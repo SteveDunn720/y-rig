@@ -3,8 +3,28 @@ import maya.cmds as cmds
 from maya.api import OpenMayaAnim as oma
 
 
+def get_skin_clusters(mesh: str) -> list[str] | None:
+    """
+    Return all skinCluster deformers in a mesh's construction history.
+
+    Queries the dependency history of the given mesh (transform or shape),
+    filters for nodes of type ``skinCluster``, and returns their names.
+
+    Args:
+        mesh: The name of a mesh transform or shape node.
+
+    Returns:
+        A list of skinCluster node names if any are found, otherwise ``None``.
+        The list order reflects the order returned by Maya's history query.
+    """
+    history = cmds.listHistory(mesh, pruneDagObjects=True) or []
+    skin_clusters = cmds.ls(history, type="skinCluster")  # type: ignore
+    return skin_clusters if skin_clusters else None
+
+
 def get_skin_cluster(mesh: str) -> str | None:
-    """Find the skinCluster deformer attached to a mesh.
+    """
+    Find the skinCluster deformer attached to a mesh.
 
     Walks the construction history of the given mesh and returns the first
     ``skinCluster`` node found, or ``None`` if the mesh is not skinned.
@@ -16,9 +36,20 @@ def get_skin_cluster(mesh: str) -> str | None:
         The name of the first skinCluster node in the mesh's history,
         or ``None`` if no skinCluster is present.
     """
-    history = cmds.listHistory(mesh, pruneDagObjects=True) or []
-    skin_clusters = cmds.ls(history, type="skinCluster")  # type: ignore
+    skin_clusters = get_skin_clusters(mesh)
     return skin_clusters[0] if skin_clusters else None
+
+
+def get_skin_cluster_influences(skin_cluster: str) -> list[str]:
+    return cmds.skinCluster(skin_cluster, query=True, influence=True)  # type: ignore
+
+
+def get_mesh_influences(shape: str, skin_cluster: str | None = None) -> list[str]:
+    if not skin_cluster:
+        skin_cluster: str | None = get_skin_cluster(shape)
+        if not skin_cluster:
+            raise RuntimeError(f"No skinCluster on {shape}")
+    return get_skin_cluster_influences(skin_cluster)
 
 
 def skin_mesh(

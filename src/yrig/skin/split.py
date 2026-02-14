@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Self, Sequence, TypeVar
+from typing import Collection, Iterable, Self, Sequence, TypeVar
 
 import maya.cmds as cmds
 from maya.api import OpenMaya as om2
@@ -22,7 +22,14 @@ from yrig.maya_api.attribute import (
     IntegerAttribute,
     MessageAttribute,
 )
-from yrig.skin.core import get_mesh_points, get_skin_cluster, get_weights, set_weights
+from yrig.skin.core import (
+    get_mesh_points,
+    get_skin_cluster,
+    get_skin_cluster_influences,
+    get_skin_clusters,
+    get_weights,
+    set_weights,
+)
 
 # CV can be anything: a Vector3, a transform name, etc.
 CV = TypeVar("CV")
@@ -184,95 +191,12 @@ def get_mesh_surface_weights(
     return spline_weights_per_vertex
 
 
-def split_weights(
-    mesh: str,
-    joint_split_dict: dict[str, list[str]],
-    degree: int = 2,
-    periodic: bool = False,
-) -> None:
-    """
-    Redistributes skin weights from specified original joints to sets of split joints using spline-based falloff.
-
-    This function is designed to reassign weights from a set of original joints (e.g., proxy drivers)
-    across multiple split joints (e.g., spline-based deformation chains like ribbons or bendy limbs).
-    The redistribution is done by computing falloff weights along a spline built from the split joints'
-    world positions and distributing the original joint's influence accordingly.
-
-    Args:
-        mesh: The transform node of the skinned mesh.
-        joint_split_dict (dict[str, list[str]]): A mapping of original joint names to a list of split joints
-            that will receive the redistributed weights. Each key-value pair is one redistribution group.
-        degree: Degree of the spline used for spatial weight interpolation. Defaults to 2.
-        periodic: If True the curve generated to split the weights will be a periodic one.
-    """
-    # get the shape node
-    mesh_shape: str = cmds.listRelatives(mesh, shapes=True)[0]
-
-    # get the skinCluster and weights
-    skin_cluster: str | None = get_skin_cluster(mesh)
-    original_weights: dict[int, dict[str, float]] = get_weights(
-        shape=mesh_shape, skin_cluster=skin_cluster
-    )
-
-    # Copy the original weights for modification.
-    new_weights: dict[int, dict[str, float]] = {
-        vtx: weights.copy() for vtx, weights in original_weights.items()
-    }
-
-    # Organize weights by influence rather than vertex
-    weights_by_influence: dict[str, dict[int, float]] = {}
-    for vertex, influence_weights in original_weights.items():
-        for influence, weight in influence_weights.items():
-            if influence in weights_by_influence:
-                weights_by_influence[influence][vertex] = weight
-            else:
-                weights_by_influence[influence] = {vertex: weight}
-
-    # Process each original joint → split joints mapping
-    for original_joint, split_joints_list in joint_split_dict.items():
-        vertex_weights: dict[int, float] = {}
-        if original_joint in weights_by_influence:
-            vertex_weights = weights_by_influence[original_joint]
-
-        # Filter for vertices actually influenced by this joint (less inputs for the spline weight algorithm)
-        influenced_vertex_weights: list[tuple[int, float]] = []
-        influenced_vertices: list[int] = []
-        for vertex, weight in vertex_weights.items():
-            if weight > 0:
-                influenced_vertex_weights.append((vertex, weight))
-                influenced_vertices.append(vertex)
-
-        # Get spline-based weights for each influenced vertex
-        spline_weights: list[list[tuple[str, float]]] = get_mesh_spline_weights(
-            mesh_shape=mesh_shape,
-            cv_transforms=split_joints_list,
-            degree=degree,
-            periodic=periodic,
-            vertex_indices=influenced_vertices,
-        )
-
-        # Redistribute the weights
-        for i, (vertex, original_weight) in enumerate(influenced_vertex_weights):
-            # Remove original joint weight
-            new_weights[vertex][original_joint] = 0.0
-
-            # Add redistributed weights to split joints
-            for influence, spline_weight in spline_weights[i]:
-                if influence not in new_weights[vertex]:
-                    new_weights[vertex][influence] = 0.0
-                new_weights[vertex][influence] += spline_weight * original_weight
-
-    set_weights(
-        shape=mesh_shape, new_weights=new_weights, skin_cluster=skin_cluster, normalize=True
-    )
-
-
 @dataclass
 class WeightSplitData:
     """Describes how a single influence's weights should be split across multiple joints."""
 
     source_influence: str
-    split_influences: Sequence[str]
+    split_influences: list[str]
     degree: int = 2
     periodic: bool = False
 
@@ -313,11 +237,12 @@ class WeightSplitTag:
         return cls(node)
 
     def get_weight_split_data(self) -> WeightSplitData:
-        source_influence = self.source_influence.source_node
-        if source_influence is None:
+        destinations = self.source_influence.connected_nodes(source=False, destination=True)
+        if not destinations:
             raise RuntimeError(
-                f"{self.source_influence} doesn't have a source node, maybe it was disconnected at some point?"
+                f"{self.source_influence} doesn't have a connection to an influence, maybe it was disconnected at some point?"
             )
+
         degree = self.degree.value
         periodic = self.periodic.value
         split_influences = [
@@ -327,7 +252,7 @@ class WeightSplitTag:
         ]
 
         return WeightSplitData(
-            source_influence=source_influence,
+            source_influence=destinations[0],
             split_influences=split_influences,
             degree=degree,
             periodic=periodic,
@@ -353,7 +278,7 @@ def tag_for_weight_split(
         attributeType="message",
     )
     tag_node = WeightSplitTag.create(name=f"{influence}_weight_split_tag")
-    tag_node.source_influence.connect_from(f"{influence}.weight_split_tag")
+    tag_node.source_influence.connect_to(f"{influence}.weight_split_tag")
     tag_node.degree.set(degree)
     tag_node.periodic.set(periodic)
     for i, split_influence in enumerate(split_influences):
@@ -364,8 +289,115 @@ def tag_for_weight_split(
 def get_weight_split_tag(influence: str) -> WeightSplitTag | None:
     if not cmds.objExists(f"{influence}.weight_split_tag"):
         return None
-    sources = cmds.listConnections(source=True, destination=False)
+    sources = cmds.listConnections(f"{influence}.weight_split_tag", source=True, destination=False)
     if not sources:
         return None
     source = sources[0]
     return WeightSplitTag.from_node(source)
+
+
+def split_weights(
+    mesh: str,
+    split_data_collection: Collection[WeightSplitData],
+    skin_cluster: str | None = None,
+) -> None:
+    """
+    Redistributes skin weights from specified original joints to sets of split joints using spline-based falloff.
+
+    This function is designed to reassign weights from a set of original joints (e.g., proxy drivers)
+    across multiple split joints (e.g., spline-based deformation chains like ribbons or bendy limbs).
+    The redistribution is done by computing weights along a spline built from the split joints'
+    world positions and distributing the original joint's influence accordingly.
+
+    Args:
+        mesh: The transform node of the skinned mesh.
+        joint_split_dict (dict[str, list[str]]): A mapping of original joint names to a list of split joints
+            that will receive the redistributed weights. Each key-value pair is one redistribution group.
+        degree: Degree of the spline used for spatial weight interpolation. Defaults to 2.
+        periodic: If True the curve generated to split the weights will be a periodic one.
+    """
+    # get the shape node
+    mesh_shape: str = cmds.listRelatives(mesh, shapes=True)[0]
+
+    # get the skinCluster and weights
+    split_skin_cluster = skin_cluster if skin_cluster is not None else get_skin_cluster(mesh)
+    original_weights: dict[int, dict[str, float]] = get_weights(
+        shape=mesh_shape, skin_cluster=split_skin_cluster
+    )
+
+    # Copy the original weights for modification.
+    new_weights: dict[int, dict[str, float]] = {
+        vtx: weights.copy() for vtx, weights in original_weights.items()
+    }
+
+    # Organize weights by influence rather than vertex
+    weights_by_influence: dict[str, dict[int, float]] = {}
+    for vertex, influence_weights in original_weights.items():
+        for influence, weight in influence_weights.items():
+            if influence in weights_by_influence:
+                weights_by_influence[influence][vertex] = weight
+            else:
+                weights_by_influence[influence] = {vertex: weight}
+
+    # Process each original joint → split joints mapping
+    for split_data in split_data_collection:
+        vertex_weights: dict[int, float] = {}
+        source_influence = split_data.source_influence
+        if source_influence in weights_by_influence:
+            vertex_weights = weights_by_influence[source_influence]
+
+        # Filter for vertices actually influenced by this joint (less inputs for the spline weight algorithm)
+        influenced_vertex_weights: list[tuple[int, float]] = []
+        influenced_vertices: list[int] = []
+        for vertex, weight in vertex_weights.items():
+            if weight > 0:
+                influenced_vertex_weights.append((vertex, weight))
+                influenced_vertices.append(vertex)
+
+        # Get spline-based weights for each influenced vertex
+        spline_weights: list[list[tuple[str, float]]] = get_mesh_spline_weights(
+            mesh_shape=mesh_shape,
+            cv_transforms=split_data.split_influences,
+            degree=split_data.degree,
+            periodic=split_data.periodic,
+            vertex_indices=influenced_vertices,
+        )
+
+        # Redistribute the weights
+        for i, (vertex, original_weight) in enumerate(influenced_vertex_weights):
+            # Remove original joint weight
+            new_weights[vertex][source_influence] = 0.0
+
+            # Add redistributed weights to split joints
+            for influence, spline_weight in spline_weights[i]:
+                if influence not in new_weights[vertex]:
+                    new_weights[vertex][influence] = 0.0
+                new_weights[vertex][influence] += spline_weight * original_weight
+
+    set_weights(
+        shape=mesh_shape, new_weights=new_weights, skin_cluster=split_skin_cluster, normalize=True
+    )
+
+
+def auto_split_weights(meshes: Iterable[str] | str) -> None:
+    meshes_to_split = (meshes,) if isinstance(meshes, str) else meshes
+    for mesh in meshes_to_split:
+        skin_clusters: list[str] | None = get_skin_clusters(mesh)
+        if skin_clusters is None:
+            continue
+        for skin_cluster in skin_clusters:
+            weight_split_data_list = []
+            influences: list[str] = get_skin_cluster_influences(skin_cluster=skin_cluster)
+            for influence in influences:
+                weight_split_tag = get_weight_split_tag(influence)
+                if weight_split_tag is None:
+                    continue
+                weight_split_data = weight_split_tag.get_weight_split_data()
+                weight_split_data_list.append(weight_split_data)
+            if weight_split_data_list:
+                split_weights(
+                    mesh,
+                    split_data_collection=weight_split_data_list,
+                    skin_cluster=skin_cluster,
+                )
+                print(f"Finished splitting {skin_cluster} weights on {mesh}.")

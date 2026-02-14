@@ -343,6 +343,8 @@ class MessageAttribute(Attribute):
         source: bool = True,
         destination: bool = False,
     ) -> list[str]:
+        if not cmds.objExists(self.attr_path):
+            return []
         return cmds.listConnections(self.attr_path, source=source, destination=destination)
 
     @property

@@ -390,13 +390,17 @@ class Component(component.Main):
         """
         # If there are joints being generated and there is more than one segment,
         # tag the joints (based on component settings).
-        if self.options["joint_rig"] and len(self.jointList) > 1:
+        if (
+            self.options["joint_rig"]
+            and len(self.jointList) > 1
+            and self.settings["weight_split_tag"]
+        ):
             source_joint: str = self.jointList[0].name()
             split_joints: list[str] = [joint.name() for joint in self.jointList]
             tag_for_weight_split(
                 influence=source_joint,
                 split_influences=split_joints,
-                degree=2,
+                degree=self.settings["weight_split_degree"],
             )
 
         # Run default finalize logic.

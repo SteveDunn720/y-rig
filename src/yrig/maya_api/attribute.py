@@ -303,7 +303,7 @@ class IndexableBlendMatrixTargetAttribute(IndexableAttribute[BlendMatrixTargetAt
 
 
 class WtMatrixAttribute(Attribute):
-    """A Maya attribute of the same compound type as the wtMatrix elements in a wrAddMatrix node."""
+    """A Maya attribute of the same compound type as the wtMatrix elements in a wtAddMatrix node."""
 
     def __init__(self, attr_path: str):
         super().__init__(attr_path)
@@ -359,7 +359,7 @@ class MessageAttribute(Attribute):
 
 
 class IndexableMessageAttribute(IndexableAttribute[MessageAttribute]):
-    """A Maya attribute that supports indexing elements in a wtAddMatrix with bracket notation."""
+    """A Maya attribute that supports indexing message attributes with bracket notation."""
 
     def __getitem__(self, index: int) -> MessageAttribute:
         """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""

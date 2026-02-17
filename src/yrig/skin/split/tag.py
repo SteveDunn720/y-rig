@@ -97,6 +97,19 @@ def tag_for_weight_split(
 
 
 def get_weight_split_tag(influence: str) -> WeightSplitTag | None:
+    """Retrieve the `WeightSplitTag` associated with an influence, if any.
+
+    Checks whether the influence has a ``weight_split_tag`` message attribute
+    and follows the connection back to the network node that stores the split
+    metadata.
+
+    Args:
+        influence: The name of the influence joint to inspect.
+
+    Returns:
+        A `WeightSplitTag` instance wrapping the connected network
+        node, or ``None`` if the influence has no weight-split tag.
+    """
     if not cmds.objExists(f"{influence}.weight_split_tag"):
         return None
     sources = cmds.listConnections(f"{influence}.weight_split_tag", source=True, destination=False)

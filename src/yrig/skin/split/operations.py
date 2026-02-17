@@ -110,6 +110,16 @@ def split_weights(
 
 
 def auto_split_weights(meshes: Iterable[str] | str) -> None:
+    """Automatically split skin weights on one or more meshes using tagged influences.
+
+    Scans every skinCluster on each mesh for influences that have a
+    ``WeightSplitTag`` attached (created via `tag_for_weight_split`).
+    For each tagged influence the stored split metadata is read and
+    `split_weights` is called to redistribute the weights.
+
+    Args:
+        meshes: A single mesh name or an iterable of mesh names to process.
+    """
     meshes_to_split = (meshes,) if isinstance(meshes, str) else meshes
     for mesh in meshes_to_split:
         skin_clusters: list[str] | None = get_skin_clusters(mesh)

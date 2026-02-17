@@ -41,10 +41,35 @@ def get_skin_cluster(mesh: str) -> str | None:
 
 
 def get_skin_cluster_influences(skin_cluster: str) -> list[str]:
+    """Return the influence joints bound to a skinCluster.
+
+    Args:
+        skin_cluster: The name of the skinCluster node to query.
+
+    Returns:
+        A list of influence (joint/transform) names associated with the
+        skinCluster.
+    """
     return cmds.skinCluster(skin_cluster, query=True, influence=True)  # type: ignore
 
 
 def get_mesh_influences(shape: str, skin_cluster: str | None = None) -> list[str]:
+    """Return the influence joints for a mesh's skinCluster.
+
+    Convenience wrapper that resolves the skinCluster from a mesh shape
+    (if not provided) and returns its influences.
+
+    Args:
+        shape: The name of the mesh shape node.
+        skin_cluster: Optional explicit skinCluster node name. When
+            ``None``, the first skinCluster in the shape's history is used.
+
+    Returns:
+        A list of influence (joint/transform) names.
+
+    Raises:
+        RuntimeError: If no skinCluster can be found on *shape*.
+    """
     if not skin_cluster:
         skin_cluster: str | None = get_skin_cluster(shape)
         if not skin_cluster:

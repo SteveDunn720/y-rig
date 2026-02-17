@@ -171,7 +171,7 @@ def deboor_weights(
         cv_weights = {cv: 1 for cv in cvs}
 
     # Run a modified version of de Boors algorithm
-    cvBases = [{cv: 1.0} for cv in cvs]  # initialize basis weights with a value of 1 for every cv
+    cv_bases = [{cv: 1.0} for cv in cvs]  # initialize basis weights with a value of 1 for every cv
     for r in range(1, degree + 1):  # Loop once per degree
         for j in range(degree, r - 1, -1):  # Loop backwards from degree to r
             right = j + 1 + span - r
@@ -181,19 +181,19 @@ def deboor_weights(
             )  # Alpha is how much influence comes from the left vs right cv
 
             weights = {}
-            for cv, weight in cvBases[j].items():
+            for cv, weight in cv_bases[j].items():
                 weights[cv] = weight * alpha
 
-            for cv, weight in cvBases[j - 1].items():
+            for cv, weight in cv_bases[j - 1].items():
                 if cv in weights:
                     weights[cv] += weight * (1 - alpha)
                 else:
                     weights[cv] = weight * (1 - alpha)
 
-            cvBases[j] = weights
-    finalBases = cvBases[degree]
+            cv_bases[j] = weights
+    finalBases = cv_bases[degree]
 
-    # Multiply each CVs basis function by it's weight
+    # Multiply each CV's basis function by its weight
     # see: https://en.wikipedia.org/wiki/Non-uniform_rational_B-spline#General_form_of_a_NURBS_curve
     numerator = {i: finalBases[i] * cv_weights[i] for i in finalBases}
 

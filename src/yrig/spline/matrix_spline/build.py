@@ -28,7 +28,8 @@ def matrix_spline_from_transforms(
     """
     Takes a set of transforms (cvs) and creates a matrix spline and optionally pins transforms to them.
     Args:
-        matrix_spline: The matrix spline defention that will drive the pinned transforms.
+        name: Base name for the spline group node.
+        cv_transforms: Ordered transform names used as control vertices.
         pinned_transforms: These transforms will be constrained to the spline.
             If the input is an integer, that many pins will be created and bound to the spline.
         padded: When True, segments are sampled such that the end points have half a segment of spacing from the ends of the spline.
@@ -57,7 +58,7 @@ def matrix_spline_from_transforms(
     spline_knots = (
         knots
         if knots is not None
-        else generate_knots(len(cv_transforms), degree=degree, periodic=False)
+        else generate_knots(len(cv_transforms), degree=degree, periodic=periodic)
     )
 
     cv_pins: list[str] = []

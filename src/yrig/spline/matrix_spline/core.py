@@ -222,7 +222,7 @@ def closest_parameter_on_matrix_spline(
 
 
 def get_point_on_matrix_spline(
-    matrix_spline: MatrixSpline, parameter: float, normalize_paramter: bool = True
+    matrix_spline: MatrixSpline, parameter: float, normalize_parameter: bool = True
 ) -> MPoint:
     """Evaluate the world-space position on a MatrixSpline at a given parameter.
 
@@ -234,7 +234,7 @@ def get_point_on_matrix_spline(
         matrix_spline: The :class:`MatrixSpline` whose CV transforms,
             degree, and knot vector define the curve.
         parameter: The curve parameter at which to evaluate.
-        normalize_paramter: When ``True`` (the default), *parameter* is
+        normalize_parameter: When ``True`` (the default), *parameter* is
             treated as a normalized value in the ``[0, 1]`` range.  When
             ``False``, it is interpreted in raw knot-space units.
 
@@ -254,7 +254,7 @@ def get_point_on_matrix_spline(
         t=parameter,
         degree=matrix_spline.degree,
         knots=matrix_spline.knots,
-        normalize_parameter=normalize_paramter,
+        normalize_parameter=normalize_parameter,
     )
     point: MPoint = MPoint(position.x, position.y, position.z)
     return point

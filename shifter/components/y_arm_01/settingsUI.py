@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsUImkMJBL.ui'
+## Form generated from reading UI file 'settingsUIcVqlLa.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.10.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from Qt.QtCore import QCoreApplication, QMetaObject, QSize, Qt
+from Qt.QtCore import (
+    QCoreApplication,
+    QMetaObject,
+    QSize,
+    Qt,
+)
 from Qt.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -32,7 +37,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName("Form")
-        Form.resize(364, 1028)
+        Form.resize(364, 914)
         self.gridLayout = QGridLayout(Form)
         self.gridLayout.setObjectName("gridLayout")
         self.groupBox = QGroupBox(Form)
@@ -146,6 +151,53 @@ class Ui_Form(object):
         self.TPoseRest_checkBox.setObjectName("TPoseRest_checkBox")
 
         self.verticalLayout.addWidget(self.TPoseRest_checkBox)
+
+        self.weight_split_formLayout = QFormLayout()
+        self.weight_split_formLayout.setObjectName("weight_split_formLayout")
+        self.weight_split_enable_label = QLabel(self.groupBox)
+        self.weight_split_enable_label.setObjectName("weight_split_enable_label")
+
+        self.weight_split_formLayout.setWidget(
+            1, QFormLayout.ItemRole.LabelRole, self.weight_split_enable_label
+        )
+
+        self.weight_split_enable_checkBox = QCheckBox(self.groupBox)
+        self.weight_split_enable_checkBox.setObjectName("weight_split_enable_checkBox")
+        self.weight_split_enable_checkBox.setChecked(True)
+
+        self.weight_split_formLayout.setWidget(
+            1, QFormLayout.ItemRole.FieldRole, self.weight_split_enable_checkBox
+        )
+
+        self.weight_split_label = QLabel(self.groupBox)
+        self.weight_split_label.setObjectName("weight_split_label")
+
+        self.weight_split_formLayout.setWidget(
+            0, QFormLayout.ItemRole.SpanningRole, self.weight_split_label
+        )
+
+        self.spline_degree_label = QLabel(self.groupBox)
+        self.spline_degree_label.setObjectName("spline_degree_label")
+
+        self.weight_split_formLayout.setWidget(
+            2, QFormLayout.ItemRole.LabelRole, self.spline_degree_label
+        )
+
+        self.spline_degree_spinBox = QSpinBox(self.groupBox)
+        self.spline_degree_spinBox.setObjectName("spline_degree_spinBox")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.spline_degree_spinBox.sizePolicy().hasHeightForWidth())
+        self.spline_degree_spinBox.setSizePolicy(sizePolicy2)
+        self.spline_degree_spinBox.setMinimum(1)
+        self.spline_degree_spinBox.setMaximum(5)
+
+        self.weight_split_formLayout.setWidget(
+            2, QFormLayout.ItemRole.FieldRole, self.spline_degree_spinBox
+        )
+
+        self.verticalLayout.addLayout(self.weight_split_formLayout)
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -440,6 +492,48 @@ class Ui_Form(object):
         )
         # endif // QT_CONFIG(whatsthis)
         self.TPoseRest_checkBox.setText(QCoreApplication.translate("Form", "Rest T Pose", None))
+        # if QT_CONFIG(tooltip)
+        self.weight_split_enable_label.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                "When enabled the component's joints will be tagged to have metadata for automatic skin weight splitting.",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        self.weight_split_enable_label.setText(QCoreApplication.translate("Form", "Enable", None))
+        # if QT_CONFIG(tooltip)
+        self.weight_split_enable_checkBox.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                "When enabled the component's joints will be tagged to have metadata for automatic skin weight splitting.",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        self.weight_split_enable_checkBox.setText("")
+        self.weight_split_label.setText(
+            QCoreApplication.translate("Form", "Weight Split Tagging", None)
+        )
+        # if QT_CONFIG(tooltip)
+        self.spline_degree_label.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                'This corresponds to the degree of the spline used for the skin weight splitting. A higher value will result in a "smoother" weight split. A value of one is a linear spline, 2 quadratic, etc.',
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        self.spline_degree_label.setText(QCoreApplication.translate("Form", "Spline Degree", None))
+        # if QT_CONFIG(tooltip)
+        self.spline_degree_spinBox.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                'This corresponds to the degree of the spline used for the skin weight splitting. A higher value will result in a "smoother" weight split. A value of one is a linear spline, 2 quadratic, etc.',
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
         self.squashStretchProfile_pushButton.setText(
             QCoreApplication.translate("Form", "Squash and Stretch Profile", None)
         )

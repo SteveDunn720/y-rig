@@ -8,6 +8,7 @@ from mgear.pymaya import datatypes
 from mgear.shifter import component
 
 from yrig.maya_api.node import CurveInfoNode, MultiplyNode, SubtractNode
+from yrig.skin.split import tag_for_weight_split
 from yrig.spline import pin_to_matrix_spline
 from yrig.spline.curve import bound_curve_from_transforms
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
@@ -381,3 +382,22 @@ class Component(component.Main):
         self.jointRelatives["chest"] = -1
 
         self.aliasRelatives["root"] = "torso"
+
+    def finalize(self):
+        """
+        This runs after all the connections are made and the
+        hierarchy is built.
+        """
+        # If there are joints being generated and there is more than one segment,
+        # tag the joints (based on component settings).
+        if self.options["joint_rig"] and len(self.jointList) > 1:
+            source_joint: str = self.jointList[0].name()
+            split_joints: list[str] = [joint.name() for joint in self.jointList]
+            tag_for_weight_split(
+                influence=source_joint,
+                split_influences=split_joints,
+                degree=2,
+            )
+
+        # Run default finalize logic.
+        super(Component, self).finalize()

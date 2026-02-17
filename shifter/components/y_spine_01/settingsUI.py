@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsUIXJxXqO.ui'
+## Form generated from reading UI file 'settingsUIFVcjaY.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.10.2
 ##
@@ -33,9 +33,15 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName("Form")
-        Form.resize(339, 332)
+        Form.resize(600, 480)
         self.gridLayout = QGridLayout(Form)
         self.gridLayout.setObjectName("gridLayout")
+        self.verticalSpacer = QSpacerItem(
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+
+        self.gridLayout.addItem(self.verticalSpacer, 2, 0, 1, 1)
+
         self.groupBox = QGroupBox(Form)
         self.groupBox.setObjectName("groupBox")
         self.formLayout = QFormLayout(self.groupBox)
@@ -103,20 +109,50 @@ class Ui_Form(object):
 
         self.formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self.leafJoints_checkBox)
 
+        self.weight_split_tagging_label = QLabel(self.groupBox)
+        self.weight_split_tagging_label.setObjectName("weight_split_tagging_label")
+        self.weight_split_tagging_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeading
+            | Qt.AlignmentFlag.AlignLeft
+            | Qt.AlignmentFlag.AlignVCenter
+        )
+
+        self.formLayout.setWidget(
+            4, QFormLayout.ItemRole.SpanningRole, self.weight_split_tagging_label
+        )
+
         self.squashStretchProfile_pushButton = QPushButton(self.groupBox)
         self.squashStretchProfile_pushButton.setObjectName("squashStretchProfile_pushButton")
 
         self.formLayout.setWidget(
-            5, QFormLayout.ItemRole.SpanningRole, self.squashStretchProfile_pushButton
+            7, QFormLayout.ItemRole.SpanningRole, self.squashStretchProfile_pushButton
         )
+
+        self.weight_split_enable_label = QLabel(self.groupBox)
+        self.weight_split_enable_label.setObjectName("weight_split_enable_label")
+
+        self.formLayout.setWidget(5, QFormLayout.ItemRole.LabelRole, self.weight_split_enable_label)
+
+        self.weight_split_enable_checkBox = QCheckBox(self.groupBox)
+        self.weight_split_enable_checkBox.setObjectName("weight_split_enable_checkBox")
+
+        self.formLayout.setWidget(
+            5, QFormLayout.ItemRole.FieldRole, self.weight_split_enable_checkBox
+        )
+
+        self.spline_degree_label = QLabel(self.groupBox)
+        self.spline_degree_label.setObjectName("spline_degree_label")
+
+        self.formLayout.setWidget(6, QFormLayout.ItemRole.LabelRole, self.spline_degree_label)
+
+        self.spline_degree_spinBox = QSpinBox(self.groupBox)
+        self.spline_degree_spinBox.setObjectName("spline_degree_spinBox")
+        sizePolicy.setHeightForWidth(self.spline_degree_spinBox.sizePolicy().hasHeightForWidth())
+        self.spline_degree_spinBox.setSizePolicy(sizePolicy)
+
+        self.formLayout.setWidget(6, QFormLayout.ItemRole.FieldRole, self.spline_degree_spinBox)
 
         self.gridLayout.addWidget(self.groupBox, 0, 0, 1, 1)
-
-        self.verticalSpacer = QSpacerItem(
-            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
-        )
-
-        self.gridLayout.addItem(self.verticalSpacer, 1, 0, 1, 1)
 
         self.retranslateUi(Form)
         self.preserve_length_slider.valueChanged.connect(self.preserve_length_spinBox.setValue)
@@ -148,8 +184,51 @@ class Ui_Form(object):
         self.ctl_world_orient_checkBox.setText("")
         self.leafJoints_label.setText(QCoreApplication.translate("Form", "Leaf Joints", None))
         self.leafJoints_checkBox.setText("")
+        self.weight_split_tagging_label.setText(
+            QCoreApplication.translate("Form", "Weight Split Tagging", None)
+        )
         self.squashStretchProfile_pushButton.setText(
             QCoreApplication.translate("Form", "Squash and Stretch Profile", None)
         )
+        # if QT_CONFIG(tooltip)
+        self.weight_split_enable_label.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                "When enabled the component's joints will be tagged to have metadata for automatic skin weight splitting.",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        self.weight_split_enable_label.setText(QCoreApplication.translate("Form", "Enable", None))
+        # if QT_CONFIG(tooltip)
+        self.weight_split_enable_checkBox.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                "When enabled the component's joints will be tagged to have metadata for automatic skin weight splitting.",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        self.weight_split_enable_checkBox.setText("")
+        # if QT_CONFIG(tooltip)
+        self.spline_degree_label.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                'This corresponds to the degree of the spline used for the skin weight splitting. A higher value will result in a "smoother" weight split. A value of one is a linear spline, 2 quadratic, etc.',
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        self.spline_degree_label.setText(QCoreApplication.translate("Form", "Spline Degree", None))
+        # if QT_CONFIG(tooltip)
+        self.spline_degree_spinBox.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                'This corresponds to the degree of the spline used for the skin weight splitting. A higher value will result in a "smoother" weight split. A value of one is a linear spline, 2 quadratic, etc.',
+                None,
+            )
+        )
 
-    # retranslateUi
+
+# endif // QT_CONFIG(tooltip)
+# retranslateUi

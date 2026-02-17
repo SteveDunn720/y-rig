@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Collection, Iterable, Self, Sequence, TypeVar
+from typing import Iterable, Self, Sequence, TypeVar
 
 import maya.cmds as cmds
 from maya.api import OpenMaya as om2
@@ -298,23 +298,32 @@ def get_weight_split_tag(influence: str) -> WeightSplitTag | None:
 
 def split_weights(
     mesh: str,
-    split_data_collection: Collection[WeightSplitData],
+    split_data_collection: Iterable[WeightSplitData],
     skin_cluster: str | None = None,
 ) -> None:
     """
-    Redistributes skin weights from specified original joints to sets of split joints using spline-based falloff.
-
     This function is designed to reassign weights from a set of original joints (e.g., proxy drivers)
     across multiple split joints (e.g., spline-based deformation chains like ribbons or bendy limbs).
     The redistribution is done by computing weights along a spline built from the split joints'
     world positions and distributing the original joint's influence accordingly.
 
+    For each `WeightSplitData` entry a temporary NURBS curve is built from the
+    world-space positions of the split influences. Every vertex that is affected by the
+    source influence is projected onto that curve and assigned new weights via B-spline
+    basis evaluation. The source influence's weight is then zeroed out and its value is
+    redistributed across the split influences proportionally.
+
     Args:
-        mesh: The transform node of the skinned mesh.
-        joint_split_dict (dict[str, list[str]]): A mapping of original joint names to a list of split joints
-            that will receive the redistributed weights. Each key-value pair is one redistribution group.
-        degree: Degree of the spline used for spatial weight interpolation. Defaults to 2.
-        periodic: If True the curve generated to split the weights will be a periodic one.
+        mesh: The transform node or mesh shape.
+        split_data_collection: One or more `WeightSplitData` descriptors, each
+            specifying a source influence and the ordered list of split
+            influences that should receive its weights.  The ``degree`` and ``periodic``
+            fields on each descriptor control the spline used for interpolation.
+        skin_cluster: Explicit skinCluster node name to operate on.  When ``None``
+            the first skinCluster found on *mesh* is used.
+
+    Raises:
+        RuntimeError: If no skinCluster can be resolved for *mesh*.
     """
     # get the shape node
     mesh_shape: str = cmds.listRelatives(mesh, shapes=True)[0]
@@ -353,6 +362,10 @@ def split_weights(
             if weight > 0:
                 influenced_vertex_weights.append((vertex, weight))
                 influenced_vertices.append(vertex)
+
+        # Skip if no vertices are influenced by this joint
+        if not influenced_vertices:
+            continue
 
         # Get spline-based weights for each influenced vertex
         spline_weights: list[list[tuple[str, float]]] = get_mesh_spline_weights(

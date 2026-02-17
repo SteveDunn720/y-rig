@@ -77,7 +77,7 @@ def get_local_matrix(transform: str) -> MMatrix:
 
 def get_parent_matrix(transform: str) -> MMatrix:
     """
-    Returns the full world matrix of a transform up to it's parent, including rotateAxis, jointOrient, etc.
+    Returns the full world matrix of a transform up to its parent, including rotateAxis, jointOrient, etc.
     Equivalent to Maya's internal parent matrix.
     """
     selection = MSelectionList()
@@ -88,7 +88,7 @@ def get_parent_matrix(transform: str) -> MMatrix:
 
 def get_parent_inverse_matrix(transform: str) -> MMatrix:
     """
-    Returns the full inverse world matrix of a transform up to it's parent, including rotateAxis, jointOrient, etc.
+    Returns the full inverse world matrix of a transform up to its parent, including rotateAxis, jointOrient, etc.
     Equivalent to Maya's internal parentInverse matrix.
     """
     selection = MSelectionList()
@@ -207,8 +207,8 @@ def matrix_constraint(
     the ``rotate`` channels.
 
     Args:
-        source_transform: joint to match.
-        constrain_joint: joint to constrain.
+        source_transform: Transform to match (the driver).
+        constrain_transform: Transform to constrain (the driven).
         keep_offset: keep the offset of the constrained transform to the source at time of constraint generation.
         local_space: if False the constrained transform will have inheritsTransform turned off.
         use_joint_orient: when true the joint orient is taken into account, otherwise it is set to zero.
@@ -244,7 +244,7 @@ def matrix_constraint(
     mult_matrix.matrix_in[mult_index].connect_from(f"{source_transform}.worldMatrix[0]")
     mult_index += 1
 
-    # If we have a parent transform we then put it into that space by multiplying by it's worldInverseMatrix
+    # If we have a parent transform we then put it into that space by multiplying by its worldInverseMatrix
     if local_space:
         mult_matrix.matrix_in[mult_index].connect_from(
             f"{constrain_transform}.parentInverseMatrix[0]"
@@ -253,7 +253,7 @@ def matrix_constraint(
     else:
         cmds.setAttr(f"{constrain_transform}.inheritsTransform", 0)  # type: ignore
 
-    # Create the decomposed matrix and connect it's inputs
+    # Create the decomposed matrix and connect its inputs
     decompose_matrix = node.DecomposeMatrixNode(f"{constraint_name}_ConstrainMatrixDecompose")
     mult_matrix.matrix_sum.connect_to(decompose_matrix.input_matrix)
     decompose_matrix.input_rotate_order.connect_from(f"{constrain_transform}.rotateOrder")

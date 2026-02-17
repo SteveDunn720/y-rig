@@ -49,7 +49,7 @@ def require_ng_skin(func):
         if not HAS_NG_SKIN:
             print("Error: This tool requires ngSkinTools2 to be installed.")
             return None
-        if is_plugin_loaded():
+        if not is_plugin_loaded():
             load_plugin()
         return func(*args, **kwargs)
 

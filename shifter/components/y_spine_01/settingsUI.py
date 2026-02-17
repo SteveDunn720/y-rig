@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsUIFVcjaY.ui'
+## Form generated from reading UI file 'settingsUIYzoiQS.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.10.2
 ##
@@ -135,6 +135,7 @@ class Ui_Form(object):
 
         self.weight_split_enable_checkBox = QCheckBox(self.groupBox)
         self.weight_split_enable_checkBox.setObjectName("weight_split_enable_checkBox")
+        self.weight_split_enable_checkBox.setChecked(True)
 
         self.formLayout.setWidget(
             5, QFormLayout.ItemRole.FieldRole, self.weight_split_enable_checkBox
@@ -149,6 +150,8 @@ class Ui_Form(object):
         self.spline_degree_spinBox.setObjectName("spline_degree_spinBox")
         sizePolicy.setHeightForWidth(self.spline_degree_spinBox.sizePolicy().hasHeightForWidth())
         self.spline_degree_spinBox.setSizePolicy(sizePolicy)
+        self.spline_degree_spinBox.setMinimum(1)
+        self.spline_degree_spinBox.setMaximum(5)
 
         self.formLayout.setWidget(6, QFormLayout.ItemRole.FieldRole, self.spline_degree_spinBox)
 

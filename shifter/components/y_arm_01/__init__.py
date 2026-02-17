@@ -1470,25 +1470,6 @@ class Component(component.Main):
     # CONNECTOR
     # =====================================================
 
-    def finalize(self):
-        """Tag split joints for automatic weight splitting.
-
-        Uses the jnt_pos indices recorded during addObjects to look up
-        the actual joints from self.jointList (populated by jointStructure).
-        Each segment (upper arm / forearm) is tagged independently.
-        """
-        if self.options["joint_rig"] and self.settings["weight_split_tag"]:
-            for segment_indices in (self.upperarm_jnt_indices, self.forearm_jnt_indices):
-                if len(segment_indices) > 1:
-                    segment_joints = [self.jointList[index].name() for index in segment_indices]
-                    tag_for_weight_split(
-                        influence=segment_joints[0],
-                        split_influences=segment_joints,
-                        degree=self.settings["weight_split_degree"],
-                    )
-
-        super(Component, self).finalize()
-
     def setRelation(self):
         """Set the relation beetween object from guide to rig"""
         offset = int(self.extra_div / 2)
@@ -1550,3 +1531,22 @@ class Component(component.Main):
         """Custom connection to be use with shoulder 01 component"""
         self.connect_standard()
         pm.parent(self.rollRef[0], self.ikHandleUpvRef, self.parent_comp.ctl)
+
+    def finalize(self):
+        """Tag split joints for automatic weight splitting.
+
+        Uses the jnt_pos indices recorded during addObjects to look up
+        the actual joints from self.jointList (populated by jointStructure).
+        Each segment (upper arm / forearm) is tagged independently.
+        """
+        if self.options["joint_rig"] and self.settings["weight_split_tag"]:
+            for segment_indices in (self.upperarm_jnt_indices, self.forearm_jnt_indices):
+                if len(segment_indices) > 1:
+                    segment_joints = [self.jointList[index].name() for index in segment_indices]
+                    tag_for_weight_split(
+                        influence=segment_joints[0],
+                        split_influences=segment_joints,
+                        degree=self.settings["weight_split_degree"],
+                    )
+
+        super(Component, self).finalize()

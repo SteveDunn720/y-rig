@@ -6,6 +6,7 @@ from mgear.core import applyop, attribute, fcurve, icon, node, primitive, string
 from mgear.pymaya import datatypes
 from mgear.shifter import component
 
+from yrig.skin.split import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.transform import matrix_constraint
 
@@ -542,6 +543,11 @@ class Component(component.Main):
         jdn_thigh_twist = jd_names[2]
         jdn_calf_twist = jd_names[3]
         jdn_foot = jd_names[4]
+
+        # Track jnt_pos indices per segment for weight split tagging in finalize
+        self.upperleg_jnt_indices = []
+        self.lowerleg_jnt_indices = []
+
         for i in range(self.divisions):
             div_cns = primitive.addTransform(self.root_ctl, self.getName("div%s_loc" % i))
 
@@ -593,6 +599,7 @@ class Component(component.Main):
                 else:
                     rot_off_root = rot_off
 
+                self.upperleg_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": self.leg_root_base,
@@ -620,6 +627,7 @@ class Component(component.Main):
                         }
                     )
             elif i == self.settings["div0"] + 1:
+                self.lowerleg_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": roll_off,
@@ -636,6 +644,10 @@ class Component(component.Main):
                 twist_idx = self.settings["div1"]
                 increment = -1
             else:
+                if twist_name == jdn_calf_twist:
+                    self.lowerleg_jnt_indices.append(len(self.jnt_pos))
+                else:
+                    self.upperleg_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": roll_off,
@@ -1442,3 +1454,22 @@ class Component(component.Main):
                 [self.ctrn_loc],
                 False,
             )
+
+    def finalize(self):
+        """Tag split joints for automatic weight splitting.
+
+        Uses the jnt_pos indices recorded during addObjects to look up
+        the actual joints from self.jointList (populated by jointStructure).
+        Each segment (upper arm / forearm) is tagged independently.
+        """
+        if self.options["joint_rig"] and self.settings["weight_split_tag"]:
+            for segment_indices in (self.upperleg_jnt_indices, self.lowerleg_jnt_indices):
+                if len(segment_indices) > 1:
+                    segment_joints = [self.jointList[index].name() for index in segment_indices]
+                    tag_for_weight_split(
+                        influence=segment_joints[0],
+                        split_influences=segment_joints,
+                        degree=self.settings["weight_split_degree"],
+                    )
+
+        super(Component, self).finalize()

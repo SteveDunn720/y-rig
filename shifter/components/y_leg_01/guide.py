@@ -113,6 +113,10 @@ class Guide(guide.ComponentGuide):
 
         self.pParentJointIndex = self.addParam("parentJointIndex", "long", -1, None, None)
 
+        # Weight Split Tagging
+        self.pWeightSplitTag = self.addParam("weight_split_tag", "bool", True)
+        self.pWeightSplitDegree = self.addParam("weight_split_degree", "long", 2, 1)
+
     def get_divisions(self):
         """Returns correct segments divisions"""
 
@@ -183,6 +187,9 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         self.populateCheck(self.settingsTab.leafJoints_checkBox, "leafJoints")
         self.settingsTab.div0_spinBox.setValue(self.root.attr("div0").get())
         self.settingsTab.div1_spinBox.setValue(self.root.attr("div1").get())
+        self.populateCheck(self.settingsTab.weight_split_enable_checkBox, "weight_split_tag")
+        self.settingsTab.spline_degree_spinBox.setValue(self.root.attr("weight_split_degree").get())
+
         ikRefArrayItems = self.root.attr("ikrefarray").get().split(",")
         for item in ikRefArrayItems:
             self.settingsTab.ikRefArray_listWidget.addItem(item)
@@ -248,6 +255,22 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
                 self.addItem2listWidget,
                 self.settingsTab.ikRefArray_listWidget,
                 "ikrefarray",
+            )
+        )
+
+        self.settingsTab.weight_split_enable_checkBox.stateChanged.connect(
+            partial(
+                self.updateCheck,
+                self.settingsTab.weight_split_enable_checkBox,
+                "weight_split_tag",
+            )
+        )
+
+        self.settingsTab.spline_degree_spinBox.valueChanged.connect(
+            partial(
+                self.updateSpinBox,
+                self.settingsTab.spline_degree_spinBox,
+                "weight_split_degree",
             )
         )
 

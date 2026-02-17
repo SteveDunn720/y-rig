@@ -450,9 +450,9 @@ class Component(component.Main):
         # Roll twist chain ---------------------------------
         # Arm
         self.uplegChainPos = []
-        ii = 1.0 / (self.settings["div0"] + 1)
+        ii = 1.0 / max(self.settings["div0"], 1)
         i = 0.0
-        for p in range(self.settings["div0"] + 2):
+        for p in range(max(self.settings["div0"] + 1, 2)):
             self.uplegChainPos.append(
                 vector.linearlyInterpolate(self.guide.pos["root"], self.guide.pos["knee"], blend=i)
             )
@@ -469,9 +469,9 @@ class Component(component.Main):
 
         # Forearm
         self.lowlegChainPos = []
-        ii = 1.0 / (self.settings["div1"] + 1)
+        ii = 1.0 / max(self.settings["div1"], 1)
         i = 0.0
-        for p in range(self.settings["div1"] + 2):
+        for p in range(max(self.settings["div1"] + 1, 2)):
             self.lowlegChainPos.append(
                 vector.linearlyInterpolate(self.guide.pos["knee"], self.guide.pos["ankle"], blend=i)
             )

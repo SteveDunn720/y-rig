@@ -6,6 +6,9 @@ from mgear.core import applyop, attribute, fcurve, icon, node, primitive, string
 from mgear.pymaya import datatypes
 from mgear.shifter import component
 
+from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
+from yrig.transform import matrix_constraint
+
 #############################################
 # COMPONENT
 #############################################
@@ -309,24 +312,34 @@ class Component(component.Main):
             self.getName("0_bone"),
             transform.getTransform(self.fk_ctl[0]),
         )
-
         self.bone0_shp = self.bone0.getShape()
         self.bone0_shp.setAttr("localPositionX", self.n_factor * 0.5)
         self.bone0_shp.setAttr("localScale", 0.5, 0, 0)
         self.bone0.setAttr("sx", self.length0)
         self.bone0.setAttr("visibility", False)
+        self.bone0_tr = primitive.addTransform(
+            parent=self.root,
+            name=self.getName("0_bone_tr"),
+            m=transform.getTransform(self.fk_ctl[0]),
+        )
+        self.bone0_tr.setAttr("visibility", False)
 
         self.bone1 = primitive.addLocator(
             self.root_ctl,
             self.getName("1_bone"),
             transform.getTransform(self.fk_ctl[1]),
         )
-
         self.bone1_shp = self.bone1.getShape()
         self.bone1_shp.setAttr("localPositionX", self.n_factor * 0.5)
         self.bone1_shp.setAttr("localScale", 0.5, 0, 0)
         self.bone1.setAttr("sx", self.length1)
         self.bone1.setAttr("visibility", False)
+        self.bone1_tr = primitive.addTransform(
+            parent=self.root,
+            name=self.getName("1_bone_tr"),
+            m=transform.getTransform(self.fk_ctl[0]),
+        )
+        self.bone1_tr.setAttr("visibility", False)
 
         # Elbow bone1 ref
         t = transform.getTransform(self.fk_ctl[1])
@@ -710,7 +723,7 @@ class Component(component.Main):
             self.uplegBendyA_npo.rz.set(180)
             self.uplegBendyA_npo.sz.set(-1)
 
-        attribute.setKeyableAttributes(self.uplegBendyA_ctl, self.t_params)
+        attribute.setKeyableAttributes(self.uplegBendyA_ctl)
 
         t = transform.getInterpolateTransformMatrix(self.fk_ctl[0], self.tws1A_npo, 0.9)
         self.uplegBendyB_npo = primitive.addTransform(
@@ -736,7 +749,7 @@ class Component(component.Main):
             self.uplegBendyB_npo.rz.set(180)
             self.uplegBendyB_npo.sz.set(-1)
 
-        attribute.setKeyableAttributes(self.uplegBendyB_ctl, self.t_params)
+        attribute.setKeyableAttributes(self.uplegBendyB_ctl)
 
         tC = self.tws1B_npo.getMatrix(worldSpace=True)
         tC = transform.setMatrixPosition(tC, self.guide.apos[2])
@@ -764,7 +777,7 @@ class Component(component.Main):
             self.lowlegBendyA_npo.rz.set(180)
             self.lowlegBendyA_npo.sz.set(-1)
 
-        attribute.setKeyableAttributes(self.lowlegBendyA_ctl, self.t_params)
+        attribute.setKeyableAttributes(self.lowlegBendyA_ctl)
 
         t = transform.getInterpolateTransformMatrix(self.tws1B_npo, tC, 0.5)
 
@@ -793,7 +806,7 @@ class Component(component.Main):
             self.lowlegBendyB_npo.rz.set(180)
             self.lowlegBendyB_npo.sz.set(-1)
 
-        attribute.setKeyableAttributes(self.lowlegBendyB_ctl, self.t_params)
+        attribute.setKeyableAttributes(self.lowlegBendyB_ctl)
 
         t = self.mid_ctl.getMatrix(worldSpace=True)
         self.kneeBendy_npo = primitive.addTransform(self.mid_ctl, self.getName("kneeBendy_npo"), t)
@@ -812,7 +825,7 @@ class Component(component.Main):
         if self.negate:
             self.kneeBendy_npo.rz.set(180)
             self.kneeBendy_npo.sz.set(-1)
-        attribute.setKeyableAttributes(self.kneeBendy_ctl, self.t_params)
+        attribute.setKeyableAttributes(self.kneeBendy_ctl)
 
         # match IK FK references
         self.match_fk0_off = self.add_match_ref(self.fk_ctl[1], self.root, "matchFk0_npo", False)
@@ -1049,6 +1062,13 @@ class Component(component.Main):
         # part is in the final and correct position
         # after the  ctrn_loc is in the correct position with the ikfk2bone op
 
+        matrix_constraint(
+            str(self.bone0), str(self.bone0_tr), keep_offset=False, scale=False, shear=False
+        )
+        matrix_constraint(
+            str(self.bone1), str(self.bone1_tr), keep_offset=False, scale=False, shear=False
+        )
+
         # point constrain tip reference
         pm.pointConstraint(self.ik_ctl, self.tip_ref, mo=False)
 
@@ -1123,18 +1143,40 @@ class Component(component.Main):
         pm.connectAttr(dm_node + ".outputRotate", self.tws2_npo.attr("rotate"))
 
         # spline IK for  twist jnts
-        self.ikhUpLegTwist, self.uplegTwistCrv = applyop.splineIK(
-            self.getName("uplegTwist"),
-            self.uplegTwistChain,
-            parent=self.root,
-            cParent=self.bone0,
+        cns_list = [
+            self.uplegBendyA_loc,
+            self.uplegBendyA_ctl,
+            self.uplegBendyB_ctl,
+            self.kneeBendy_ctl,
+        ]
+
+        self.up_leg_twist_spline = matrix_spline_from_transforms(
+            name=self.getName("uplegTwist"),
+            parent=str(self.bone0_tr),
+            cv_transforms=[str(transform) for transform in cns_list],
+            primary_axis=(1, 0, 0),
+            secondary_axis=(0, 0, 1),
+            degree=2,
+            pinned_transforms=[str(transform) for transform in self.uplegTwistChain],
+            padded=False,
         )
 
-        self.ikhLowLegTwist, self.lowlegTwistCrv = applyop.splineIK(
-            self.getName("lowlegTwist"),
-            self.lowlegTwistChain,
-            parent=self.root,
-            cParent=self.bone1,
+        cns_list = [
+            self.kneeBendy_ctl,
+            self.lowlegBendyA_ctl,
+            self.lowlegBendyB_ctl,
+            self.lowlegBendyB_loc,
+        ]
+
+        self.low_leg_twist_spline = matrix_spline_from_transforms(
+            name=self.getName("lowlegTwist"),
+            parent=str(self.bone1_tr),
+            cv_transforms=[str(transform) for transform in cns_list],
+            primary_axis=(1, 0, 0),
+            secondary_axis=(0, 0, 1),
+            degree=2,
+            pinned_transforms=[str(transform) for transform in self.lowlegTwistChain],
+            padded=False,
         )
 
         # references
@@ -1159,66 +1201,7 @@ class Component(component.Main):
             cParent=self.eff_loc,
         )
 
-        # setting connexions for ikhUpLegTwist
-        self.ikhUpLegTwist.attr("dTwistControlEnable").set(True)
-        self.ikhUpLegTwist.attr("dWorldUpType").set(4)
-        self.ikhUpLegTwist.attr("dWorldUpAxis").set(3)
-        self.ikhUpLegTwist.attr("dWorldUpVectorZ").set(1.0)
-        self.ikhUpLegTwist.attr("dWorldUpVectorY").set(0.0)
-        self.ikhUpLegTwist.attr("dWorldUpVectorEndZ").set(1.0)
-        self.ikhUpLegTwist.attr("dWorldUpVectorEndY").set(0.0)
-
-        if self.negate:
-            self.ikhUpLegTwist.attr("dForwardAxis").set(1)
-
-        pm.connectAttr(
-            self.uplegRollRef[0].attr("worldMatrix[0]"),
-            self.ikhUpLegTwist.attr("dWorldUpMatrix"),
-        )
-        pm.connectAttr(
-            self.bone0.attr("worldMatrix[0]"),
-            self.ikhUpLegTwist.attr("dWorldUpMatrixEnd"),
-        )
-
-        # setting connexions for ikhAuxTwist
-        self.ikhAuxTwist.attr("dTwistControlEnable").set(True)
-        self.ikhAuxTwist.attr("dWorldUpType").set(4)
-        self.ikhAuxTwist.attr("dWorldUpAxis").set(3)
-        self.ikhAuxTwist.attr("dWorldUpVectorZ").set(1.0)
-        self.ikhAuxTwist.attr("dWorldUpVectorY").set(0.0)
-        self.ikhAuxTwist.attr("dWorldUpVectorEndZ").set(1.0)
-        self.ikhAuxTwist.attr("dWorldUpVectorEndY").set(0.0)
-        pm.connectAttr(
-            self.lowlegRollRef[0].attr("worldMatrix[0]"),
-            self.ikhAuxTwist.attr("dWorldUpMatrix"),
-        )
-        pm.connectAttr(
-            self.tws_ref.attr("worldMatrix[0]"),
-            self.ikhAuxTwist.attr("dWorldUpMatrixEnd"),
-        )
-        pm.connectAttr(self.auxTwistChain[1].attr("rx"), self.ikhLowLegTwist.attr("twist"))
-
         pm.parentConstraint(self.bone1, self.aux_npo, maintainOffset=True)
-
-        # scale arm length for twist chain (not the squash and stretch)
-        arclen_node = pm.arclen(self.uplegTwistCrv, ch=True)
-        alAttrUpLeg = arclen_node.attr("arcLength")
-        muldiv_nodeArm = pm.createNode("multiplyDivide")
-        pm.connectAttr(arclen_node.attr("arcLength"), muldiv_nodeArm.attr("input1X"))
-        muldiv_nodeArm.attr("input2X").set(alAttrUpLeg.get())
-        muldiv_nodeArm.attr("operation").set(2)
-        for jnt in self.uplegTwistChain:
-            pm.connectAttr(muldiv_nodeArm.attr("outputX"), jnt.attr("sx"))
-
-        # scale forearm length for twist chain (not the squash and stretch)
-        arclen_node = pm.arclen(self.lowlegTwistCrv, ch=True)
-        alAttrLowLeg = arclen_node.attr("arcLength")
-        muldiv_nodeLowLeg = pm.createNode("multiplyDivide")
-        pm.connectAttr(arclen_node.attr("arcLength"), muldiv_nodeLowLeg.attr("input1X"))
-        muldiv_nodeLowLeg.attr("input2X").set(alAttrLowLeg.get())
-        muldiv_nodeLowLeg.attr("operation").set(2)
-        for jnt in self.lowlegTwistChain:
-            pm.connectAttr(muldiv_nodeLowLeg.attr("outputX"), jnt.attr("sx"))
 
         # scale compensation for the first  twist join
         dm_node = pm.createNode("decomposeMatrix")
@@ -1346,23 +1329,6 @@ class Component(component.Main):
         pm.connectAttr(div_node2.attr("outputX"), self.tws1B_loc.attr("sx"))
         pm.connectAttr(div_node2.attr("outputX"), self.lowlegBendyB_loc.attr("sx"))
 
-        # conection curve
-        cnts = [
-            self.uplegBendyA_loc,
-            self.uplegBendyA_ctl,
-            self.uplegBendyB_ctl,
-            self.kneeBendy_ctl,
-        ]
-        applyop.gear_curvecns_op(self.uplegTwistCrv, cnts)
-
-        cnts = [
-            self.kneeBendy_ctl,
-            self.lowlegBendyA_ctl,
-            self.lowlegBendyB_ctl,
-            self.lowlegBendyB_loc,
-        ]
-        applyop.gear_curvecns_op(self.lowlegTwistCrv, cnts)
-
         # connect elbow ref
         cns = pm.parentConstraint(self.bone1, self.knee_ref, mo=False)
         if self.negate and self.settings["div1"]:
@@ -1407,18 +1373,10 @@ class Component(component.Main):
                     o_node + ".worldMatrix", div_cns + ".parentInverseMatrix"
                 )
             dm_node = node.createDecomposeMatrixNode(mulmat_node + ".output")
-            pm.connectAttr(dm_node + ".outputTranslate", div_cns + ".t")
-
-            pm.connectAttr(dm_node + ".outputRotate", div_cns + ".r")
-
-            # Squash n Stretch
-            o_node = applyop.gear_squashstretch2_op(
-                div_cns, None, pm.getAttr(self.volDriver_att), "x"
-            )
-            pm.connectAttr(self.volume_att, o_node + ".blend")
-            pm.connectAttr(self.volDriver_att, o_node + ".driver")
-            pm.connectAttr(self.st_att[i], o_node + ".stretch")
-            pm.connectAttr(self.sq_att[i], o_node + ".squash")
+            pm.connectAttr(dm_node + ".outputTranslate", div_cns + ".translate")
+            pm.connectAttr(dm_node + ".outputRotate", div_cns + ".rotate")
+            pm.connectAttr(dm_node + ".outputScale", div_cns + ".scale")
+            pm.connectAttr(dm_node + ".outputShear", div_cns + ".shear")
 
         # TODO: check for a more clean and elegant solution instead of
         # re-match the world matrix again

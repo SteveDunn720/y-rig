@@ -194,7 +194,7 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
 
         self.settingsTab.ikfk_slider.setValue(int(self.root.attr("blend").get() * 100))
         self.settingsTab.ikfk_spinBox.setValue(int(self.root.attr("blend").get() * 100))
-        self.settingsTab.maxStretch_spinBox.setValue(self.root.attr("maxstretch").get())
+        self.settingsTab.maxStretch_spinBox.setValue(int(self.root.attr("maxstretch").get() * 100))
         self.populateCheck(self.settingsTab.ikTR_checkBox, "ikTR")
         self.populateCheck(self.settingsTab.mirrorMid_checkBox, "mirrorMid")
         self.populateCheck(self.settingsTab.mirrorIK_checkBox, "mirrorIK")
@@ -251,7 +251,7 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
 
         self.settingsTab.maxStretch_spinBox.valueChanged.connect(
             partial(
-                self.updateSpinBox,
+                self.updateSlider,
                 self.settingsTab.maxStretch_spinBox,
                 "maxstretch",
             )

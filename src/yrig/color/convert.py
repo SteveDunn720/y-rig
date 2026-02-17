@@ -83,11 +83,13 @@ def oklab_to_linear_srgb(
         -1.2684380046 * lightness + 2.6097574011 * m - 0.3413193965 * s,
         -0.0041960863 * lightness - 0.7034186147 * m + 1.7076147010 * s,
     )
-    return (
-        max(0.0, min(1.0, rgb[0])),
-        max(0.0, min(1.0, rgb[1])),
-        max(0.0, min(1.0, rgb[2])),
-    )
+    if clamp:
+        return (
+            max(0.0, min(1.0, rgb[0])),
+            max(0.0, min(1.0, rgb[1])),
+            max(0.0, min(1.0, rgb[2])),
+        )
+    return rgb
 
 
 def lab_to_lch(color: tuple[float, float, float]) -> tuple[float, float, float]:

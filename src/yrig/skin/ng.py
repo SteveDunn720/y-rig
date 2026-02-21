@@ -28,7 +28,7 @@ try:
 
     HAS_NG_SKIN = True
 except ImportError:
-    log.warn("ngSkinTools2 not found. Skinning sub-module features will be limited.")
+    log.warning("ngSkinTools2 not found. Skinning sub-module features will be limited.")
 
 
 def require_ng_skin(func):

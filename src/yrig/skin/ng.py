@@ -1,8 +1,11 @@
+import logging
 import os
 from functools import wraps
 from typing import TYPE_CHECKING
 
 import maya.cmds as cmds
+
+log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import]
@@ -25,14 +28,14 @@ try:
 
     HAS_NG_SKIN = True
 except ImportError:
-    print("ngSkinTools2 not found. Skinning sub-module features will be limited.")
+    log.warn("ngSkinTools2 not found. Skinning sub-module features will be limited.")
 
 
 def require_ng_skin(func):
     """Decorator that guards a function behind the ngSkinTools2 dependency.
 
     If the ``ngSkinTools2`` package is not installed the wrapped function
-    prints an error message and returns ``None`` instead of executing.
+    logs an error message and returns ``None`` instead of executing.
     When the package *is* available but its Maya plug-in has not yet been
     loaded, the decorator loads it automatically before proceeding.
 
@@ -47,9 +50,13 @@ def require_ng_skin(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not HAS_NG_SKIN:
-            print("Error: This tool requires ngSkinTools2 to be installed.")
+            log.error(
+                "Execution failed for '%s'. Dependency 'ngSkinTools2' is not installed.",
+                func.__name__,
+            )
             return None
         if not is_plugin_loaded():
+            log.info("Successfully loaded ngSkinTools2.")
             load_plugin()
         return func(*args, **kwargs)
 

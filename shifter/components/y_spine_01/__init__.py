@@ -284,7 +284,6 @@ class Component(component.Main):
             secondary_axis=(1, 0, 0),
             stretch=True,
         )
-        print(self.bind_spline.pinned_transforms)
         self.base_connection = self.spine_base
         self.top_connection = self.spine_top
         start_transform = self.spine_base

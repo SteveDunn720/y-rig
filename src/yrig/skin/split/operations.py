@@ -1,3 +1,4 @@
+import logging
 from typing import Iterable
 
 from maya import cmds
@@ -11,6 +12,8 @@ from yrig.skin.core import (
 )
 from yrig.skin.split.data import WeightSplitData, get_mesh_spline_weights
 from yrig.skin.split.tag import get_weight_split_tag
+
+log = logging.getLogger(__name__)
 
 
 def split_weights(
@@ -140,4 +143,4 @@ def auto_split_weights(meshes: Iterable[str] | str) -> None:
                     split_data_collection=weight_split_data_list,
                     skin_cluster=skin_cluster,
                 )
-                print(f"Finished splitting {skin_cluster} weights on {mesh}.")
+                log.info(f"Finished splitting {skin_cluster} weights on {mesh}.")

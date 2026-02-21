@@ -1203,7 +1203,7 @@ class Component(component.Main):
         ]
 
         self.arm_twist_spline = matrix_spline_from_transforms(
-            name=self.getName("armTwist"),
+            name=f"{self.bone0_tr}_armTwist",
             parent=str(self.bone0_tr),
             cv_transforms=[str(transform) for transform in cns_list],
             primary_axis=(1, 0, 0),
@@ -1220,7 +1220,7 @@ class Component(component.Main):
             self.forearmBendyB_loc,
         ]
         self.forearm_twist_spline = matrix_spline_from_transforms(
-            name=self.getName("armTwist"),
+            name=f"{self.bone1_tr}_armTwist",
             parent=str(self.bone1_tr),
             cv_transforms=[str(transform) for transform in cns_list],
             primary_axis=(1, 0, 0),

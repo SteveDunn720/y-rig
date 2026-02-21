@@ -200,10 +200,10 @@ class Component(component.Main):
         chest_top_name = "chest_top"
         chest_top_transform = transform.setMatrixPosition(ik_t, self.guide.pos["spineTop"])
         self.chest_top_npo = primitive.addTransform(
-            self.chest_ik_ctl, self.getName(f"{chest_ik_name}_npo"), chest_top_transform
+            self.chest_ik_ctl, self.getName(f"{chest_top_name}_npo"), chest_top_transform
         )
         self.chest_top_length_adjust = primitive.addTransform(
-            self.chest_top_npo, self.getName(f"{chest_ik_name}_length_adjust"), chest_top_transform
+            self.chest_top_npo, self.getName(f"{chest_top_name}_length_adjust"), chest_top_transform
         )
         self.chest_top_ctl = self.addCtl(
             self.chest_top_length_adjust,

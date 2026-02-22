@@ -57,7 +57,7 @@ def _build_from_shifter_file(file_path: Path, dev_build: bool):
     from mgear.shifter import Rig, io
 
     guide_data: dict = io._import_guide_template(file_path)
-    guide_data["guide_root"]["mode"] = 1 if dev_build else 0
+    guide_data["guide_root"]["param_values"]["mode"] = 1 if dev_build else 0
     rig = Rig()
     rig.buildFromDict(guide_data)
     # controls shapes buffer

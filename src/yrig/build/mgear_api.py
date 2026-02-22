@@ -26,7 +26,6 @@ class _StdoutToLogger(TextIOBase):
         while "\n" in self._buffer:
             line, self._buffer = self._buffer.split("\n", 1)
             self._logger.log(self._level, line)
-            self._logger.log(self._level, "log line ^")
         return len(message)
 
     def flush(self) -> None:

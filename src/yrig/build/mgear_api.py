@@ -52,18 +52,32 @@ def _capture_mgear_output() -> Iterator[None]:
         captured_err.flush()
 
 
-def build_from_file(file_path: Path) -> None:
+def _build_from_shifter_file(file_path: Path, dev_build: bool):
+    from mgear.core import curve
+    from mgear.shifter import Rig, io
+
+    guide_data: dict = io._import_guide_template(file_path)
+    guide_data["guide_root"]["mode"] = 1 if dev_build else 0
+    rig = Rig()
+    rig.buildFromDict(guide_data)
+    # controls shapes buffer
+    if guide_data["ctl_buffers_dict"]:
+        curve.update_curve_from_data(guide_data["ctl_buffers_dict"], rplStr=["_controlBuffer", ""])
+    return rig
+
+
+def build_from_file(file_path: Path, dev_build: bool = False) -> None:
     """Build an mGear Shifter rig from a guide template file.
 
     Args:
         file_path: Path to an ``.sgt`` guide template file.
     """
-    from mgear.shifter import io as shifter_io
 
     log.info("Starting mGear Shifter build from file: %s", file_path)
     try:
         with _capture_mgear_output():
-            shifter_io.build_from_file(filePath=file_path)
+            _build_from_shifter_file(file_path, dev_build)
+
     except Exception as e:
         log.error("mGear build failed: %s", e)
         raise RuntimeError(f"mGear Shifter build failed for '{file_path.name}': {e}") from e

@@ -1,6 +1,6 @@
 import logging
-import sys
-from contextlib import contextmanager
+from collections.abc import Callable
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from io import TextIOBase
 from pathlib import Path
 from typing import Iterator
@@ -8,7 +8,7 @@ from typing import Iterator
 log = logging.getLogger(__name__)
 
 
-class _StdoutToLogger(TextIOBase):
+class StdoutToLogger(TextIOBase):
     """A write-only stream that forwards each line to a Python logger.
 
     mGear calls ``sys.stdout.write()`` directly rather than using the
@@ -25,7 +25,8 @@ class _StdoutToLogger(TextIOBase):
         self._buffer += message
         while "\n" in self._buffer:
             line, self._buffer = self._buffer.split("\n", 1)
-            self._logger.log(self._level, line)
+            if line:
+                self._logger.log(self._level, line)
         return len(message)
 
     def flush(self) -> None:
@@ -37,19 +38,12 @@ class _StdoutToLogger(TextIOBase):
 @contextmanager
 def _capture_mgear_output() -> Iterator[None]:
     """Redirect sys.stdout and sys.stderr into the logger."""
-    original_out = sys.stdout
-    original_err = sys.stderr
-    sys.stdout = _StdoutToLogger(log)
-    sys.stderr = _StdoutToLogger(log, logging.ERROR)
-    try:
+
+    stdout_logger = StdoutToLogger(log)
+    stderr_logger = StdoutToLogger(log, logging.ERROR)
+
+    with redirect_stdout(stdout_logger), redirect_stderr(stderr_logger):
         yield
-    finally:
-        captured_out = sys.stdout
-        captured_err = sys.stderr
-        sys.stdout = original_out
-        sys.stderr = original_err
-        captured_out.flush()
-        captured_err.flush()
 
 
 def _build_from_shifter_file(file_path: Path, dev_build: bool):
@@ -59,24 +53,33 @@ def _build_from_shifter_file(file_path: Path, dev_build: bool):
     guide_data: dict = io._import_guide_template(file_path)
     guide_data["guide_root"]["param_values"]["mode"] = 1 if dev_build else 0
     rig = Rig()
-    rig.buildFromDict(guide_data)
-    # controls shapes buffer
-    if guide_data["ctl_buffers_dict"]:
-        curve.update_curve_from_data(guide_data["ctl_buffers_dict"], rplStr=["_controlBuffer", ""])
+    with _capture_mgear_output():
+        rig.buildFromDict(guide_data)
+        # controls shapes buffer
+        if guide_data["ctl_buffers_dict"]:
+            curve.update_curve_from_data(
+                guide_data["ctl_buffers_dict"], rplStr=["_controlBuffer", ""]
+            )
     return rig
 
 
-def build_from_file(file_path: Path, dev_build: bool = False) -> None:
+def build_from_file(
+    file_path: Path,
+    dev_build: bool = False,
+    progress_callback: Callable[[float, str | None], None] | None = None,
+) -> None:
     """Build an mGear Shifter rig from a guide template file.
 
     Args:
         file_path: Path to an ``.sgt`` guide template file.
+        dev_build: When true the mGear shifter build will be set to WIP mode.
+        progress_callback: A function to call at each step of the build.
+            It will be called with a float (overall progress from 0-1) and a string (the current step)
     """
 
     log.info("Starting mGear Shifter build from file: %s", file_path)
     try:
-        with _capture_mgear_output():
-            _build_from_shifter_file(file_path, dev_build)
+        _build_from_shifter_file(file_path, dev_build)
 
     except Exception as e:
         log.error("mGear build failed: %s", e)

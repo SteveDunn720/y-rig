@@ -123,7 +123,7 @@ class ProgressLogHandler(logging.Handler):
 
 BUILD_STEPS: list[BuildStep] = [
     BuildStep("Init", 1),
-    BuildStep("Objects", 3),
+    BuildStep("Objects", 5),
     BuildStep("Properties", 1),
     BuildStep("Operators", 1),
     BuildStep("Connect", 1),

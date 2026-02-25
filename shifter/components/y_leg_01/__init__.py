@@ -2,7 +2,7 @@
 import ast
 
 import mgear.pymaya as pm
-from mgear.core import applyop, attribute, fcurve, icon, node, primitive, string, transform, vector
+from mgear.core import applyop, attribute, icon, node, primitive, string, transform, vector
 from mgear.pymaya import datatypes
 from mgear.shifter import component
 
@@ -932,36 +932,36 @@ class Component(component.Main):
 
         # Setup ------------------------------------------
         # Eval Fcurve
-        if self.guide.paramDefs["st_profile"].value:
-            self.st_value = self.guide.paramDefs["st_profile"].value
-            self.sq_value = self.guide.paramDefs["sq_profile"].value
-        else:
-            self.st_value = fcurve.getFCurveValues(self.settings["st_profile"], self.divisions)
-            self.sq_value = fcurve.getFCurveValues(self.settings["sq_profile"], self.divisions)
+        # if self.guide.paramDefs["st_profile"].value:
+        #     self.st_value = self.guide.paramDefs["st_profile"].value
+        #     self.sq_value = self.guide.paramDefs["sq_profile"].value
+        # else:
+        #     self.st_value = fcurve.getFCurveValues(self.settings["st_profile"], self.divisions)
+        #     self.sq_value = fcurve.getFCurveValues(self.settings["sq_profile"], self.divisions)
 
-        self.st_att = [
-            self.addSetupParam(
-                "stretch_%s" % i,
-                "Stretch %s" % i,
-                "double",
-                self.st_value[i],
-                -1,
-                0,
-            )
-            for i in range(self.divisions)
-        ]
+        # self.st_att = [
+        #     self.addSetupParam(
+        #         "stretch_%s" % i,
+        #         "Stretch %s" % i,
+        #         "double",
+        #         self.st_value[i],
+        #         -1,
+        #         0,
+        #     )
+        #     for i in range(self.divisions)
+        # ]
 
-        self.sq_att = [
-            self.addSetupParam(
-                "squash_%s" % i,
-                "Squash %s" % i,
-                "double",
-                self.sq_value[i],
-                0,
-                1,
-            )
-            for i in range(self.divisions)
-        ]
+        # self.sq_att = [
+        #     self.addSetupParam(
+        #         "squash_%s" % i,
+        #         "Squash %s" % i,
+        #         "double",
+        #         self.sq_value[i],
+        #         0,
+        #         1,
+        #     )
+        #     for i in range(self.divisions)
+        # ]
 
         self.resample_att = self.addSetupParam("resample", "Resample", "bool", True)
         self.absolute_att = self.addSetupParam("absolute", "Absolute", "bool", False)

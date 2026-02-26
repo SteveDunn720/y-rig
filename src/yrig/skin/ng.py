@@ -137,6 +137,7 @@ def apply_ng_skin_weights(weights_file: Path, geometry: str) -> None:
     )
 
 
+@require_ng_skin
 def write_ng_skin_weights(filepath: Path, geometry: str, force: bool = False) -> None:
     """
     Writes a ngSkinTools JSON file representing the weights of the given geometry.
@@ -169,3 +170,21 @@ def write_ng_skin_weights(filepath: Path, geometry: str, force: bool = False) ->
     ng.export_json(target=geometry, file=str(filepath))
 
     return
+
+
+@require_ng_skin
+def cleanup_ng_data_nodes():
+    """
+    Removes the `ngst2SkinLayerData` nodes in the scene for publish.
+
+    ngst2SkinLayerData nodes store the layer data for ngSkinTools, but their final result is baked
+    into the skin cluster so they just bloat the rig file size if left in the scene.
+
+    We once had a rig go from 450+ Mb to like 53 Mb just by removing these nodes.
+    """
+    ng_data_nodes: list[str] = cmds.ls(type="ngst2SkinLayerData")
+    if ng_data_nodes:
+        cmds.delete(ng_data_nodes)  # type: ignore
+        log.info(
+            f"Removed ngst2SkinLayerData {len(ng_data_nodes)} node(s) from the scene: {ng_data_nodes}"
+        )

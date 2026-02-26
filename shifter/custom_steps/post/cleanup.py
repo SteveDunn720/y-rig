@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 import mgear.shifter.custom_step as cstp
 from maya import cmds
 
+from yrig.skin.ng import cleanup_ng_data_nodes
+
 if TYPE_CHECKING:
     from mgear.shifter import Rig
 
@@ -54,3 +56,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
             geo_group = "geo"
             cmds.setAttr(f"{geo_group}.overrideEnabled", True)  # type: ignore
             cmds.setAttr(f"{geo_group}.overrideDisplayType", 2)  # type: ignore
+            log.info(f"{geo_group} made unselectable.")
+
+            # Remove ng Layer Data nodes
+            cleanup_ng_data_nodes()

@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 import mgear.shifter.custom_step as cstp
 from maya import cmds
 
+from yrig.skin.split import auto_split_weights
+
 if TYPE_CHECKING:
     from mgear.shifter import Rig
 
@@ -46,7 +48,5 @@ class CustomShifterStep(cstp.customShifterMainStep):
         """
         mgear_rig: Rig = self.mgear_run  # noqa
 
-        geo_group: str = self.custom_step("import_model").geo_group
-        geo_group_meshes: list[str] = cmds.listRelatives(  # noqa
-            geo_group, allDescendents=True, type="mesh"
-        )
+        geo_in_set: list[str] = cmds.sets("rig_geo_grp", query=True)  # type: ignore
+        auto_split_weights(geo_in_set)

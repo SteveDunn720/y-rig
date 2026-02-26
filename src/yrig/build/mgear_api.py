@@ -8,6 +8,8 @@ from io import TextIOBase
 from pathlib import Path
 from typing import Iterator, Sequence
 
+from yrig.build.context import temp_asset_root
+
 log = logging.getLogger(__name__)
 
 
@@ -148,7 +150,26 @@ def _build_from_shifter_file(
     rig = Rig()
     progress_handler = ProgressLogHandler(BUILD_STEPS, num_components, progress_callback)
     with _capture_mgear_output(), _temporary_log_handler(log, progress_handler):
-        rig.buildFromDict(guide_data)
+        log.info("\n" + "= SHIFTER RIG SYSTEM " + "=" * 46)
+
+        rig.stopBuild = False
+
+        rig.guide.set_from_dict(guide_data)
+
+        # Build
+        log.info("\n" + "= BUILDING RIG " + "=" * 46)
+        # Get merged options early so custom steps use blueprint values
+        merged_options = rig.guide.getMergedOptions()
+        rig.from_dict_custom_step(merged_options, pre=True)
+        rig.build()
+
+        # Check if build was cancelled
+        if rig.stopBuild:
+            log.info("\n" + "= SHIFTER BUILD CANCELLED " + "=" * 40)
+            return None
+
+        rig.from_dict_custom_step(merged_options, pre=False)
+
         # controls shapes buffer
         if guide_data["ctl_buffers_dict"]:
             curve.update_curve_from_data(
@@ -158,24 +179,34 @@ def _build_from_shifter_file(
 
 
 def build_from_file(
-    file_path: Path,
+    guide_path: Path,
     dev_build: bool = False,
     progress_callback: Callable[[float, str | None], None] | None = None,
 ) -> None:
     """Build an mGear Shifter rig from a guide template file.
 
     Args:
-        file_path: Path to an ``.sgt`` guide template file.
+        guide_path: Path to an ``.sgt`` guide template file.
         dev_build: When true the mGear shifter build will be set to WIP mode.
         progress_callback: A function to call at each step of the build.
             It will be called with a float (overall progress from 0-1) and a string (the current step)
     """
 
-    log.info("Starting mGear Shifter build from file: %s", file_path)
+    log.info("Starting mGear Shifter build from file: %s", guide_path)
     try:
-        _build_from_shifter_file(file_path, dev_build, progress_callback)
+        _build_from_shifter_file(guide_path, dev_build, progress_callback)
 
     except Exception as e:
         log.error("mGear build failed: %s", e)
-        raise RuntimeError(f"mGear Shifter build failed for '{file_path.name}': {e}") from e
+        raise RuntimeError(f"mGear Shifter build failed for '{guide_path.name}': {e}") from e
     log.info("Build from file complete.")
+
+
+def build_from_asset_path(
+    guide_path: Path,
+    asset_root_path: Path,
+    dev_build: bool = False,
+    progress_callback: Callable[[float, str | None], None] | None = None,
+):
+    with temp_asset_root(asset_root_path):
+        build_from_file(guide_path, dev_build, progress_callback)

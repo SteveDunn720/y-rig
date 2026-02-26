@@ -42,7 +42,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
             None: None
         """
         asset_root = get_asset_root()
-        self.rig_root_path = Path
+        self.rig_root_path: Path
         if asset_root is None:
             self.rig_root_path = Path(__file__).parents[1]
             log.warning(

@@ -7,6 +7,7 @@ _ASSET_ROOT: Path | None = None
 
 
 def set_asset_root(path: Path | None) -> None:
+    global _ASSET_ROOT
     _ASSET_ROOT = path
 
 

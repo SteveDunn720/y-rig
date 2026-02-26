@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -9,7 +10,9 @@ from maya import cmds
 if TYPE_CHECKING:
     from mgear.shifter import Rig
 
-    from .paths import CustomShifterStep as PathsStep
+    from ..pre.paths import CustomShifterStep as PathsStep
+
+log = logging.getLogger(__name__)
 
 
 class CustomShifterStep(cstp.customShifterMainStep):
@@ -48,7 +51,9 @@ class CustomShifterStep(cstp.customShifterMainStep):
 
         asset_path: Path = paths_step.rig_asset_path
         model_path: Path = asset_path / "model.mb"
-
+        if not model_path.exists():
+            raise RuntimeError(f"No model file found at {model_path}")
+        log.info(f"Loading model file: {model_path}")
         imported_nodes: list[str] = cmds.file(
             str(model_path), i=True, defaultNamespace=True, returnNewNodes=True
         )  # type: ignore

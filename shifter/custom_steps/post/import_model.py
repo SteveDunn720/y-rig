@@ -50,7 +50,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         paths_step: PathsStep = self.custom_step("paths")
         mgear_rig: Rig = self.mgear_run
 
-        assets_path: Path = paths_step.rig_asset_paths
+        assets_path: Path = paths_step.rig_assets_path
         model_path: Path = assets_path / "model.mb"
         if not model_path.exists():
             raise RuntimeError(f"No model file found at {model_path}")

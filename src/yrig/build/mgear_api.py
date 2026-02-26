@@ -41,13 +41,33 @@ class StdoutToLogger(TextIOBase):
 
 
 @contextmanager
+def _redirect_external_logger(external_logger: logging.Logger, target_logger: logging.Logger):
+    """Temporarily hooks an external logger into a specified target."""
+
+    # Store original state
+    original_parent = external_logger.parent
+    original_propagate = external_logger.propagate
+
+    try:
+        external_logger.parent = target_logger
+        external_logger.propagate = True
+        yield external_logger
+    finally:
+        # Restore original state exactly as it was
+        external_logger.parent = original_parent
+        external_logger.propagate = original_propagate
+
+
+@contextmanager
 def _capture_mgear_output() -> Iterator[None]:
     """Redirect sys.stdout and sys.stderr into the logger."""
 
     stdout_logger = StdoutToLogger(log)
     stderr_logger = StdoutToLogger(log, logging.ERROR)
-
-    with redirect_stdout(stdout_logger), redirect_stderr(stderr_logger):
+    with (
+        redirect_stdout(stdout_logger),
+        redirect_stderr(stderr_logger),
+    ):
         yield
 
 

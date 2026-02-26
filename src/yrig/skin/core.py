@@ -3,6 +3,25 @@ import maya.cmds as cmds
 from maya.api import OpenMayaAnim as oma
 
 
+def get_shape(object: str) -> str | None:
+    shape: str
+    if cmds.nodeType(object) == "transform":
+        shape_list: list[str] = cmds.listRelatives(
+            object, shapes=True, noIntermediate=True, children=True
+        )
+        if shape_list:
+            shape = shape_list[0]
+            return shape
+        else:
+            return None
+
+    if cmds.objectType(object, isAType="shape"):
+        shape = object
+        return shape
+    else:
+        return None
+
+
 def get_skin_clusters(mesh: str) -> list[str] | None:
     """
     Return all skinCluster deformers in a mesh's construction history.
@@ -97,21 +116,19 @@ def skin_mesh(
     if not name:
         name = f"{geometry}_SC"
 
-    shape_list: list[str] = cmds.listRelatives(
-        geometry, shapes=True, noIntermediate=True, children=True
-    )
-    if shape_list:
-        shape = shape_list[0]
-        skin_cluster = cmds.skinCluster(
-            bind_joints,  # type: ignore
-            shape,
-            skinMethod=1 if dual_quaternion else 0,
-            name=name,
+    shape = get_shape(geometry)
+
+    if shape is None:
+        raise RuntimeError(
+            f"{geometry} is not a shape node! This function expects a transform with a shape or a shape."
         )
-        if not isinstance(skin_cluster, str):
-            raise RuntimeError()
-    else:
-        raise RuntimeError(f"{geometry} has no shape node!")
+
+    skin_cluster: str = cmds.skinCluster(  # type: ignore
+        bind_joints,  # type: ignore
+        shape,
+        skinMethod=1 if dual_quaternion else 0,
+        name=name,
+    )
 
     return skin_cluster
 

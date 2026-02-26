@@ -178,35 +178,26 @@ def _build_from_shifter_file(
     return rig
 
 
-def build_from_file(
-    guide_path: Path,
+def build_from_path(
+    rig_root_path: Path,
     dev_build: bool = False,
     progress_callback: Callable[[float, str | None], None] | None = None,
-) -> None:
-    """Build an mGear Shifter rig from a guide template file.
+):
+    """Build an mGear Shifter rig from a rig path.
 
     Args:
-        guide_path: Path to an ``.sgt`` guide template file.
+        rig_root_path: Path to an a rig file structure.
         dev_build: When true the mGear shifter build will be set to WIP mode.
         progress_callback: A function to call at each step of the build.
             It will be called with a float (overall progress from 0-1) and a string (the current step)
     """
 
-    log.info("Starting mGear Shifter build from file: %s", guide_path)
-    try:
-        _build_from_shifter_file(guide_path, dev_build, progress_callback)
-
-    except Exception as e:
-        log.error("mGear build failed: %s", e)
-        raise RuntimeError(f"mGear Shifter build failed for '{guide_path.name}': {e}") from e
-    log.info("Build from file complete.")
-
-
-def build_from_asset_path(
-    guide_path: Path,
-    asset_root_path: Path,
-    dev_build: bool = False,
-    progress_callback: Callable[[float, str | None], None] | None = None,
-):
-    with temp_asset_root(asset_root_path):
-        build_from_file(guide_path, dev_build, progress_callback)
+    guide_path = rig_root_path / "assets/model.mb"
+    with temp_asset_root(rig_root_path):
+        log.info("Starting mGear Shifter build from file: %s", guide_path)
+        try:
+            _build_from_shifter_file(guide_path, dev_build, progress_callback)
+        except Exception as e:
+            log.error("mGear build failed: %s", e)
+            raise RuntimeError(f"mGear Shifter build failed for '{guide_path.name}': {e}") from e
+        log.info("Build from file complete.")

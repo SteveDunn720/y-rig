@@ -51,4 +51,4 @@ class CustomShifterStep(cstp.customShifterMainStep):
         else:
             self.rig_root_path = asset_root
         self.rig_data_path = self.rig_root_path / "data"
-        self.rig_asset_path = self.rig_root_path / "asset"
+        self.rig_assets_path = self.rig_root_path / "assets"

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import mgear.shifter.custom_step as cstp
@@ -9,8 +8,6 @@ from maya import cmds
 
 if TYPE_CHECKING:
     from mgear.shifter import Rig
-
-    from ..pre.paths import CustomShifterStep as PathsStep
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +26,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         i.e: Running  self.custom_step("{name}")  from steps ran after
              this one, will grant this step.
         """
-        self.name = "skin_model"
+        self.name = "split_weights"
 
     def run(self):
         """Run method.
@@ -47,13 +44,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         Returns:
             None: None
         """
-        paths_step: PathsStep = self.custom_step("paths")
         mgear_rig: Rig = self.mgear_run  # noqa
-
-        data_path: Path = paths_step.rig_data_path
-        skin_path: Path = data_path / "skin"
-        if not skin_path.exists():
-            raise RuntimeError(f"No skin folder found in {data_path}")
 
         geo_group: str = self.custom_step("import_model").geo_group
         geo_group_meshes: list[str] = cmds.listRelatives(  # noqa

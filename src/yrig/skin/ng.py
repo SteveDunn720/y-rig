@@ -1,6 +1,6 @@
 import logging
-import os
 from functools import wraps
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import maya.cmds as cmds
@@ -111,7 +111,7 @@ def get_or_create_ng_layer(skin_cluster: str, layer_name: str) -> ng.Layer:
 
 
 @require_ng_skin
-def apply_ng_skin_weights(weights_file: str, geometry: str) -> None:
+def apply_ng_skin_weights(weights_file: Path, geometry: str) -> None:
     """Apply an ngSkinTools2 JSON weights file to the specified geometry.
 
     Uses name-based influence matching (not distance-based) and vertex-ID
@@ -125,19 +125,19 @@ def apply_ng_skin_weights(weights_file: str, geometry: str) -> None:
     config.use_distance_matching = False
     config.use_name_matching = True
 
-    if not os.path.isfile(path=weights_file):
+    if not weights_file.exists():
         raise RuntimeError(f"{weights_file} doesn't exist, unable to load weights.")
 
     # Run the import
     ng.import_json(
         target=geometry,
-        file=weights_file,
+        file=str(weights_file),
         vertex_transfer_mode=ng.transfer.VertexTransferMode.vertexId,
         influences_mapping_config=config,
     )
 
 
-def write_ng_skin_weights(filepath: str, geometry: str, force: bool = False) -> None:
+def write_ng_skin_weights(filepath: Path, geometry: str, force: bool = False) -> None:
     """
     Writes a ngSkinTools JSON file representing the weights of the given geometry.
 
@@ -149,7 +149,7 @@ def write_ng_skin_weights(filepath: str, geometry: str, force: bool = False) -> 
     """
 
     # If the file exists, only write it if force = True, or after asking for confirmation.
-    if os.path.isfile(path=filepath):
+    if filepath.exists():
         if force:
             pass
         else:
@@ -166,6 +166,6 @@ def write_ng_skin_weights(filepath: str, geometry: str, force: bool = False) -> 
             else:
                 return
 
-    ng.export_json(target=geometry, file=filepath)
+    ng.export_json(target=geometry, file=str(filepath))
 
     return

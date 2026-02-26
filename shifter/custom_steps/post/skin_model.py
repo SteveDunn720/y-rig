@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING
 import mgear.shifter.custom_step as cstp
 from maya import cmds
 
-if TYPE_CHECKING:
-    from mgear.shifter import Rig
+from yrig.skin.core import skin_mesh
+from yrig.skin.ng import apply_ng_skin_weights
 
+if TYPE_CHECKING:
     from ..pre.paths import CustomShifterStep as PathsStep
 
 log = logging.getLogger(__name__)
@@ -48,14 +49,23 @@ class CustomShifterStep(cstp.customShifterMainStep):
             None: None
         """
         paths_step: PathsStep = self.custom_step("paths")
-        mgear_rig: Rig = self.mgear_run  # noqa
 
         data_path: Path = paths_step.rig_data_path
         skin_path: Path = data_path / "skin"
         if not skin_path.exists():
             raise RuntimeError(f"No skin folder found in {data_path}")
 
-        geo_group: str = self.custom_step("import_model").geo_group
-        geo_group_meshes: list[str] = cmds.listRelatives(  # noqa
-            geo_group, allDescendents=True, type="mesh"
-        )
+        geo_in_set: list[str] = cmds.sets("rig_geo_grp", query=True)  # type: ignore
+        def_in_set = cmds.sets("rig_deformers_grp", query=True)
+        def_joints = cmds.ls(def_in_set, type="joint")  # type: ignore
+        for geo in geo_in_set:
+            skin_mesh(def_joints, geo)
+            log.info(f"Skinned {geo} to {len(def_joints)} joint(s)")
+            skin_filepath: Path = skin_path / f"{geo}.json"
+            if not skin_filepath.exists():
+                geo_short_name = geo.rsplit("_", 1)[0]
+                skin_filepath: Path = skin_path / f"{geo_short_name}.json"
+                if not skin_filepath.exists():
+                    continue
+            apply_ng_skin_weights(skin_filepath, geo)
+            log.info(f"Loaded ng skin file for {geo}")

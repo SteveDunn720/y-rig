@@ -80,10 +80,9 @@ class CustomShifterStep(cstp.customShifterMainStep):
         cmds.parent(geo_grp, mgear_rig.model)
         cmds.reorder(geo_grp, front=True)
         cmds.reorder(geo_grp, relative=1)
-
         self.geo_group = geo_grp
 
-        # Put the geo in the set.
+        # Get the imported meshes
         meshes = cmds.listRelatives(geo_grp, allDescendents=True, type="mesh")
         mesh_transforms = (
             cmds.listRelatives(
@@ -93,7 +92,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
             )
             or []
         )
-
         # remove duplicates
         mesh_transforms: list[str] = list(set(mesh_transforms))
+        # Put the geo in the set.
         cmds.sets(mesh_transforms, add="rig_geo_grp")  # type: ignore

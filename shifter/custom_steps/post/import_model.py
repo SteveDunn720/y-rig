@@ -77,3 +77,5 @@ class CustomShifterStep(cstp.customShifterMainStep):
 
         # Keep in mind the mgear rig object's "model" is actually the root rig transform.
         cmds.parent(geo_grp, mgear_rig.model)
+        cmds.reorder(geo_grp, front=True)
+        cmds.reorder(geo_grp, relative=1)

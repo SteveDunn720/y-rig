@@ -17,7 +17,8 @@ log = logging.getLogger(__name__)
 
 class CustomShifterStep(cstp.customShifterMainStep):
     """
-    This step gives the needed metadata and path information for later steps like loading the model, applying skin weights, etc.
+    This step loads a model file called "model.mb" from the asset path defined by the `paths` pre-step,
+    and puts it in the rig hierarchy.
     """
 
     def setup(self):

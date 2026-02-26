@@ -192,7 +192,7 @@ def build_from_path(
             It will be called with a float (overall progress from 0-1) and a string (the current step)
     """
 
-    guide_path = rig_root_path / "assets/model.mb"
+    guide_path = rig_root_path / "data/guide.sgt"
     with temp_asset_root(rig_root_path):
         log.info("Starting mGear Shifter build from file: %s", guide_path)
         try:

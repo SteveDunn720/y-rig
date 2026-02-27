@@ -59,11 +59,41 @@ def _redirect_external_logger(external_logger: logging.Logger, target_logger: lo
 
 
 @contextmanager
-def _capture_mgear_output() -> Iterator[None]:
-    """Redirect sys.stdout and sys.stderr into the logger."""
+def _capture_mgear_logs():
+    import mgear.pymaya
+
+    def display_info(msg: str):
+        log.info(msg)
+
+    def display_warning(msg: str):
+        log.warning(msg)
+
+    def display_error(msg: str):
+        log.error(msg)
+
+    original_info = mgear.pymaya.displayInfo
+    original_warning = mgear.pymaya.displayWarning
+    original_error = mgear.pymaya.displayError
+
+    try:
+        mgear.pymaya.displayInfo = display_info  # type: ignore
+        mgear.pymaya.displayWarning = original_warning  # type: ignore
+        mgear.pymaya.displayError = display_error  # type: ignore
+        yield
+
+    finally:
+        mgear.pymaya.displayInfo = original_info  # type: ignore
+        mgear.pymaya.displayWarning = original_warning  # type: ignore
+        mgear.pymaya.displayError = original_error  # type: ignore
+
+
+@contextmanager
+def _capture_mgear_output():
+    """Redirect sys.stdout and sys.stderr into this module's logger."""
 
     stdout_logger = StdoutToLogger(log)
     stderr_logger = StdoutToLogger(log, logging.ERROR)
+
     with (
         redirect_stdout(stdout_logger),
         redirect_stderr(stderr_logger),
@@ -169,7 +199,11 @@ def _build_from_shifter_file(
 
     rig = Rig()
     progress_handler = ProgressLogHandler(BUILD_STEPS, num_components, progress_callback)
-    with _capture_mgear_output(), _temporary_log_handler(log, progress_handler):
+    with (
+        _capture_mgear_output(),
+        _capture_mgear_logs(),
+        _temporary_log_handler(log, progress_handler),
+    ):
         log.info("\n" + "= SHIFTER RIG SYSTEM " + "=" * 46)
 
         rig.stopBuild = False

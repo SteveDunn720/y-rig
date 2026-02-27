@@ -186,5 +186,5 @@ def cleanup_ng_data_nodes():
     if ng_data_nodes:
         cmds.delete(ng_data_nodes)  # type: ignore
         log.info(
-            f"Removed ngst2SkinLayerData {len(ng_data_nodes)} node(s) from the scene: {ng_data_nodes}"
+            f"Removed {len(ng_data_nodes)} ngst2SkinLayerData node(s) from the scene: {ng_data_nodes}"
         )

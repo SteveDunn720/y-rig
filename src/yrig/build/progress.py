@@ -23,11 +23,11 @@ class ProgressStep:
         return self._child_steps
 
     def _update_progress_from_children(self):
-        cumulative_progress = 0
         if all(child._finished for child in self._child_steps):
             self._set_finished()
             return
 
+        cumulative_progress = 0
         for child in self._child_steps:
             child_progress = child.get_progress()
             scaled_progress = child_progress * (child._weight / self._child_weight_sum)
@@ -53,6 +53,8 @@ class ProgressStep:
         self._progress = 1
 
     def finish_step(self):
+        if self._finished:
+            return
         for child in self._child_steps:
             child.finish_step()
         self._set_finished()

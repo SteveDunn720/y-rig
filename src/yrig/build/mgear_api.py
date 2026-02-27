@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Callable
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
@@ -9,6 +10,7 @@ from pathlib import Path
 from typing import Iterator, Sequence
 
 from yrig.build.context import temp_asset_root
+from yrig.build.progress import ProgressStep
 
 log = logging.getLogger(__name__)
 
@@ -119,11 +121,12 @@ class BuildStep:
 class BuildStepFilter(logging.Filter):
     def __init__(self, build_steps: Sequence[BuildStep]):
         super().__init__()
-        self._prefix_set = set(f"{step.name} : " for step in build_steps)
+        self._build_prefix_set: set[str] = set(f"{step.name} : " for step in build_steps)
 
-    def filter(self, record: logging.LogRecord):
+    def filter(self, record: logging.LogRecord) -> bool:
         message = record.getMessage()
-        return any(prefix in message for prefix in self._prefix_set)
+
+        return any(prefix in message for prefix in self._build_prefix_set)
 
 
 class ProgressLogHandler(logging.Handler):
@@ -138,39 +141,46 @@ class ProgressLogHandler(logging.Handler):
         self.build_steps = build_steps
         self.addFilter(BuildStepFilter(build_steps))
         self.number_of_components = number_of_components
+
+        self.build_step_map: dict[str, ProgressStep] = {}
+        self.root_step = ProgressStep("Rig Build")
+        for step in build_steps:
+            step_progress = ProgressStep(step.name, weight=step.weight)
+            self.root_step.add_child_step(step_progress)
+            self.build_step_map[step.name] = step_progress
+            # Add leaf steps for components
+            for i in range(number_of_components):
+                step_progress.add_child_step(ProgressStep(f"{step.name}_component{i}", weight=1))
+
         self.build_step_counter: dict[str, int] = {}
 
-        self.step_spans: dict[str, float] = {}
-        self.step_offset: dict[str, float] = {}
-        total_weight = sum(step.weight for step in self.build_steps)
-        running_weight = 0
-        for step in self.build_steps:
-            normalized_weight = step.weight / total_weight
-            self.step_offset[step.name] = running_weight
-            self.step_spans[step.name] = normalized_weight
-            running_weight += normalized_weight
-
-    def emit(self, record: logging.LogRecord):
-        message = record.getMessage()
-        prefix = message.partition(" : ")[0]
-        step_name = prefix
-        if step_name in self.build_step_counter:
-            self.build_step_counter[step_name] += 1
-        else:
-            self.build_step_counter[step_name] = 1
-        start_offset = self.step_offset[step_name]
-        step_span = self.step_spans[step_name]
-
-        current_step_progress = min(
-            (self.build_step_counter[step_name] / self.number_of_components), 1
-        )
-        progress = start_offset + (current_step_progress * step_span)
+    def _report_progress(self, progress: float, step_name: str | None = None):
         if self.progress_callback:
             try:
                 self.progress_callback(progress, step_name)
             except Exception:
                 pass
-        return
+
+    def _on_build_step_progress(self, step_name: str):
+        if step_name in self.build_step_counter:
+            self.build_step_counter[step_name] += 1
+        else:
+            self.build_step_counter[step_name] = 1
+
+        self.build_step_map[step_name].get_child_steps()[
+            self.build_step_counter[step_name] - 1
+        ].finish_step()
+
+        self._report_progress(self.root_step.get_progress(), step_name)
+
+    def _on_custom_step_finished(self, step_name: str):
+        pass
+
+    def emit(self, record: logging.LogRecord):
+        message = record.getMessage()
+        prefix = message.partition(" : ")[0]
+        step_name = prefix
+        self._on_build_step_progress(step_name)
 
 
 BUILD_STEPS: list[BuildStep] = [
@@ -184,6 +194,15 @@ BUILD_STEPS: list[BuildStep] = [
 ]
 
 
+def _build_steps_with_custom(
+    pre_custom_step_names: list[str], post_custom_step_names: list[str]
+) -> list[BuildStep]:
+    # Assign a reasonable default weight for each custom step
+    pre_custom_steps = [BuildStep(name, weight=0.1) for name in pre_custom_step_names]
+    post_custom_steps = [BuildStep(name, weight=0.5) for name in post_custom_step_names]
+    return pre_custom_steps + BUILD_STEPS + post_custom_steps
+
+
 def _build_from_shifter_file(
     file_path: Path,
     dev_build: bool,
@@ -193,12 +212,18 @@ def _build_from_shifter_file(
     from mgear.shifter import Rig, io
 
     guide_data: dict = io._import_guide_template(file_path)
-    num_components = len(guide_data["components_list"])
+    param_values = guide_data["guide_root"]["param_values"]
+    param_values["mode"] = 1 if dev_build else 0
 
-    guide_data["guide_root"]["param_values"]["mode"] = 1 if dev_build else 0
+    num_components = len(guide_data["components_list"])
+    pre_custom_step: dict = json.loads(param_values["preCustomStep"])
+    post_custom_step: dict = json.loads(param_values["postCustomStep"])
+    pre_custom_steps: list[str] = [item["path"] for item in pre_custom_step["items"]]
+    post_custom_steps: list[str] = [item["path"] for item in post_custom_step["items"]]
+    build_steps = _build_steps_with_custom(pre_custom_steps, post_custom_steps)
 
     rig = Rig()
-    progress_handler = ProgressLogHandler(BUILD_STEPS, num_components, progress_callback)
+    progress_handler = ProgressLogHandler(build_steps, num_components, progress_callback)
     with (
         _capture_mgear_output(),
         _capture_mgear_logs(),

@@ -118,7 +118,7 @@ class Component(component.Main):
 
         # Torso Control
         torso_name = "torso"
-        torso_transform = transform.setMatrixPosition(ik_t, self.guide.pos["spineBase"])
+        torso_transform = transform.setMatrixPosition(ik_t, self.guide.pos["root"])
         self.torso_rotation = primitive.addTransform(
             self.rotation_group, self.getName(f"{torso_name}_rotation"), torso_transform
         )

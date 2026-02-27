@@ -1,18 +1,10 @@
-from __future__ import annotations
-
-import json
 import logging
-from collections.abc import Callable
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
-from dataclasses import dataclass
 from io import TextIOBase
-from pathlib import Path
-from typing import Iterator, Sequence
+from typing import Callable, Iterator, Sequence
 
-from yrig.build.context import temp_asset_root
+from yrig.build.mgear_api.step import BuildStep
 from yrig.build.progress import ProgressStep
-
-log = logging.getLogger(__name__)
 
 
 class StdoutToLogger(TextIOBase):
@@ -61,17 +53,17 @@ def _redirect_external_logger(external_logger: logging.Logger, target_logger: lo
 
 
 @contextmanager
-def _capture_mgear_logs():
+def _capture_mgear_logs(target_logger: logging.Logger):
     import mgear.pymaya
 
     def display_info(msg: str):
-        log.info(msg)
+        target_logger.info(msg)
 
     def display_warning(msg: str):
-        log.warning(msg)
+        target_logger.warning(msg)
 
     def display_error(msg: str):
-        log.error(msg)
+        target_logger.error(msg)
 
     original_info = mgear.pymaya.displayInfo
     original_warning = mgear.pymaya.displayWarning
@@ -90,11 +82,11 @@ def _capture_mgear_logs():
 
 
 @contextmanager
-def _capture_mgear_output():
+def _capture_mgear_output(target_logger: logging.Logger):
     """Redirect sys.stdout and sys.stderr into this module's logger."""
 
-    stdout_logger = StdoutToLogger(log)
-    stderr_logger = StdoutToLogger(log, logging.ERROR)
+    stdout_logger = StdoutToLogger(target_logger)
+    stderr_logger = StdoutToLogger(target_logger, logging.ERROR)
 
     with (
         redirect_stdout(stdout_logger),
@@ -110,12 +102,6 @@ def _temporary_log_handler(logger: logging.Logger, handler: logging.Handler) -> 
         yield
     finally:
         logger.removeHandler(handler)
-
-
-@dataclass
-class BuildStep:
-    name: str
-    weight: float = 1
 
 
 class BuildStepFilter(logging.Filter):
@@ -229,102 +215,3 @@ class ProgressLogHandler(logging.Handler):
         prefix = message.partition(" : ")[0]
         step_name = prefix
         self._on_build_step_progress(step_name)
-
-
-BUILD_STEPS: list[BuildStep] = [
-    BuildStep("Init", 1),
-    BuildStep("Objects", 5),
-    BuildStep("Properties", 1),
-    BuildStep("Operators", 1),
-    BuildStep("Connect", 1),
-    BuildStep("Joints", 1),
-    BuildStep("Finalize", 1),
-]
-
-
-def _build_from_shifter_file(
-    file_path: Path,
-    dev_build: bool,
-    progress_callback: Callable[[float, str | None], None] | None = None,
-):
-    from mgear.core import curve
-    from mgear.shifter import Rig, io
-
-    # Get the guide data from the file
-    guide_data: dict = io._import_guide_template(file_path)
-    param_values = guide_data["guide_root"]["param_values"]
-
-    # Set WIP mode in the mgear guide data if we're doing a dev build
-    param_values["mode"] = 1 if dev_build else 0
-
-    # Get the relevant steps of the build (progress reporting)
-    pre_custom_step: dict = json.loads(param_values["preCustomStep"])
-    post_custom_step: dict = json.loads(param_values["postCustomStep"])
-    pre_custom_steps: list[BuildStep] = [
-        BuildStep(item["path"]) for item in pre_custom_step["items"]
-    ]
-    post_custom_steps: list[BuildStep] = [
-        BuildStep(item["path"]) for item in post_custom_step["items"]
-    ]
-    num_components = len(guide_data["components_list"])
-
-    rig = Rig()
-    progress_handler = ProgressLogHandler(
-        pre_custom_steps, BUILD_STEPS, post_custom_steps, num_components, progress_callback
-    )
-    with (
-        _capture_mgear_output(),
-        _capture_mgear_logs(),
-        _temporary_log_handler(log, progress_handler),
-    ):
-        log.info("\n" + "= SHIFTER RIG SYSTEM " + "=" * 46)
-
-        rig.stopBuild = False
-
-        rig.guide.set_from_dict(guide_data)
-
-        # Build
-        log.info("\n" + "= BUILDING RIG " + "=" * 46)
-        # Get merged options early so custom steps use blueprint values
-        merged_options = rig.guide.getMergedOptions()
-        rig.from_dict_custom_step(merged_options, pre=True)
-        rig.build()
-
-        # Check if build was cancelled
-        if rig.stopBuild:
-            log.info("\n" + "= SHIFTER BUILD CANCELLED " + "=" * 40)
-            return None
-
-        rig.from_dict_custom_step(merged_options, pre=False)
-
-        # controls shapes buffer
-        if guide_data["ctl_buffers_dict"]:
-            curve.update_curve_from_data(
-                guide_data["ctl_buffers_dict"], rplStr=["_controlBuffer", ""]
-            )
-    return rig
-
-
-def build_from_path(
-    rig_root_path: Path,
-    dev_build: bool = False,
-    progress_callback: Callable[[float, str | None], None] | None = None,
-):
-    """Build an mGear Shifter rig from a rig path.
-
-    Args:
-        rig_root_path: Path to an a rig file structure.
-        dev_build: When true the mGear shifter build will be set to WIP mode.
-        progress_callback: A function to call at each step of the build.
-            It will be called with a float (overall progress from 0-1) and a string (the current step)
-    """
-
-    guide_path = rig_root_path / "data/guide.sgt"
-    with temp_asset_root(rig_root_path):
-        log.info("Starting mGear Shifter build from file: %s", guide_path)
-        try:
-            _build_from_shifter_file(guide_path, dev_build, progress_callback)
-        except Exception as e:
-            log.error("mGear build failed: %s", e)
-            raise RuntimeError(f"mGear Shifter build failed for '{guide_path.name}': {e}") from e
-        log.info("Build from file complete.")

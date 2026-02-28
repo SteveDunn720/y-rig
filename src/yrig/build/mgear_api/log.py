@@ -190,7 +190,10 @@ class ProgressLogHandler(logging.Handler):
             self.build_step_counter[step_name] = 1
         step = self.build_step_map.get(step_name)
         if step is not None:
-            step.get_child_steps()[self.build_step_counter[step_name] - 1].finish_step()
+            children = step.get_child_steps()
+            step_child_index = self.build_step_counter[step_name] - 1
+            if step_child_index < len(children):
+                children[step_child_index].finish_step()
         self._report_progress(self.root_step.get_progress(), step_name)
 
     def _on_custom_step_finished(self, step_name: str):

@@ -8,7 +8,7 @@ We have a few guiding principles to keep in mind for doing so:
 It's tempting to write some "good enough" code to get something fixed the easy way,
 but this comes at the expense of everyone who comes after you.
 Realize that there are times for throw away scripts, but that this library is meant to be useful for people after you for years to come.
-Be in the practice of writing clean code that's easy for others to work with. Clean up after yourself, and when needed, others.
+Be in the practice of writing clean code that's easy for others to work with. Clean up after yourself, and when needed, others.  
 Your future coworkers will thank you.
 
 ## A computer can never be held accountable

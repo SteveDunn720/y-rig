@@ -323,7 +323,6 @@ class Component(component.Main):
         self.fk_ik_ctls = self.fk_ctl + [self.ik_ctl]
 
         # References --------------------------------------
-        # Calculate  again the transfor for the IK ref. This way align with FK
         trnIK_ref = transform.getTransformLookingAt(
             self.guide.pos["wrist"],
             self.guide.pos["eff"],
@@ -367,12 +366,30 @@ class Component(component.Main):
         self.bone1_tr = primitive.addTransform(
             parent=self.root,
             name=self.getName("1_bone_tr"),
-            m=transform.getTransform(self.fk_ctl[0]),
+            m=transform.getTransform(self.fk0_ctl),
         )
         self.bone1_tr.setAttr("visibility", False)
 
-        # Elbow bone1 ref
-        self.elbow_ref = primitive.addTransform(self.root, self.getName("elbow_ref"), t)
+        self.swing_npo = primitive.addTransform(
+            parent=self.root,
+            name=self.getName("swing_npo"),
+            m=transform.getTransform(self.fk0_ctl),
+        )
+        self.swing = primitive.addTransform(
+            parent=self.swing_npo,
+            name=self.getName("swing"),
+            m=transform.getTransform(self.fk0_ctl),
+        )
+        self.swing_aim_point = primitive.addTransform(
+            parent=self.bone0,
+            name=self.getName("swing_aim_point"),
+            m=transform.getTransform(self.fk1_ctl),
+        )
+        self.upper_twist = primitive.addTransform(
+            parent=self.swing,
+            name=self.getName("upper_twist"),
+            m=transform.getTransform(self.fk0_ctl),
+        )
 
         # Elbow control
 
@@ -484,7 +501,6 @@ class Component(component.Main):
             self.negate,
             self.WIP,
         )
-        pm.parent(self.lowerTwistChain[0], self.mid_ctl)
 
         # Divisions ----------------------------------------
         # We have attribute least one division attribute the start, the end
@@ -539,7 +555,9 @@ class Component(component.Main):
             if i == 0:
                 if self.settings["div0"]:
                     self.arm_root_base = primitive.addTransform(
-                        self.root, self.getName("divRoot_loc")
+                        self.root,
+                        self.getName("divRoot_loc"),
+                        m=transform.getTransform(self.fk0_ctl),
                     )
                 else:
                     self.arm_root_base = roll_off
@@ -641,16 +659,19 @@ class Component(component.Main):
         posB = transform.getTranslation(self.fk1_ctl)
         midpoint = vector.linearlyInterpolate(posA, posB, 0.5)
         t = transform.setMatrixPosition(transform.getTransform(self.fk0_ctl), midpoint)
+
         self.upperBendy_aim = primitive.addTransform(
-            self.root,
+            self.bone0,
             self.getName("upperBendy_aim"),
             self.fk_ctl[0].getMatrix(worldSpace=True),
         )
-
-        self.upperBendy_npo = primitive.addTransform(
-            self.upperBendy_aim, self.getName("upperBendy_npo"), t
+        self.upperBendy_pin = primitive.addTransform(
+            self.upperBendy_aim,
+            self.getName("upperBendy_pin"),
+            t,
         )
 
+        self.upperBendy_npo = primitive.addTransform(self.root, self.getName("upperBendy_npo"), t)
         self.upperBendy_ctl = self.addCtl(
             self.upperBendy_npo,
             "upperBendy_ctl",
@@ -674,7 +695,7 @@ class Component(component.Main):
         t = transform.setMatrixPosition(transform.getTransform(self.fk1_ctl), midpoint)
 
         self.lowerBendy_aim = primitive.addTransform(
-            self.root,
+            self.bone1,
             self.getName("lowerBendy_aim"),
             transform.getTransformLookingAt(
                 self.guide.apos[2],
@@ -684,9 +705,11 @@ class Component(component.Main):
                 self.negate,
             ),
         )
-        self.lowerBendy_npo = primitive.addTransform(
-            self.lowerBendy_aim, self.getName("lowerBendy_npo"), t
+        self.lowerBendy_pin = primitive.addTransform(
+            self.lowerBendy_aim, self.getName("lowerBendy_pin"), t
         )
+
+        self.lowerBendy_npo = primitive.addTransform(self.root, self.getName("lowerBendy_npo"), t)
         self.lowerBendy_ctl = self.addCtl(
             self.lowerBendy_npo,
             "lowerBendy_ctl",
@@ -977,6 +1000,37 @@ class Component(component.Main):
             str(self.bone1), str(self.bone1_tr), keep_offset=False, scale=False, shear=False
         )
 
+        matrix_constraint(
+            str(self.upperBendy_pin),
+            str(self.upperBendy_npo),
+            keep_offset=False,
+            scale=False,
+            shear=False,
+        )
+        matrix_constraint(
+            str(self.lowerBendy_pin),
+            str(self.lowerBendy_npo),
+            keep_offset=False,
+            scale=False,
+            shear=False,
+        )
+
+        # Main Arm Swing
+        matrix_constraint(
+            str(self.bone0),
+            str(self.swing_npo),
+            keep_offset=False,
+            rotate=False,
+            scale=False,
+            shear=False,
+        )
+        pm.aimConstraint(
+            self.swing_aim_point,
+            self.swing,
+            worldUpType="none",
+            maintainOffset=False,
+        )
+
         # point constrain tip reference
         pm.pointConstraint(self.ik_ctl, self.tip_ref, mo=False)
 
@@ -1127,7 +1181,7 @@ class Component(component.Main):
             dm_node = node.createDecomposeMatrixNode(mulmat_node + ".output")
             pm.connectAttr(dm_node + ".outputTranslate", div_cns + ".translate")
             if i == 0:
-                applyop.oriCns(self.bone0, self.arm_root_base, maintainOffset=True)
+                applyop.parentCns(self.bone0, self.arm_root_base, maintainOffset=False)
 
             pm.connectAttr(dm_node + ".outputRotate", div_cns + ".rotate")
             pm.connectAttr(dm_node + ".outputScale", div_cns + ".scale")

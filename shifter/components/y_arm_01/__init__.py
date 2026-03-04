@@ -444,123 +444,47 @@ class Component(component.Main):
             attribute.setInvertMirror(self.mid_ctl, ["tx", "ty", "tz"])
         attribute.setKeyableAttributes(self.mid_ctl, self.t_params)
 
-        # Roll join ref---------------------------------
-        self.tws0_loc = primitive.addTransform(
-            self.root,
-            self.getName("tws0_loc"),
-            transform.getTransform(self.fk_ctl[0]),
-        )
-
-        self.tws1_npo = primitive.addTransform(
-            self.ctrn_loc,
-            self.getName("tws1_npo"),
-            transform.getTransform(self.ctrn_loc),
-        )
-
-        self.tws1_loc = primitive.addTransform(
-            self.tws1_npo,
-            self.getName("tws1_loc"),
-            transform.getTransform(self.ctrn_loc),
-        )
-
-        self.tws1A_npo = primitive.addTransform(self.mid_ctl, self.getName("tws1A_npo"), tA)
-        self.tws1A_loc = primitive.addTransform(self.tws1A_npo, self.getName("tws1A_loc"), tA)
-        self.tws1B_npo = primitive.addTransform(self.mid_ctl, self.getName("tws1B_npo"), tB)
-        self.tws1B_loc = primitive.addTransform(self.tws1B_npo, self.getName("tws1B_loc"), tB)
-
-        self.tws2_npo = primitive.addTransform(
-            self.root,
-            self.getName("tws2_npo"),
-            transform.getTransform(self.fk_ctl[2]),
-        )
-
-        self.tws2_loc = primitive.addTransform(
-            self.tws2_npo,
-            self.getName("tws2_loc"),
-            transform.getTransform(self.fk_ctl[2]),
-        )
-
         # Roll twist chain ---------------------------------
         # Arm
-        self.armChainPos = []
+        self.upperChainPos = []
         ii = 1.0 / max(self.settings["div0"], 1)
         i = 0.0
         for p in range(max(self.settings["div0"] + 1, 2)):
             p_vec = vector.linearlyInterpolate(
                 self.guide.pos["root"], self.guide.pos["elbow"], blend=i
             )
-            self.armChainPos.append(p_vec)
+            self.upperChainPos.append(p_vec)
             i = i + ii
 
-        self.armTwistChain = primitive.add2DChain(
+        self.upperTwistChain = primitive.add2DChain(
             self.root,
-            self.getName("armTwist%s_jnt"),
-            self.armChainPos,
+            self.getName("upperTwist%s_jnt"),
+            self.upperChainPos,
             self.normal,
             self.negate,
             self.WIP,
         )
 
         # Forearm
-        self.forearmChainPos = []
+        self.lowerChainPos = []
         ii = 1.0 / max(self.settings["div1"], 1)
         i = 0.0
         for p in range(max(self.settings["div1"] + 1, 2)):
             p_vec = vector.linearlyInterpolate(
                 self.guide.pos["elbow"], self.guide.pos["wrist"], blend=i
             )
-            self.forearmChainPos.append(p_vec)
+            self.lowerChainPos.append(p_vec)
             i = i + ii
 
-        self.forearmTwistChain = primitive.add2DChain(
+        self.lowerTwistChain = primitive.add2DChain(
             self.root,
-            self.getName("forearmTwist%s_jnt"),
-            self.forearmChainPos,
+            self.getName("lowerTwist%s_jnt"),
+            self.lowerChainPos,
             self.normal,
             self.negate,
             self.WIP,
         )
-        pm.parent(self.forearmTwistChain[0], self.mid_ctl)
-
-        # Hand Aux chain and nonroll
-        self.auxChainPos = []
-        ii = 0.5
-        i = 0.0
-        for p in range(3):
-            p_vec = vector.linearlyInterpolate(
-                self.guide.pos["wrist"], self.guide.pos["eff"], blend=i
-            )
-            self.auxChainPos.append(p_vec)
-            i = i + ii
-        t = self.root.getMatrix(worldSpace=True)
-        self.aux_npo = primitive.addTransform(self.root, self.getName("aux_npo"), t)
-        self.auxTwistChain = primitive.add2DChain(
-            self.aux_npo,
-            self.getName("auxTwist%s_jnt"),
-            self.auxChainPos,
-            self.normal,
-            False,
-            self.WIP,
-        )
-
-        # Non Roll join ref ---------------------------------
-        self.armRollRef = primitive.add2DChain(
-            self.root,
-            self.getName("armRollRef%s_jnt"),
-            self.armChainPos[:2],
-            self.normal,
-            False,
-            self.WIP,
-        )
-
-        self.forearmRollRef = primitive.add2DChain(
-            self.aux_npo,
-            self.getName("forearmRollRef%s_jnt"),
-            self.auxChainPos[:2],
-            self.normal,
-            False,
-            self.WIP,
-        )
+        pm.parent(self.lowerTwistChain[0], self.mid_ctl)
 
         # Divisions ----------------------------------------
         # We have attribute least one division attribute the start, the end
@@ -713,20 +637,23 @@ class Component(component.Main):
         )
 
         # Bendy controls
-        t = transform.getInterpolateTransformMatrix(self.fk_ctl[0], self.tws1A_npo, 0.5)
-        self.armBendyA_loc = primitive.addTransform(
+        posA = transform.getTranslation(self.fk0_ctl)
+        posB = transform.getTranslation(self.fk1_ctl)
+        midpoint = vector.linearlyInterpolate(posA, posB, 0.5)
+        t = transform.setMatrixPosition(transform.getTransform(self.fk0_ctl), midpoint)
+        self.upperBendy_aim = primitive.addTransform(
             self.root,
-            self.getName("armBendyA_loc"),
+            self.getName("upperBendy_aim"),
             self.fk_ctl[0].getMatrix(worldSpace=True),
         )
 
-        self.armBendyA_npo = primitive.addTransform(
-            self.armBendyA_loc, self.getName("armBendyA_npo"), t
+        self.upperBendy_npo = primitive.addTransform(
+            self.upperBendy_aim, self.getName("upperBendy_npo"), t
         )
 
-        self.armBendyA_ctl = self.addCtl(
-            self.armBendyA_npo,
-            "armBendyA_ctl",
+        self.upperBendy_ctl = self.addCtl(
+            self.upperBendy_npo,
+            "upperBendy_ctl",
             t,
             self.color_ik,
             "circle",
@@ -735,72 +662,34 @@ class Component(component.Main):
             tp=self.mid_ctl,
         )
         if self.negate and self.settings["mirrorMid"]:
-            self.armBendyA_npo.sx.set(-1)
+            self.upperBendy_npo.sx.set(-1)
         elif self.negate:
-            self.armBendyA_npo.rz.set(180)
-            self.armBendyA_npo.sz.set(-1)
-        attribute.setKeyableAttributes(self.armBendyA_ctl)
+            self.upperBendy_npo.rz.set(180)
+            self.upperBendy_npo.sz.set(-1)
+        attribute.setKeyableAttributes(self.upperBendy_ctl)
 
-        t = transform.getInterpolateTransformMatrix(self.fk_ctl[0], self.tws1A_npo, 0.9)
-        self.armBendyB_npo = primitive.addTransform(
-            self.tws1A_loc, self.getName("armBendyB_npo"), t
-        )
-        self.armBendyB_ctl = self.addCtl(
-            self.armBendyB_npo,
-            "armBendyB_ctl",
-            t,
-            self.color_ik,
-            "circle",
-            w=self.size * 0.1,
-            ro=datatypes.Vector(0, 0, 1.570796),
-            tp=self.mid_ctl,
-        )
-        if self.negate and self.settings["mirrorMid"]:
-            self.armBendyB_npo.sx.set(-1)
-            self.armBendyB_npo.sy.set(-1)
-            self.armBendyB_npo.sz.set(-1)
-        elif self.negate:
-            self.armBendyB_npo.rz.set(180)
-            self.armBendyB_npo.sz.set(-1)
-        attribute.setKeyableAttributes(self.armBendyB_ctl)
+        posA = transform.getTranslation(self.fk1_ctl)
+        posB = transform.getTranslation(self.fk2_ctl)
+        midpoint = vector.linearlyInterpolate(posA, posB, 0.5)
+        t = transform.setMatrixPosition(transform.getTransform(self.fk1_ctl), midpoint)
 
-        tC = self.tws1B_npo.getMatrix(worldSpace=True)
-        tC = transform.setMatrixPosition(tC, self.guide.apos[2])
-        t = transform.getInterpolateTransformMatrix(self.tws1B_npo, tC, 0.1)
-        self.forearmBendyA_npo = primitive.addTransform(
-            self.tws1B_loc, self.getName("forearmBendyA_npo"), t
+        self.lowerBendy_aim = primitive.addTransform(
+            self.root,
+            self.getName("lowerBendy_aim"),
+            transform.getTransformLookingAt(
+                self.guide.apos[2],
+                self.guide.apos[1],
+                self.normal,
+                "xz",
+                self.negate,
+            ),
         )
-
-        self.forearmBendyA_ctl = self.addCtl(
-            self.forearmBendyA_npo,
-            "forearmBendyA_ctl",
-            t,
-            self.color_ik,
-            "circle",
-            w=self.size * 0.1,
-            ro=datatypes.Vector(0, 0, 1.570796),
-            tp=self.mid_ctl,
+        self.lowerBendy_npo = primitive.addTransform(
+            self.lowerBendy_aim, self.getName("lowerBendy_npo"), t
         )
-
-        if self.negate and self.settings["mirrorMid"]:
-            self.forearmBendyA_npo.sx.set(-1)
-            self.forearmBendyA_npo.sy.set(-1)
-            self.forearmBendyA_npo.sz.set(-1)
-        elif self.negate:
-            self.forearmBendyA_npo.rz.set(180)
-            self.forearmBendyA_npo.sz.set(-1)
-        attribute.setKeyableAttributes(self.forearmBendyA_ctl)
-
-        t = transform.getInterpolateTransformMatrix(self.tws1B_npo, tC, 0.5)
-        self.forearmBendyB_loc = primitive.addTransform(
-            self.root, self.getName("forearmBendyB_loc"), tC
-        )
-        self.forearmBendyB_npo = primitive.addTransform(
-            self.forearmBendyB_loc, self.getName("forearmBendyB_npo"), t
-        )
-        self.forearmBendyB_ctl = self.addCtl(
-            self.forearmBendyB_npo,
-            "forearmBendyB_ctl",
+        self.lowerBendy_ctl = self.addCtl(
+            self.lowerBendy_npo,
+            "lowerBendy_ctl",
             t,
             self.color_ik,
             "circle",
@@ -810,11 +699,11 @@ class Component(component.Main):
         )
 
         if self.negate and self.settings["mirrorMid"]:
-            self.forearmBendyB_npo.sx.set(-1)
+            self.lowerBendy_npo.sx.set(-1)
         elif self.negate:
-            self.forearmBendyB_npo.rz.set(180)
-            self.forearmBendyB_npo.sz.set(-1)
-        attribute.setKeyableAttributes(self.forearmBendyB_ctl)
+            self.lowerBendy_npo.rz.set(180)
+            self.lowerBendy_npo.sz.set(-1)
+        attribute.setKeyableAttributes(self.lowerBendy_ctl)
 
         t = self.mid_ctl.getMatrix(worldSpace=True)
         self.elbowBendy_npo = primitive.addTransform(
@@ -1049,13 +938,9 @@ class Component(component.Main):
             pm.connectAttr(self.midCtl_att, shp.attr("visibility"))
 
         # Bendy controls vis
-        for shp in self.armBendyA_ctl.getShapes():
+        for shp in self.upperBendy_ctl.getShapes():
             pm.connectAttr(self.bendyVis_att, shp.attr("visibility"))
-        for shp in self.armBendyB_ctl.getShapes():
-            pm.connectAttr(self.elbowBendyVis_att, shp.attr("visibility"))
-        for shp in self.forearmBendyA_ctl.getShapes():
-            pm.connectAttr(self.elbowBendyVis_att, shp.attr("visibility"))
-        for shp in self.forearmBendyB_ctl.getShapes():
+        for shp in self.lowerBendy_ctl.getShapes():
             pm.connectAttr(self.bendyVis_att, shp.attr("visibility"))
         for shp in self.elbowBendy_ctl.getShapes():
             pm.connectAttr(self.elbowBendyVis_att, shp.attr("visibility"))
@@ -1179,203 +1064,39 @@ class Component(component.Main):
         pm.connectAttr(self.softness_att, o_node + ".softness")
         pm.connectAttr(self.reverse_att, o_node + ".reverse")
 
-        # Twist references ---------------------------------
-
-        o_node = applyop.gear_mulmatrix_op(
-            self.eff_loc.attr("worldMatrix"),
-            self.root.attr("worldInverseMatrix"),
-        )
-
-        dm_node = pm.createNode("decomposeMatrix")
-        pm.connectAttr(o_node + ".output", dm_node + ".inputMatrix")
-        pm.connectAttr(dm_node + ".outputTranslate", self.tws2_npo.attr("translate"))
-
-        dm_node = pm.createNode("decomposeMatrix")
-        pm.connectAttr(o_node + ".output", dm_node + ".inputMatrix")
-        pm.connectAttr(dm_node + ".outputRotate", self.tws2_npo.attr("rotate"))
-
         # spline IK for  twist jnts
         cns_list = [
-            self.armBendyA_loc,
-            self.armBendyA_ctl,
-            self.armBendyB_ctl,
+            self.upperBendy_aim,
+            self.upperBendy_ctl,
             self.elbowBendy_ctl,
         ]
 
-        self.arm_twist_spline = matrix_spline_from_transforms(
-            name=f"{self.bone0_tr}_armTwist",
+        self.upper_twist_spline = matrix_spline_from_transforms(
+            name=f"{self.bone0_tr}_twist",
             parent=str(self.bone0_tr),
             cv_transforms=[str(transform) for transform in cns_list],
             primary_axis=(1, 0, 0),
             secondary_axis=(0, 0, 1),
             degree=2,
-            pinned_transforms=[str(transform) for transform in self.armTwistChain],
+            pinned_transforms=[str(transform) for transform in self.upperTwistChain],
             padded=False,
         )
 
         cns_list = [
             self.elbowBendy_ctl,
-            self.forearmBendyA_ctl,
-            self.forearmBendyB_ctl,
-            self.forearmBendyB_loc,
+            self.lowerBendy_ctl,
+            self.lowerBendy_aim,
         ]
-        self.forearm_twist_spline = matrix_spline_from_transforms(
-            name=f"{self.bone1_tr}_armTwist",
+        self.lower_twist_spline = matrix_spline_from_transforms(
+            name=f"{self.bone1_tr}_twist",
             parent=str(self.bone1_tr),
             cv_transforms=[str(transform) for transform in cns_list],
             primary_axis=(1, 0, 0),
             secondary_axis=(0, 0, 1),
             degree=2,
-            pinned_transforms=[str(transform) for transform in self.forearmTwistChain],
+            pinned_transforms=[str(transform) for transform in self.lowerTwistChain],
             padded=False,
         )
-
-        # references
-        self.ikhArmRef, self.tmpCrv = applyop.splineIK(
-            self.getName("armRollRef"),
-            self.armRollRef,
-            parent=self.root,
-            cParent=self.bone0,
-        )
-
-        self.ikhForearmRef, self.tmpCrv = applyop.splineIK(
-            self.getName("forearmRollRef"),
-            self.forearmRollRef,
-            parent=self.root,
-            cParent=self.eff_loc,
-        )
-
-        self.ikhAuxTwist, self.tmpCrv = applyop.splineIK(
-            self.getName("auxTwist"),
-            self.auxTwistChain,
-            parent=self.root,
-            cParent=self.eff_loc,
-        )
-
-        pm.parentConstraint(self.bone1, self.aux_npo, maintainOffset=True)
-
-        # scale compensation for the first  twist join
-        dm_node = pm.createNode("decomposeMatrix")
-        pm.connectAttr(self.root.attr("worldMatrix[0]"), dm_node.attr("inputMatrix"))
-        pm.connectAttr(
-            dm_node.attr("outputScale"),
-            self.armTwistChain[0].attr("inverseScale"),
-        )
-        pm.connectAttr(
-            dm_node.attr("outputScale"),
-            self.forearmTwistChain[0].attr("inverseScale"),
-        )
-
-        # bendy controls
-        muldiv_node = pm.createNode("multiplyDivide")
-        muldiv_node.attr("input2X").set(-1)
-        pm.connectAttr(self.tws1A_npo.attr("rz"), muldiv_node.attr("input1X"))
-        muldiv_nodeBias = pm.createNode("multiplyDivide")
-        if self.negate:
-            sum_node = node.createPlusMinusAverage1D(
-                [muldiv_node.attr("outputX"), 180], operation=2
-            )
-            pm.connectAttr(sum_node.output1D, muldiv_nodeBias.attr("input1X"))
-        else:
-            pm.connectAttr(muldiv_node.attr("outputX"), muldiv_nodeBias.attr("input1X"))
-        pm.connectAttr(self.roundness_att, muldiv_nodeBias.attr("input2X"))
-        pm.connectAttr(muldiv_nodeBias.attr("outputX"), self.tws1A_loc.attr("rz"))
-        if self.negate:
-            axis = "xz"
-        else:
-            axis = "-xz"
-        applyop.aimCns(
-            self.tws1A_npo,
-            self.tws0_loc,
-            axis=axis,
-            wupType=2,
-            wupVector=[0, 0, 1],
-            wupObject=self.mid_ctl,
-            maintainOffset=False,
-        )
-
-        applyop.aimCns(
-            self.forearmBendyB_loc,
-            self.forearmBendyA_npo,
-            axis=axis,
-            wupType=2,
-            wupVector=[0, 0, 1],
-            wupObject=self.mid_ctl,
-            maintainOffset=False,
-        )
-
-        pm.pointConstraint(self.eff_loc, self.forearmBendyB_loc)
-
-        muldiv_node = pm.createNode("multiplyDivide")
-        muldiv_node.attr("input2X").set(-1)
-        pm.connectAttr(self.tws1B_npo.attr("rz"), muldiv_node.attr("input1X"))
-        muldiv_nodeBias = pm.createNode("multiplyDivide")
-        if self.negate:
-            sum_node = node.createPlusMinusAverage1D(
-                [muldiv_node.attr("outputX"), 180], operation=1
-            )
-            pm.connectAttr(sum_node.output1D, muldiv_nodeBias.attr("input1X"))
-        else:
-            pm.connectAttr(muldiv_node.attr("outputX"), muldiv_nodeBias.attr("input1X"))
-        pm.connectAttr(self.roundness_att, muldiv_nodeBias.attr("input2X"))
-        pm.connectAttr(muldiv_nodeBias.attr("outputX"), self.tws1B_loc.attr("rz"))
-        if self.negate:
-            axis = "-xz"
-        else:
-            axis = "xz"
-        applyop.aimCns(
-            self.tws1B_npo,
-            self.tws2_loc,
-            axis=axis,
-            wupType=2,
-            wupVector=[0, 0, 1],
-            wupObject=self.mid_ctl,
-            maintainOffset=False,
-        )
-
-        applyop.aimCns(
-            self.armBendyA_loc,
-            self.armBendyB_npo,
-            axis=axis,
-            wupType=2,
-            wupVector=[0, 0, 1],
-            wupObject=self.mid_ctl,
-            maintainOffset=False,
-        )
-
-        # Volume -------------------------------------------
-        distA_node = node.createDistNode(self.tws0_loc, self.tws1_loc)
-        distB_node = node.createDistNode(self.tws1_loc, self.tws2_loc)
-        add_node = node.createAddNode(distA_node + ".distance", distB_node + ".distance")
-        div_node = node.createDivNode(add_node + ".output", self.root.attr("sx"))
-
-        dm_node = pm.createNode("decomposeMatrix")
-        pm.connectAttr(self.root.attr("worldMatrix"), dm_node + ".inputMatrix")
-
-        div_node2 = node.createDivNode(div_node + ".outputX", dm_node + ".outputScaleX")
-        self.volDriver_att = div_node2.outputX
-
-        # connecting bendy scaele compensation after
-        # volume to avoid duplicate some nodes
-        distA_node = node.createDistNode(self.tws0_loc, self.mid_ctl)
-        distB_node = node.createDistNode(self.mid_ctl, self.tws2_loc)
-
-        div_nodeArm = node.createDivNode(distA_node + ".distance", dm_node.attr("outputScaleX"))
-        div_node2 = node.createDivNode(div_nodeArm + ".outputX", distA_node.attr("distance").get())
-        pm.connectAttr(div_node2.attr("outputX"), self.tws1A_loc.attr("sx"))
-        pm.connectAttr(div_node2.attr("outputX"), self.armBendyA_loc.attr("sx"))
-
-        div_nodeForearm = node.createDivNode(distB_node + ".distance", dm_node.attr("outputScaleX"))
-        div_node2 = node.createDivNode(
-            div_nodeForearm + ".outputX", distB_node.attr("distance").get()
-        )
-        pm.connectAttr(div_node2.attr("outputX"), self.tws1B_loc.attr("sx"))
-        pm.connectAttr(div_node2.attr("outputX"), self.forearmBendyB_loc.attr("sx"))
-
-        # connect elbow ref
-        cns = pm.parentConstraint(self.bone1, self.elbow_ref, mo=False)
-        if self.negate and self.settings["div1"]:
-            pm.setAttr(cns + ".target[0].targetOffsetRotateZ", 180)
 
         # Divisions ----------------------------------------
         # attribute 0 or 1 the division will follow exactly the rotation of
@@ -1383,25 +1104,13 @@ class Component(component.Main):
         div_offset = int(self.extra_div / 2)
         for i, div_cns in enumerate(self.div_cns):
             if i == 0:
-                if self.settings["div0"]:
-                    transform.matchWorldTransform(self.fk_ctl[0], self.arm_root_base)
-                    mulmat_node = applyop.gear_mulmatrix_op(
-                        self.armTwistChain[i] + ".worldMatrix",
-                        div_cns + ".parentInverseMatrix",
-                    )
-                    mulmat_node = applyop.gear_mulmatrix_op(
-                        self.armRollRef[0] + ".worldMatrix",
-                        self.arm_root_base + ".parentInverseMatrix",
-                    )
-                else:
-                    transform.matchWorldTransform(self.fk_ctl[0], div_cns)
-                    mulmat_node = applyop.gear_mulmatrix_op(
-                        self.armRollRef[0] + ".worldMatrix",
-                        div_cns + ".parentInverseMatrix",
-                    )
+                mulmat_node = applyop.gear_mulmatrix_op(
+                    self.upperTwistChain[i] + ".worldMatrix",
+                    div_cns + ".parentInverseMatrix",
+                )
             elif i < (self.settings["div0"] + div_offset):
                 mulmat_node = applyop.gear_mulmatrix_op(
-                    self.armTwistChain[i] + ".worldMatrix",
+                    self.upperTwistChain[i] + ".worldMatrix",
                     div_cns + ".parentInverseMatrix",
                 )
             elif i == (self.settings["div0"] + div_offset) and self.settings["div1"] == 0:
@@ -1410,7 +1119,7 @@ class Component(component.Main):
                     div_cns + ".parentInverseMatrix",
                 )
             else:
-                ftc = self.forearmTwistChain[i - (self.settings["div0"] + div_offset)]
+                ftc = self.lowerTwistChain[i - (self.settings["div0"] + div_offset)]
                 mulmat_node = applyop.gear_mulmatrix_op(
                     ftc + ".worldMatrix", div_cns + ".parentInverseMatrix"
                 )
@@ -1423,15 +1132,6 @@ class Component(component.Main):
             pm.connectAttr(dm_node + ".outputRotate", div_cns + ".rotate")
             pm.connectAttr(dm_node + ".outputScale", div_cns + ".scale")
             pm.connectAttr(dm_node + ".outputShear", div_cns + ".shear")
-
-            # # Squash n Stretch
-            # o_node = applyop.gear_squashstretch2_op(
-            #     div_cns, None, pm.getAttr(self.volDriver_att), "x"
-            # )
-            # pm.connectAttr(self.volume_att, o_node + ".blend")
-            # pm.connectAttr(self.volDriver_att, o_node + ".driver")
-            # pm.connectAttr(self.st_att[i], o_node + ".stretch")
-            # pm.connectAttr(self.sq_att[i], o_node + ".squash")
 
         # TODO: check for a more clean and elegant solution instead of re-match
         # the world matrix again

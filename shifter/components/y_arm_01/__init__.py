@@ -682,11 +682,6 @@ class Component(component.Main):
             ro=datatypes.Vector(0, 0, 1.570796),
             tp=self.mid_ctl,
         )
-        if self.negate and self.settings["mirrorMid"]:
-            self.upperBendy_npo.sx.set(-1)
-        elif self.negate:
-            self.upperBendy_npo.rz.set(180)
-            self.upperBendy_npo.sz.set(-1)
         attribute.setKeyableAttributes(self.upperBendy_ctl)
 
         posA = transform.getTranslation(self.fk1_ctl)
@@ -721,11 +716,6 @@ class Component(component.Main):
             tp=self.mid_ctl,
         )
 
-        if self.negate and self.settings["mirrorMid"]:
-            self.lowerBendy_npo.sx.set(-1)
-        elif self.negate:
-            self.lowerBendy_npo.rz.set(180)
-            self.lowerBendy_npo.sz.set(-1)
         attribute.setKeyableAttributes(self.lowerBendy_ctl)
 
         t = self.mid_ctl.getMatrix(worldSpace=True)
@@ -1003,14 +993,14 @@ class Component(component.Main):
         matrix_constraint(
             str(self.upperBendy_pin),
             str(self.upperBendy_npo),
-            keep_offset=False,
+            keep_offset=True,
             scale=False,
             shear=False,
         )
         matrix_constraint(
             str(self.lowerBendy_pin),
             str(self.lowerBendy_npo),
-            keep_offset=False,
+            keep_offset=True,
             scale=False,
             shear=False,
         )
@@ -1129,8 +1119,8 @@ class Component(component.Main):
             name=f"{self.bone0_tr}_twist",
             parent=str(self.bone0_tr),
             cv_transforms=[str(transform) for transform in cns_list],
-            primary_axis=(1, 0, 0),
-            secondary_axis=(0, 0, 1),
+            primary_axis=(1, 0, 0) if not self.negate else (-1, 0, 0),
+            secondary_axis=(0, 0, 1) if not self.negate else (0, 0, -1),
             degree=2,
             pinned_transforms=[str(transform) for transform in self.upperTwistChain],
             padded=False,
@@ -1145,8 +1135,8 @@ class Component(component.Main):
             name=f"{self.bone1_tr}_twist",
             parent=str(self.bone1_tr),
             cv_transforms=[str(transform) for transform in cns_list],
-            primary_axis=(1, 0, 0),
-            secondary_axis=(0, 0, 1),
+            primary_axis=(1, 0, 0) if not self.negate else (-1, 0, 0),
+            secondary_axis=(0, 0, 1) if not self.negate else (0, 0, -1),
             degree=2,
             pinned_transforms=[str(transform) for transform in self.lowerTwistChain],
             padded=False,

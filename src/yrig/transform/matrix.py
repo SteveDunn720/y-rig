@@ -12,6 +12,7 @@ from maya.api.OpenMaya import (
 )
 
 from yrig.maya_api import node
+from yrig.maya_api.node import DecomposeMatrixNode, MultMatrixNode
 from yrig.name import get_short_name
 
 # fmt: off
@@ -175,6 +176,24 @@ def set_world_matrix(transform: str, matrix: MMatrix, fallback=False) -> None:
         inverse_matrix: MMatrix = get_parent_inverse_matrix(transform)
         local_matrix: MMatrix = matrix * inverse_matrix
         set_local_matrix(transform, local_matrix)
+
+
+def localize_world_matrix(transform: str, target_space_transform: str) -> MultMatrixNode:
+    """Create a multMatrix node localizing transform into target_space_transform's space."""
+    localize_matrix = node.MultMatrixNode(
+        f"{get_short_name(target_space_transform)}_local_{get_short_name(transform)}"
+    )
+    localize_matrix.matrix_in[0].connect_from(f"{transform}.worldMatrix[0]")
+    localize_matrix.matrix_in[1].connect_from(f"{target_space_transform}.worldInverseMatrix[0]")
+    return localize_matrix
+
+
+def localize_and_decompose_matrix(transform: str, parent: str) -> DecomposeMatrixNode:
+    """Create a network that localizing transform into target_space_transform's space and connect it to a new decomposeMatrix node."""
+    localize_matrix = localize_world_matrix(transform, parent)
+    decompose = DecomposeMatrixNode(f"{get_short_name(transform)}_decompose")
+    localize_matrix.matrix_sum.connect_to(decompose.input_matrix)
+    return decompose
 
 
 def matrix_constraint(

@@ -402,7 +402,7 @@ class Component(component.Main):
             )
         )
         self.lower_twist = primitive.addTransform(
-            parent=self.lower_swing,
+            parent=self.bone1_tr,
             name=self.getName("lower_twist"),
             m=transform.getTransform(self.fk1_ctl),
         )
@@ -1044,7 +1044,7 @@ class Component(component.Main):
             shear=False,
         )
         matrix_constraint(
-            str(self.lower_swing),
+            str(self.bone1_tr),
             str(self.lowerBendy_npo),
             keep_offset=True,
             translate=False,
@@ -1072,7 +1072,7 @@ class Component(component.Main):
         upper_twist_mid.output_quat.connect_to(upper_twist_mid_euler.input_quat)
         upper_twist_mid_euler.output_rotate.x.connect_to(f"{self.upperBendy_twist}.rotateX")
 
-        lower_twist_quat = twist_extract_quat(str(self.eff_loc), str(self.lower_swing), axis="x")
+        lower_twist_quat = twist_extract_quat(str(self.eff_loc), str(self.bone1_tr), axis="x")
         lower_twist_euler = QuatToEulerNode(f"{self.bone1}_twist")
         lower_twist_euler.input_quat.connect_from(lower_twist_quat)
         lower_twist_euler.output_rotate.x.connect_to(f"{self.lower_twist}.rotateX")
@@ -1189,7 +1189,7 @@ class Component(component.Main):
         )
 
         cns_list = [
-            self.lower_swing,
+            self.bone1_tr,
             self.lowerBendy_twist,
             self.lower_twist,
         ]

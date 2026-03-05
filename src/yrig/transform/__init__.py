@@ -6,6 +6,7 @@ and common transform tasks such as matching, zeroing, and reparenting.
 """
 
 from . import matrix as matrix
+from . import quat as quat
 from . import utils as utils
 from .matrix import (
     get_local_matrix,
@@ -19,6 +20,9 @@ from .matrix import (
 from .utils import get_shapes, match_location, match_transform, zero_rotate_axis
 
 __all__ = [
+    "matrix",
+    "quat",
+    "utils",
     # Matrix
     "get_local_matrix",
     "get_parent_inverse_matrix",

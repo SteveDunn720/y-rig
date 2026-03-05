@@ -1,3 +1,5 @@
+from typing import Literal
+
 import maya.cmds as cmds
 from maya.api.OpenMaya import MAngle, MEulerRotation, MMatrix, MPoint
 
@@ -6,6 +8,9 @@ from yrig.transform.matrix import (
     set_local_matrix,
     set_world_matrix,
 )
+
+Axis = Literal["x", "y", "z"]
+Direction = Literal["x", "y", "z", "-x", "-y", "-z"]
 
 
 def get_shapes(transform: str) -> list[str]:

@@ -373,6 +373,17 @@ class QuatInvertNode(Node):
         self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
 
 
+class QuatNormalizeNode(Node):
+    """Maya quatNormalize node with enhanced interface."""
+
+    def __init__(self, name: str = "quatNormalize") -> None:
+        super().__init__("quatNormalize", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
+        self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
+
+
 class QuatProdNode(Node):
     """Maya quatProd node with enhanced interface."""
 
@@ -382,6 +393,19 @@ class QuatProdNode(Node):
     def _setup_attributes(self) -> None:
         self.input1_quat = QuatAttribute(f"{self.name}.input1Quat")
         self.input2_quat = QuatAttribute(f"{self.name}.input2Quat")
+        self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
+
+
+class QuatSlerpNode(Node):
+    """Maya quatSlerp node with enhanced interface."""
+
+    def __init__(self, name: str = "quatSlerp") -> None:
+        super().__init__("quatSlerp", name)
+
+    def _setup_attributes(self) -> None:
+        self.input1_quat = QuatAttribute(f"{self.name}.input1Quat")
+        self.input2_quat = QuatAttribute(f"{self.name}.input2Quat")
+        self.input_t = ScalarAttribute(f"{self.name}.inputT")
         self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
 
 

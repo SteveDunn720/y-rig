@@ -32,32 +32,28 @@ except ImportError:
 
 
 def require_ng_skin(func):
-    """Decorator that guards a function behind the ngSkinTools2 dependency.
+    """Decorator that guards a function requiring ngSkinTools2 dependency.
 
-    If the ``ngSkinTools2`` package is not installed the wrapped function
-    logs an error message and returns ``None`` instead of executing.
-    When the package *is* available but its Maya plug-in has not yet been
+    If ``ngSkinTools2`` is not installed the wrapped function errors with a message instead of executing.
+    When it *is* available but the Maya plug-in has not yet been
     loaded, the decorator loads it automatically before proceeding.
 
     Args:
         func: The function to wrap.
 
     Returns:
-        A wrapper that either delegates to *func* or short-circuits with
-        ``None`` when ngSkinTools2 is unavailable.
+        A wrapper that either delegates to *func* or errors when ngSkinTools2 is unavailable.
     """
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not HAS_NG_SKIN:
-            log.error(
-                "Execution failed for '%s'. Dependency 'ngSkinTools2' is not installed.",
-                func.__name__,
+            raise RuntimeError(
+                f"Execution failed for {func.__name__}. Dependency 'ngSkinTools2' is not available."
             )
-            return None
         if not is_plugin_loaded():
-            log.info("Successfully loaded ngSkinTools2.")
             load_plugin()
+            log.info("Successfully loaded ngSkinTools2 plugin.")
         return func(*args, **kwargs)
 
     return wrapper

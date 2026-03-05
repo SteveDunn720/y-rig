@@ -6,9 +6,11 @@ from mgear.core import applyop, attribute, icon, node, primitive, string, transf
 from mgear.pymaya import datatypes
 from mgear.shifter import component
 
+from yrig.maya_api.node import QuatSlerpNode, QuatToEulerNode
 from yrig.skin.split import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.transform.matrix import matrix_constraint
+from yrig.transform.quat import create_swing_only_transform, twist_extract_quat
 
 #############################################
 # COMPONENT
@@ -335,6 +337,7 @@ class Component(component.Main):
 
         # Chain --------------------------------------------
         # The outputs of the ikfk2bone solver
+
         self.bone0 = primitive.addLocator(
             self.root,
             self.getName("0_bone"),
@@ -370,27 +373,39 @@ class Component(component.Main):
         )
         self.bone1_tr.setAttr("visibility", False)
 
-        self.swing_npo = primitive.addTransform(
-            parent=self.root,
-            name=self.getName("swing_npo"),
-            m=transform.getTransform(self.fk0_ctl),
+        # Eff locator
+        self.eff_loc = primitive.addTransformFromPos(
+            self.root, self.getName("eff_loc"), self.guide.apos[2]
         )
-        self.swing = primitive.addTransform(
-            parent=self.swing_npo,
-            name=self.getName("swing"),
-            m=transform.getTransform(self.fk0_ctl),
-        )
-        self.swing_aim_point = primitive.addTransform(
-            parent=self.bone0,
-            name=self.getName("swing_aim_point"),
-            m=transform.getTransform(self.fk1_ctl),
+
+        self.upper_swing = pm.PyNode(
+            create_swing_only_transform(
+                transform=str(self.bone0_tr),
+                reference_space=str(self.root),
+                axis="x",
+                name=self.getName("upper_swing"),
+            )
         )
         self.upper_twist = primitive.addTransform(
-            parent=self.swing,
+            parent=self.upper_swing,
             name=self.getName("upper_twist"),
             m=transform.getTransform(self.fk0_ctl),
         )
 
+        self.lower_swing = pm.PyNode(
+            create_swing_only_transform(
+                transform=str(self.bone1_tr),
+                reference_space=str(self.bone0_tr),
+                axis="x",
+                name=self.getName("lower_swing"),
+                parent=self.root,
+            )
+        )
+        self.lower_twist = primitive.addTransform(
+            parent=self.lower_swing,
+            name=self.getName("lower_twist"),
+            m=transform.getTransform(self.fk1_ctl),
+        )
         # Elbow control
 
         tA = transform.getTransformLookingAt(
@@ -433,11 +448,6 @@ class Component(component.Main):
         self.match_ik = self.add_match_ref(self.ik_ctl, self.fk2_ctl, "ik_mth")
 
         self.match_ikUpv = self.add_match_ref(self.upv_ctl, self.fk0_ctl, "upv_mth")
-
-        # Eff locator
-        self.eff_loc = primitive.addTransformFromPos(
-            self.root, self.getName("eff_loc"), self.guide.apos[2]
-        )
 
         # Mid Controler ------------------------------------
 
@@ -553,14 +563,7 @@ class Component(component.Main):
 
             # setting the joints
             if i == 0:
-                if self.settings["div0"]:
-                    self.arm_root_base = primitive.addTransform(
-                        self.root,
-                        self.getName("divRoot_loc"),
-                        m=transform.getTransform(self.fk0_ctl),
-                    )
-                else:
-                    self.arm_root_base = roll_off
+                self.arm_root_base = roll_off
 
                 self.upperarm_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
@@ -682,7 +685,20 @@ class Component(component.Main):
             ro=datatypes.Vector(0, 0, 1.570796),
             tp=self.mid_ctl,
         )
+        self.upperBendy_twist = primitive.addTransform(
+            self.upperBendy_ctl,
+            self.getName("upperBendy_twist"),
+            t,
+        )
         attribute.setKeyableAttributes(self.upperBendy_ctl)
+
+        self.upperBendy_end = primitive.addTransform(
+            self.bone0_tr,
+            self.getName("upperBendy_end"),
+            transform.setMatrixPosition(
+                transform.getTransform(self.fk0_ctl), transform.getTranslation(self.fk1_ctl)
+            ),
+        )
 
         posA = transform.getTranslation(self.fk1_ctl)
         posB = transform.getTranslation(self.fk2_ctl)
@@ -715,7 +731,11 @@ class Component(component.Main):
             ro=datatypes.Vector(0, 0, 1.570796),
             tp=self.mid_ctl,
         )
-
+        self.lowerBendy_twist = primitive.addTransform(
+            self.lowerBendy_ctl,
+            self.getName("lowerBendy_twist"),
+            t,
+        )
         attribute.setKeyableAttributes(self.lowerBendy_ctl)
 
         t = self.mid_ctl.getMatrix(worldSpace=True)
@@ -994,6 +1014,24 @@ class Component(component.Main):
             str(self.upperBendy_pin),
             str(self.upperBendy_npo),
             keep_offset=True,
+            rotate=False,
+            scale=False,
+            shear=False,
+        )
+        matrix_constraint(
+            str(self.upper_swing),
+            str(self.upperBendy_npo),
+            keep_offset=True,
+            translate=False,
+            rotate=True,
+            scale=False,
+            shear=False,
+        )
+        matrix_constraint(
+            str(self.bone1),
+            str(self.upper_twist),
+            keep_offset=False,
+            rotate=False,
             scale=False,
             shear=False,
         )
@@ -1001,25 +1039,49 @@ class Component(component.Main):
             str(self.lowerBendy_pin),
             str(self.lowerBendy_npo),
             keep_offset=True,
+            rotate=False,
             scale=False,
             shear=False,
         )
-
-        # Main Arm Swing
         matrix_constraint(
-            str(self.bone0),
-            str(self.swing_npo),
+            str(self.lower_swing),
+            str(self.lowerBendy_npo),
+            keep_offset=True,
+            translate=False,
+            rotate=True,
+            scale=False,
+            shear=False,
+        )
+        matrix_constraint(
+            str(self.eff_loc),
+            str(self.lower_twist),
             keep_offset=False,
             rotate=False,
             scale=False,
             shear=False,
         )
-        pm.aimConstraint(
-            self.swing_aim_point,
-            self.swing,
-            worldUpType="none",
-            maintainOffset=False,
-        )
+
+        upper_twist_quat = twist_extract_quat(str(self.bone1), str(self.upper_swing), axis="x")
+        upper_twist_euler = QuatToEulerNode(f"{self.bone0}_twist")
+        upper_twist_euler.input_quat.connect_from(upper_twist_quat)
+        upper_twist_euler.output_rotate.x.connect_to(f"{self.upper_twist}.rotateX")
+        upper_twist_mid = QuatSlerpNode(f"{upper_twist_quat}_blend")
+        upper_twist_mid.input2_quat.connect_from(upper_twist_quat)
+        upper_twist_mid.input_t.set(0.5)
+        upper_twist_mid_euler = QuatToEulerNode(f"{upper_twist_mid}_euler")
+        upper_twist_mid.output_quat.connect_to(upper_twist_mid_euler.input_quat)
+        upper_twist_mid_euler.output_rotate.x.connect_to(f"{self.upperBendy_twist}.rotateX")
+
+        lower_twist_quat = twist_extract_quat(str(self.eff_loc), str(self.lower_swing), axis="x")
+        lower_twist_euler = QuatToEulerNode(f"{self.bone1}_twist")
+        lower_twist_euler.input_quat.connect_from(lower_twist_quat)
+        lower_twist_euler.output_rotate.x.connect_to(f"{self.lower_twist}.rotateX")
+        lower_twist_mid = QuatSlerpNode(f"{lower_twist_quat}_blend")
+        lower_twist_mid.input2_quat.connect_from(lower_twist_quat)
+        lower_twist_mid.input_t.set(0.5)
+        lower_twist_mid_euler = QuatToEulerNode(f"{lower_twist_mid}_euler")
+        lower_twist_mid.output_quat.connect_to(lower_twist_mid_euler.input_quat)
+        lower_twist_mid_euler.output_rotate.x.connect_to(f"{self.lowerBendy_twist}.rotateX")
 
         # point constrain tip reference
         pm.pointConstraint(self.ik_ctl, self.tip_ref, mo=False)
@@ -1110,9 +1172,9 @@ class Component(component.Main):
 
         # spline IK for  twist jnts
         cns_list = [
-            self.upperBendy_aim,
-            self.upperBendy_ctl,
-            self.elbowBendy_ctl,
+            self.upper_swing,
+            self.upperBendy_twist,
+            self.upper_twist,
         ]
 
         self.upper_twist_spline = matrix_spline_from_transforms(
@@ -1127,9 +1189,9 @@ class Component(component.Main):
         )
 
         cns_list = [
-            self.elbowBendy_ctl,
-            self.lowerBendy_ctl,
-            self.lowerBendy_aim,
+            self.lower_swing,
+            self.lowerBendy_twist,
+            self.lower_twist,
         ]
         self.lower_twist_spline = matrix_spline_from_transforms(
             name=f"{self.bone1_tr}_twist",
@@ -1170,9 +1232,6 @@ class Component(component.Main):
 
             dm_node = node.createDecomposeMatrixNode(mulmat_node + ".output")
             pm.connectAttr(dm_node + ".outputTranslate", div_cns + ".translate")
-            if i == 0:
-                applyop.parentCns(self.bone0, self.arm_root_base, maintainOffset=False)
-
             pm.connectAttr(dm_node + ".outputRotate", div_cns + ".rotate")
             pm.connectAttr(dm_node + ".outputScale", div_cns + ".scale")
             pm.connectAttr(dm_node + ".outputShear", div_cns + ".shear")

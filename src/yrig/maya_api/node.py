@@ -201,7 +201,7 @@ class DecomposeMatrixNode(Node):
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
         self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
-        self.output_quat = Vector4Attribute(f"{self.name}.outputQuat")
+        self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
         self.output_rotate = Vector3Attribute(f"{self.name}.outputRotate")
         self.output_scale = Vector3Attribute(f"{self.name}.outputScale")
         self.output_shear = Vector3Attribute(f"{self.name}.outputShear")

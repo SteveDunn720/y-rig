@@ -848,6 +848,17 @@ class Component(component.Main):
         we shouldn't create any new object in this method.
 
         """
+        self._setup_ik_upv()
+        self._setup_control_vis()
+        self._setup_control_rotation_orders()
+        self._setup_ik_solver()
+        self._setup_swing_twist()
+        self._setup_roll_control()
+        self._setup_roll_control()
+        self._setup_ik_fk_match()
+        self._setup_joints()
+
+    def _setup_ik_upv(self):
         # 1 bone chain Upv ref ======================================
         self.ikHandleUpvRef = primitive.addIkHandle(
             self.root,
@@ -875,6 +886,7 @@ class Component(component.Main):
             self.ikH_parCns = pm.parentConstraint(self.armChainUpvRef[0], self.upv_cns, mo=True)
             self.ikH_cns_driver = self.armChainUpvRef[0]
 
+    def _setup_control_vis(self):
         # Visibilities -------------------------------------
         # fk
         fkvis_node = node.createReverseNode(self.blend_att)
@@ -922,12 +934,13 @@ class Component(component.Main):
         for shp in self.midBendy_ctl.getShapes():
             pm.connectAttr(self.midBendyVis_att, shp.attr("visibility"))
 
-        # Controls ROT order -----------------------------------
+    def _setup_control_rotation_orders(self):
         attribute.setRotOrder(self.fk0_ctl, "XZY")
         attribute.setRotOrder(self.fk1_ctl, "XYZ")
         attribute.setRotOrder(self.fk2_ctl, "YZX")
         attribute.setRotOrder(self.ik_ctl, "XYZ")
 
+    def _setup_ik_solver(self):
         # IK Solver -----------------------------------------
         out = [self.bone0, self.bone1, self.ctrn_loc, self.eff_loc]
         o_node = applyop.gear_ikfk2bone_op(
@@ -959,6 +972,45 @@ class Component(component.Main):
         if self.negate and self.settings["div1"]:
             pm.setAttr(cns + ".target[0].targetOffsetRotateZ", 180)
 
+        # scale: this fix the scalin popping issue
+        intM_node = applyop.gear_intmatrix_op(
+            self.fk2_ctl.attr("worldMatrix"),
+            self.ik_ctl_ref.attr("worldMatrix"),
+            o_node.attr("blend"),
+        )
+
+        mulM_node = applyop.gear_mulmatrix_op(
+            intM_node.attr("output"), self.eff_loc.attr("parentInverseMatrix")
+        )
+
+        dm_node = node.createDecomposeMatrixNode(mulM_node.attr("output"))
+        dm_node.attr("outputScale") >> self.eff_loc.attr("scale")
+
+        pm.connectAttr(self.blend_att, o_node + ".blend")
+        if self.negate:
+            mulVal = -1
+            rollMulVal = 1
+        else:
+            mulVal = 1
+            rollMulVal = -1
+        roll_m_node = node.createMulNode(self.roll_att, mulVal)
+        roll_m_node2 = node.createMulNode(self.roll_ctl.attr("rx"), rollMulVal)
+        node.createPlusMinusAverage1D(
+            [roll_m_node.outputX, roll_m_node2.outputX],
+            operation=1,
+            output=o_node + ".roll",
+        )
+        pm.connectAttr(self.scale_att, o_node + ".scaleA")
+        pm.connectAttr(self.scale_att, o_node + ".scaleB")
+        pm.connectAttr(self.maxstretch_att, o_node + ".maxstretch")
+        pm.connectAttr(self.slide_att, o_node + ".slide")
+        pm.connectAttr(self.softness_att, o_node + ".softness")
+        pm.connectAttr(self.reverse_att, o_node + ".reverse")
+
+        # point constrain tip reference
+        pm.pointConstraint(self.ik_ctl, self.tip_ref, mo=False)
+
+    def _setup_swing_twist(self):
         matrix_constraint(
             str(self.upperBendy_pin),
             str(self.upperBendy_npo),
@@ -1032,9 +1084,7 @@ class Component(component.Main):
         lower_twist_mid.output_quat.connect_to(lower_twist_mid_euler.input_quat)
         lower_twist_mid_euler.output_rotate.x.connect_to(f"{self.lowerBendy_twist}.rotateX")
 
-        # point constrain tip reference
-        pm.pointConstraint(self.ik_ctl, self.tip_ref, mo=False)
-
+    def _setup_roll_control(self):
         # interpolate transform  mid point locator
         int_matrix = applyop.gear_intmatrix_op(
             self.armChainUpvRef[0].attr("worldMatrix"),
@@ -1057,41 +1107,7 @@ class Component(component.Main):
         # parent constraint roll control npo to interpolate trans
         pm.parentConstraint(self.interpolate_lvl, self.roll_ctl_npo, mo=True)
 
-        # scale: this fix the scalin popping issue
-        intM_node = applyop.gear_intmatrix_op(
-            self.fk2_ctl.attr("worldMatrix"),
-            self.ik_ctl_ref.attr("worldMatrix"),
-            o_node.attr("blend"),
-        )
-
-        mulM_node = applyop.gear_mulmatrix_op(
-            intM_node.attr("output"), self.eff_loc.attr("parentInverseMatrix")
-        )
-
-        dm_node = node.createDecomposeMatrixNode(mulM_node.attr("output"))
-        dm_node.attr("outputScale") >> self.eff_loc.attr("scale")
-
-        pm.connectAttr(self.blend_att, o_node + ".blend")
-        if self.negate:
-            mulVal = -1
-            rollMulVal = 1
-        else:
-            mulVal = 1
-            rollMulVal = -1
-        roll_m_node = node.createMulNode(self.roll_att, mulVal)
-        roll_m_node2 = node.createMulNode(self.roll_ctl.attr("rx"), rollMulVal)
-        node.createPlusMinusAverage1D(
-            [roll_m_node.outputX, roll_m_node2.outputX],
-            operation=1,
-            output=o_node + ".roll",
-        )
-        pm.connectAttr(self.scale_att, o_node + ".scaleA")
-        pm.connectAttr(self.scale_att, o_node + ".scaleB")
-        pm.connectAttr(self.maxstretch_att, o_node + ".maxstretch")
-        pm.connectAttr(self.slide_att, o_node + ".slide")
-        pm.connectAttr(self.softness_att, o_node + ".softness")
-        pm.connectAttr(self.reverse_att, o_node + ".reverse")
-
+    def _setup_twist_chains(self):
         # spline IK for  twist jnts
         cns_list = [
             self.upper_swing,
@@ -1126,6 +1142,19 @@ class Component(component.Main):
             padded=False,
         )
 
+    def _setup_ik_fk_match(self):
+        # TODO: check for a more clean and elegant solution instead of re-match
+        # the world matrix again
+        transform.matchWorldTransform(self.fk_ctl[0], self.match_fk0_off)
+        transform.matchWorldTransform(self.fk_ctl[1], self.match_fk1_off)
+        transform.matchWorldTransform(self.fk_ctl[0], self.match_fk0)
+        transform.matchWorldTransform(self.fk_ctl[1], self.match_fk1)
+
+        # match IK/FK ref
+        pm.parentConstraint(self.bone0, self.match_fk0_off, mo=True)
+        pm.parentConstraint(self.bone1, self.match_fk1_off, mo=True)
+
+    def _setup_divisions(self):
         # Divisions ----------------------------------------
         # attribute 0 or 1 the division will follow exactly the rotation of
         # the controler.. and we wont have this nice bendy + roll
@@ -1158,21 +1187,8 @@ class Component(component.Main):
             pm.connectAttr(dm_node + ".outputScale", div_cns + ".scale")
             pm.connectAttr(dm_node + ".outputShear", div_cns + ".shear")
 
-        # TODO: check for a more clean and elegant solution instead of re-match
-        # the world matrix again
-        transform.matchWorldTransform(self.fk_ctl[0], self.match_fk0_off)
-        transform.matchWorldTransform(self.fk_ctl[1], self.match_fk1_off)
-        transform.matchWorldTransform(self.fk_ctl[0], self.match_fk0)
-        transform.matchWorldTransform(self.fk_ctl[1], self.match_fk1)
-
-        # match IK/FK ref
-        pm.parentConstraint(self.bone0, self.match_fk0_off, mo=True)
-        pm.parentConstraint(self.bone1, self.match_fk1_off, mo=True)
-
-        # recover hand offset transform
-        if self.settings["use_blade"]:
-            self.eff_jnt_off.setMatrix(self.off_t, worldSpace=True)
-
+    def _setup_joints(self):
+        self._setup_divisions()
         # force translation for mid joint to mid ctl
         lastArmDiv = None
         if not self.settings["div0"]:

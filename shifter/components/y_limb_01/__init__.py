@@ -20,6 +20,9 @@ from yrig.transform.quat import create_swing_only_transform, twist_extract_quat
 class Component(component.Main):
     """Shifter component Class"""
 
+    # Override in subclasses to map guide locator names to canonical names
+    GUIDE_MAP = {}  # e.g. {"mid": "elbow", "end": "wrist"}
+
     # =====================================================
     # OBJECTS
     # =====================================================
@@ -59,6 +62,10 @@ class Component(component.Main):
         self.color_offset_fk = [1, 0.25, 0]  # orange
 
         self.jd_names = ast.literal_eval(self.settings["jointNamesDescription_custom"])
+
+        self.root_guide = self.GUIDE_MAP.get("root", "root")
+        self.mid_guide = self.GUIDE_MAP.get("mid", "mid")
+        self.end_guide = self.GUIDE_MAP.get("end", "end")
 
     def _add_fk_controls(self):
         # FK Controlers -----------------------------------
@@ -258,15 +265,15 @@ class Component(component.Main):
 
         if self.settings["rest_T_Pose"]:
             arm_length = vector.getDistance(
-                self.guide.pos["root"], self.guide.pos["mid"]
-            ) + vector.getDistance(self.guide.pos["mid"], self.guide.pos["end"])
+                self.guide.pos[self.root_guide], self.guide.pos[self.mid_guide]
+            ) + vector.getDistance(self.guide.pos[self.mid_guide], self.guide.pos[self.end_guide])
             if self.negate:
-                end_pos = self.guide.pos["root"] - datatypes.Vector(arm_length, 0, 0)
+                end_pos = self.guide.pos[self.root_guide] - datatypes.Vector(arm_length, 0, 0)
             else:
-                end_pos = self.guide.pos["root"] + datatypes.Vector(arm_length, 0, 0)
+                end_pos = self.guide.pos[self.root_guide] + datatypes.Vector(arm_length, 0, 0)
 
         else:
-            end_pos = self.guide.pos["end"]
+            end_pos = self.guide.pos[self.end_guide]
 
         self.ik_cns = primitive.addTransformFromPos(self.root, self.getName("ik_cns"), end_pos)
 
@@ -287,7 +294,7 @@ class Component(component.Main):
 
         if self.negate:
             m = transform.getTransformLookingAt(
-                self.guide.pos["end"],
+                self.guide.pos[self.end_guide],
                 self.guide.pos["eff"],
                 self.normal,
                 "x-y",
@@ -297,7 +304,7 @@ class Component(component.Main):
                 m = transform.setMatrixScale(m, [-1, 1, 1])
         else:
             m = transform.getTransformLookingAt(
-                self.guide.pos["end"],
+                self.guide.pos[self.end_guide],
                 self.guide.pos["eff"],
                 self.normal,
                 "xy",
@@ -348,7 +355,7 @@ class Component(component.Main):
     def _add_reference_objects(self):
         # References --------------------------------------
         trnIK_ref = transform.getTransformLookingAt(
-            self.guide.pos["end"],
+            self.guide.pos[self.end_guide],
             self.guide.pos["eff"],
             self.normal,
             "xz",
@@ -507,7 +514,7 @@ class Component(component.Main):
         i = 0.0
         for p in range(max(self.settings["div0"] + 1, 2)):
             p_vec = vector.linearlyInterpolate(
-                self.guide.pos["root"], self.guide.pos["mid"], blend=i
+                self.guide.pos[self.root_guide], self.guide.pos[self.mid_guide], blend=i
             )
             self.upperChainPos.append(p_vec)
             i = i + ii
@@ -527,7 +534,7 @@ class Component(component.Main):
         i = 0.0
         for p in range(max(self.settings["div1"] + 1, 2)):
             p_vec = vector.linearlyInterpolate(
-                self.guide.pos["mid"], self.guide.pos["end"], blend=i
+                self.guide.pos[self.mid_guide], self.guide.pos[self.end_guide], blend=i
             )
             self.lowerChainPos.append(p_vec)
             i = i + ii
@@ -668,7 +675,7 @@ class Component(component.Main):
         if self.settings["use_blade"]:
             # set the offset rotation for the hand
             self.off_t = transform.getTransformLookingAt(
-                self.guide.pos["end"],
+                self.guide.pos[self.end_guide],
                 self.guide.pos["eff"],
                 self.blade_normal,
                 axis="xy",

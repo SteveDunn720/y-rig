@@ -78,22 +78,7 @@ class Component(component.Main):
             self.negate,
         )
 
-        if self.settings["rest_T_Pose"]:
-            x = datatypes.Vector(1, 0, 0)
-            if self.negate:
-                z_dir = -1
-            else:
-                z_dir = 1
-
-            if self.up_axis == "y":
-                z = datatypes.Vector(0, z_dir, 0)
-            else:
-                z = datatypes.Vector(0, 0, z_dir)
-
-            t_npo = transform.getRotationFromAxis(x, z, "xz", False)
-            t_npo = transform.setMatrixPosition(t_npo, self.guide.apos[0])
-        else:
-            t_npo = t
+        t_npo = t
 
         self.fk0_npo = primitive.addTransform(self.root, self.getName("fk0_npo"), t_npo)
 
@@ -117,12 +102,7 @@ class Component(component.Main):
             self.negate,
         )
 
-        if self.settings["rest_T_Pose"]:
-            t_npo = transform.setMatrixPosition(
-                transform.getTransform(self.fk0_ctl), self.guide.apos[1]
-            )
-        else:
-            t_npo = t
+        t_npo = t
 
         self.fk1_npo = primitive.addTransform(self.fk0_ctl, self.getName("fk1_npo"), t_npo)
 
@@ -152,13 +132,7 @@ class Component(component.Main):
             self.negate,
         )
 
-        if self.settings["rest_T_Pose"]:
-            t_npo = transform.setMatrixPosition(
-                transform.getTransform(self.fk1_ctl), self.guide.apos[2]
-            )
-
-        else:
-            t_npo = t
+        t_npo = t
 
         self.fk2_npo = primitive.addTransform(self.fk1_ctl, self.getName("fk2_npo"), t_npo)
 
@@ -263,17 +237,7 @@ class Component(component.Main):
     def _add_ik_controls(self):
         # IK Controlers -----------------------------------
 
-        if self.settings["rest_T_Pose"]:
-            arm_length = vector.getDistance(
-                self.guide.pos[self.root_guide], self.guide.pos[self.mid_guide]
-            ) + vector.getDistance(self.guide.pos[self.mid_guide], self.guide.pos[self.end_guide])
-            if self.negate:
-                end_pos = self.guide.pos[self.root_guide] - datatypes.Vector(arm_length, 0, 0)
-            else:
-                end_pos = self.guide.pos[self.root_guide] + datatypes.Vector(arm_length, 0, 0)
-
-        else:
-            end_pos = self.guide.pos[self.end_guide]
+        end_pos = self.guide.pos[self.end_guide]
 
         self.ik_cns = primitive.addTransformFromPos(self.root, self.getName("ik_cns"), end_pos)
 
@@ -334,21 +298,6 @@ class Component(component.Main):
             self.negate,
         )
         self.ik_ctl_ref = primitive.addTransform(self.ik_ctl, self.getName("ikCtl_ref"), ik_ref_t)
-
-        # IK rotation controls
-        if self.settings["ikTR"]:
-            self.ikRot_npo = primitive.addTransform(self.root, self.getName("ikRot_npo"), m)
-            self.ikRot_cns = primitive.addTransform(self.ikRot_npo, self.getName("ikRot_cns"), m)
-            self.ikRot_ctl = self.addCtl(
-                self.ikRot_cns,
-                "ikRot_ctl",
-                m,
-                self.color_ik,
-                "sphere",
-                w=self.size * 0.12,
-                tp=self.ik_ctl,
-            )
-            attribute.setKeyableAttributes(self.ikRot_ctl, self.r_params)
 
         self.fk_ik_ctls = self.fk_ctl + [self.ik_ctl]
 
@@ -422,12 +371,7 @@ class Component(component.Main):
 
         self.match_fk1 = self.add_match_ref(self.fk_ctl[1], self.match_fk1_off, "fk1_mth")
 
-        if self.settings["ikTR"]:
-            reference = self.ikRot_ctl
-
-            self.match_ikRot = self.add_match_ref(self.ikRot_ctl, self.fk2_ctl, "ikRot_mth")
-        else:
-            reference = self.ik_ctl
+        reference = self.ik_ctl
 
         self.match_fk2 = self.add_match_ref(self.fk_ctl[2], reference, "fk2_mth")
 
@@ -819,9 +763,8 @@ class Component(component.Main):
         self.blend_att = self.addAnimParam(
             "blend", "Fk/Ik Blend", "double", self.settings["blend"], 0, 1
         )
-        self.roll_att = self.addAnimParam("roll", "Roll upv", "double", 0, -180, 180)
-        self.armpitRoll_att = self.addAnimParam("armpitRoll", "Armpit Roll", "double", 0)
-        self.scale_att = self.addAnimParam("ikscale", "Scale", "double", 1, 0.001, 10)
+        self.roll_att = self.addAnimParam("roll", "IK Roll", "double", 0, -180, 180)
+        self.scale_att = self.addAnimParam("ikscale", "IK Scale", "double", 1, 0.001, 10)
 
         self.maxstretch_att = self.addAnimParam(
             "maxstretch",
@@ -846,8 +789,8 @@ class Component(component.Main):
 
         self.midBendyVis_att = self.addAnimParam("midBendy_vis", "Mid Bendy vis", "bool", False)
 
-        self.upvAimVis_att = self.addAnimParam("UpvAim_vis", "Upv Aim vis", "bool", True)
-        self.upvCtlVis_att = self.addAnimParam("UpvCtl_vis", "Upv Roll Ctl vis", "bool", False)
+        self.upvAimVis_att = self.addAnimParam("UpvAim_vis", "IK Pole Vector vis", "bool", True)
+        self.upvCtlVis_att = self.addAnimParam("UpvCtl_vis", "IK Roll Ctl vis", "bool", False)
         self.tweakVis_att = self.addAnimParam("Tweak_vis", "Tweak Vis", "bool", False)
 
         self.midCtl_att = self.addAnimParam("mid_ctl_vis", "Mid Ctl Vis", "bool", False)
@@ -863,12 +806,6 @@ class Component(component.Main):
                     0,
                     self.settings["ikrefarray"].split(","),
                 )
-
-        if self.settings["ikTR"]:
-            ref_names = ["Auto", "ik_ctl"]
-            if self.settings["ikrefarray"]:
-                ref_names = ref_names + self.settings["ikrefarray"].split(",")
-            self.ikRotRef_att = self.addAnimEnumParam("ikRotRef", "Ik Rot Ref", 0, ref_names)
 
         if self.settings["upvrefarray"]:
             ref_names = self.settings["upvrefarray"].split(",")
@@ -893,39 +830,6 @@ class Component(component.Main):
                 ],
             )
             attribute.addProxyAttribute(self.roll_att, [self.ik_ctl, self.upv_ctl])
-
-        # Setup ------------------------------------------
-        # Eval Fcurve
-        # if self.guide.paramDefs["st_profile"].value:
-        #     self.st_value = self.guide.paramDefs["st_profile"].value
-        #     self.sq_value = self.guide.paramDefs["sq_profile"].value
-        # else:
-        #     self.st_value = fcurve.getFCurveValues(self.settings["st_profile"], self.divisions)
-        #     self.sq_value = fcurve.getFCurveValues(self.settings["sq_profile"], self.divisions)
-
-        # self.st_att = [
-        #     self.addSetupParam(
-        #         "stretch_%s" % i,
-        #         "Stretch %s" % i,
-        #         "double",
-        #         self.st_value[i],
-        #         -1,
-        #         0,
-        #     )
-        #     for i in range(self.divisions)
-        # ]
-
-        # self.sq_att = [
-        #     self.addSetupParam(
-        #         "squash_%s" % i,
-        #         "Squash %s" % i,
-        #         "double",
-        #         self.sq_value[i],
-        #         0,
-        #         1,
-        #     )
-        #     for i in range(self.divisions)
-        # ]
 
         self.resample_att = self.addSetupParam("resample", "Resample", "bool", True)
         self.absolute_att = self.addSetupParam("absolute", "Absolute", "bool", False)
@@ -996,9 +900,6 @@ class Component(component.Main):
             pm.connectAttr(self.blend_att, shp.attr("visibility"))
         for shp in self.line_ref.getShapes():
             pm.connectAttr(self.blend_att, shp.attr("visibility"))
-        if self.settings["ikTR"]:
-            for shp in self.ikRot_ctl.getShapes():
-                pm.connectAttr(self.blend_att, shp.attr("visibility"))
 
         for shp in self.roll_ctl.getShapes():
             pm.connectAttr(self.blend_att, shp.attr("visibility"))
@@ -1156,33 +1057,6 @@ class Component(component.Main):
         # parent constraint roll control npo to interpolate trans
         pm.parentConstraint(self.interpolate_lvl, self.roll_ctl_npo, mo=True)
 
-        if self.settings["ikTR"]:
-            # connect the control inputs
-            outEff_dm = o_node.listConnections(c=True)[-1][1]
-
-            in_attr = self.ikRot_npo.attr("translate")
-            outEff_dm.attr("outputTranslate") >> in_attr
-
-            outEff_dm.attr("outputScale") >> self.ikRot_npo.attr("scale")
-            dm_node = node.createDecomposeMatrixNode(o_node.attr("outB"))
-            dm_node.attr("outputRotate") >> self.ikRot_npo.attr("rotate")
-
-            # rotation
-
-            mulM_node = applyop.gear_mulmatrix_op(
-                self.ikRot_ctl.attr("worldMatrix"),
-                self.eff_loc.attr("parentInverseMatrix"),
-            )
-
-            intM_node = applyop.gear_intmatrix_op(
-                o_node.attr("outEff"),
-                mulM_node.attr("output"),
-                o_node.attr("blend"),
-            )
-            dm_node = node.createDecomposeMatrixNode(intM_node.attr("output"))
-            dm_node.attr("outputRotate") >> self.eff_loc.attr("rotate")
-            transform.matchWorldTransform(self.fk2_ctl, self.ikRot_cns)
-
         # scale: this fix the scalin popping issue
         intM_node = applyop.gear_intmatrix_op(
             self.fk2_ctl.attr("worldMatrix"),
@@ -1294,9 +1168,6 @@ class Component(component.Main):
         # match IK/FK ref
         pm.parentConstraint(self.bone0, self.match_fk0_off, mo=True)
         pm.parentConstraint(self.bone1, self.match_fk1_off, mo=True)
-        if self.settings["ikTR"]:
-            transform.matchWorldTransform(self.ikRot_ctl, self.match_ikRot)
-            transform.matchWorldTransform(self.fk_ctl[2], self.match_fk2)
 
         # recover hand offset transform
         if self.settings["use_blade"]:
@@ -1324,9 +1195,9 @@ class Component(component.Main):
     def setRelation(self):
         """Set the relation beetween object from guide to rig"""
         offset = int(self.extra_div / 2)
-        self.relatives["root"] = self.div_cns[0]
-        self.relatives["mid"] = self.div_cns[self.settings["div0"] + offset]
-        self.relatives["end"] = self.div_cns[-1]
+        self.relatives[self.root_guide] = self.div_cns[0]
+        self.relatives[self.mid_guide] = self.div_cns[self.settings["div0"] + offset]
+        self.relatives[self.end_guide] = self.div_cns[-1]
         self.relatives["eff"] = self.eff_loc
 
         self.jointRelatives["root"] = 0
@@ -1334,13 +1205,13 @@ class Component(component.Main):
         if self.settings["div0"]:
             offset = offset + 1
 
-        self.jointRelatives["mid"] = self.settings["div0"] + offset
-        self.jointRelatives["end"] = len(self.div_cns) - offset
+        self.jointRelatives[self.mid_guide] = self.settings["div0"] + offset
+        self.jointRelatives[self.end_guide] = len(self.div_cns) - offset
         self.jointRelatives["eff"] = -1
 
-        self.controlRelatives["root"] = self.fk0_ctl
-        self.controlRelatives["mid"] = self.fk1_ctl
-        self.controlRelatives["end"] = self.fk2_ctl
+        self.controlRelatives[self.root_guide] = self.fk0_ctl
+        self.controlRelatives[self.mid_guide] = self.fk1_ctl
+        self.controlRelatives[self.end_guide] = self.fk2_ctl
         self.controlRelatives["eff"] = self.fk2_ctl
 
     def addConnection(self):
@@ -1351,22 +1222,9 @@ class Component(component.Main):
     def connect_standard(self):
         """standard connection definition for the component"""
 
-        if self.settings["ikTR"]:
-            self.parent.addChild(self.root)
-            self.connectRef(self.settings["ikrefarray"], self.ik_cns)
-            self.connectRef(self.settings["upvrefarray"], self.upv_cns, True)
-
-            init_refNames = ["lower_arm", "ik_ctl"]
-            self.connectRef2(
-                self.settings["ikrefarray"],
-                self.ikRot_cns,
-                self.ikRotRef_att,
-                [self.ikRot_npo, self.ik_ctl],
-                True,
-                init_refNames,
-            )
-        else:
-            self.connect_standardWithIkRef()
+        # Set the Ik Reference
+        self.connectRef(self.settings["ikrefarray"], self.ik_cns)
+        self.connectRef(self.settings["upvrefarray"], self.upv_cns, True)
 
         if self.settings["pinrefarray"]:
             self.connectRef2(

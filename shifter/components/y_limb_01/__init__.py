@@ -408,6 +408,10 @@ class Component(component.Main):
             self.root, self.getName("eff_loc"), self.guide.apos[2]
         )
 
+        # Mid bone1 ref — used as fallback when div1 == 0
+        t = transform.getTransform(self.fk_ctl[1])
+        self.mid_ref = primitive.addTransform(self.root, self.getName("mid_ref"), t)
+
     def _add_match_refs(self):
         # match IK FK references
         self.match_fk0_off = self.add_match_ref(self.fk_ctl[1], self.root, "matchFk0_npo", False)
@@ -1048,6 +1052,11 @@ class Component(component.Main):
         matrix_constraint(
             str(self.bone1), str(self.bone1_tr), keep_offset=False, scale=False, shear=False
         )
+
+        # connect mid ref
+        cns = pm.parentConstraint(self.bone1, self.mid_ref, mo=False)
+        if self.negate and self.settings["div1"]:
+            pm.setAttr(cns + ".target[0].targetOffsetRotateZ", 180)
 
         matrix_constraint(
             str(self.upperBendy_pin),

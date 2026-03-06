@@ -43,10 +43,8 @@ URL = "https://github.com/michaelharmonart/y-rig"
 EMAIL = ""
 VERSION = [1, 0, 0]
 TYPE = "y_limb_01"
-NAME = "arm"
-DESCRIPTION = (
-    """Component based on EPIC_arm_02 which has added features for more flexible bendbows."""
-)
+NAME = "limb"
+DESCRIPTION = """Generic 2 segment limb component. y_arm and y_leg inherit from this component."""
 
 ##########################################################
 # CLASS
@@ -67,20 +65,19 @@ class Guide(guide.ComponentGuide):
 
     connectors = ["shoulder_01"]
     joint_names_description = [
-        "upperarm",
-        "lowerarm",
-        "upperarm_twist_##",
-        "lowerarm_twist_##",
-        "hand",
+        "upper",
+        "lower",
+        "upper_twist_##",
+        "lower_twist_##",
+        "end",
     ]
 
     def postInit(self):
         """Initialize the position for the guide"""
         self.save_transform = ["root", "mid", "end", "eff"]
-        self.save_blade = ["blade"]
 
     def addObjects(self):
-        """Add the Guide Root, blade and locators"""
+        """Add the Guide Root and locators"""
 
         self.root = self.addRoot()
 
@@ -93,8 +90,6 @@ class Guide(guide.ComponentGuide):
 
         self.dispcrv = self.addDispCurve("crv", [self.root, self.mid, self.end, self.eff])
 
-        self.blade = self.addBlade("blade", self.end, self.eff)
-
         self.addUpvLocator(self.mid, self.end, self.eff, float_value=0.8)
 
     def addParameters(self):
@@ -106,11 +101,9 @@ class Guide(guide.ComponentGuide):
         self.pUpvRefArray = self.addParam("upvrefarray", "string", "")
         self.pUpvRefArray = self.addParam("pinrefarray", "string", "")
         self.pMaxStretch = self.addParam("maxstretch", "double", 1, 1, None)
-        self.pIKTR = self.addParam("ikTR", "bool", False)
         self.pMirrorMid = self.addParam("mirrorMid", "bool", True)
         self.pMirrorIK = self.addParam("mirrorIK", "bool", True)
         self.pleafJoints = self.addParam("leafJoints", "bool", False)
-        self.pUseBlade = self.addParam("use_blade", "bool", True)
         self.pTPoseRest = self.addParam("rest_T_Pose", "bool", False)
 
         # Divisions
@@ -136,9 +129,7 @@ class Guide(guide.ComponentGuide):
 
     def postDraw(self):
         "Add post guide draw elements to the guide"
-        # hide blade if not in use
-        for shp in self.blade.getShapes():  # type: ignore
-            pm.connectAttr(self.root.use_blade, shp.attr("visibility"))  # type: ignore
+        pass
 
 
 ##########################################################
@@ -199,11 +190,9 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         self.settingsTab.ikfk_slider.setValue(int(self.root.attr("blend").get() * 100))
         self.settingsTab.ikfk_spinBox.setValue(int(self.root.attr("blend").get() * 100))
         self.settingsTab.maxStretch_spinBox.setValue(int(self.root.attr("maxstretch").get() * 100))
-        self.populateCheck(self.settingsTab.ikTR_checkBox, "ikTR")
         self.populateCheck(self.settingsTab.mirrorMid_checkBox, "mirrorMid")
         self.populateCheck(self.settingsTab.mirrorIK_checkBox, "mirrorIK")
         self.populateCheck(self.settingsTab.leafJoints_checkBox, "leafJoints")
-        self.populateCheck(self.settingsTab.useBlade_checkBox, "use_blade")
         self.settingsTab.div0_spinBox.setValue(self.root.attr("div0").get())
         self.settingsTab.div1_spinBox.setValue(self.root.attr("div1").get())
         self.populateCheck(self.settingsTab.weight_split_enable_checkBox, "weight_split_tag")
@@ -274,10 +263,6 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
 
         self.settingsTab.squashStretchProfile_pushButton.clicked.connect(self.setProfile)
 
-        self.settingsTab.ikTR_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.ikTR_checkBox, "ikTR")
-        )
-
         self.settingsTab.mirrorMid_checkBox.stateChanged.connect(
             partial(
                 self.updateCheck,
@@ -297,14 +282,6 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
                 self.updateCheck,
                 self.settingsTab.leafJoints_checkBox,
                 "leafJoints",
-            )
-        )
-
-        self.settingsTab.useBlade_checkBox.stateChanged.connect(
-            partial(
-                self.updateCheck,
-                self.settingsTab.useBlade_checkBox,
-                "use_blade",
             )
         )
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsUIcVqlLa.ui'
+## Form generated from reading UI file 'settingsUIbzNJeH.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.10.2
 ##
@@ -127,11 +127,6 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.leafJoints_checkBox)
 
-        self.ikTR_checkBox = QCheckBox(self.groupBox)
-        self.ikTR_checkBox.setObjectName("ikTR_checkBox")
-
-        self.verticalLayout.addWidget(self.ikTR_checkBox)
-
         self.mirrorIK_checkBox = QCheckBox(self.groupBox)
         self.mirrorIK_checkBox.setObjectName("mirrorIK_checkBox")
 
@@ -141,16 +136,6 @@ class Ui_Form(object):
         self.mirrorMid_checkBox.setObjectName("mirrorMid_checkBox")
 
         self.verticalLayout.addWidget(self.mirrorMid_checkBox)
-
-        self.useBlade_checkBox = QCheckBox(self.groupBox)
-        self.useBlade_checkBox.setObjectName("useBlade_checkBox")
-
-        self.verticalLayout.addWidget(self.useBlade_checkBox)
-
-        self.TPoseRest_checkBox = QCheckBox(self.groupBox)
-        self.TPoseRest_checkBox.setObjectName("TPoseRest_checkBox")
-
-        self.verticalLayout.addWidget(self.TPoseRest_checkBox)
 
         self.weight_split_formLayout = QFormLayout()
         self.weight_split_formLayout.setObjectName("weight_split_formLayout")
@@ -383,9 +368,6 @@ class Ui_Form(object):
         self.maxStretch_label.setText(QCoreApplication.translate("Form", "Max Stretch", None))
         self.divisions_label.setText(QCoreApplication.translate("Form", "Divisions", None))
         self.leafJoints_checkBox.setText(QCoreApplication.translate("Form", "Leaf Joints", None))
-        self.ikTR_checkBox.setText(
-            QCoreApplication.translate("Form", "IK separated Trans and Rot ctl", None)
-        )
         # if QT_CONFIG(tooltip)
         self.mirrorIK_checkBox.setToolTip(
             QCoreApplication.translate(
@@ -446,52 +428,6 @@ class Ui_Form(object):
         self.mirrorMid_checkBox.setText(
             QCoreApplication.translate("Form", "Mirror Mid Ctl and UPV  axis behaviour", None)
         )
-        # if QT_CONFIG(tooltip)
-        self.useBlade_checkBox.setToolTip(
-            QCoreApplication.translate(
-                "Form",
-                "<html><head/><body><p>If checked, will use a blade to control the wrist joint orientation. This doesn't affect the controls that are align with the arm plane.</p></body></html>",
-                None,
-            )
-        )
-        # endif // QT_CONFIG(tooltip)
-        # if QT_CONFIG(statustip)
-        self.useBlade_checkBox.setStatusTip("")
-        # endif // QT_CONFIG(statustip)
-        # if QT_CONFIG(whatsthis)
-        self.useBlade_checkBox.setWhatsThis("")
-        # endif // QT_CONFIG(whatsthis)
-        self.useBlade_checkBox.setText(
-            QCoreApplication.translate("Form", "Use Wrist Blade to orient wrist joint", None)
-        )
-        # if QT_CONFIG(tooltip)
-        self.TPoseRest_checkBox.setToolTip(
-            QCoreApplication.translate(
-                "Form",
-                "<html><head/><body><p>If checked, the Rest pose for controls will be in T Pose</p></body></html>",
-                None,
-            )
-        )
-        # endif // QT_CONFIG(tooltip)
-        # if QT_CONFIG(statustip)
-        self.TPoseRest_checkBox.setStatusTip(
-            QCoreApplication.translate(
-                "Form",
-                "This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ",
-                None,
-            )
-        )
-        # endif // QT_CONFIG(statustip)
-        # if QT_CONFIG(whatsthis)
-        self.TPoseRest_checkBox.setWhatsThis(
-            QCoreApplication.translate(
-                "Form",
-                "This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ",
-                None,
-            )
-        )
-        # endif // QT_CONFIG(whatsthis)
-        self.TPoseRest_checkBox.setText(QCoreApplication.translate("Form", "Rest T Pose", None))
         # if QT_CONFIG(tooltip)
         self.weight_split_enable_label.setToolTip(
             QCoreApplication.translate(
@@ -554,7 +490,7 @@ class Ui_Form(object):
         self.upvRefArrayAdd_pushButton.setText(QCoreApplication.translate("Form", "<<", None))
         self.upvRefArrayRemove_pushButton.setText(QCoreApplication.translate("Form", ">>", None))
         self.pinRefArray_groupBox.setTitle(
-            QCoreApplication.translate("Form", "Pin Elbow Reference Array", None)
+            QCoreApplication.translate("Form", "Pin Mid Control Reference Array", None)
         )
         self.pinRefArray_copyRef_pushButton.setText(
             QCoreApplication.translate("Form", "Copy from IK Ref", None)

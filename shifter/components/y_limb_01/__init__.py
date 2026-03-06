@@ -620,20 +620,7 @@ class Component(component.Main):
         if self.negate:
             self.end_ref.attr("rz").set(180.0)
 
-        if self.settings["use_blade"]:
-            # set the offset rotation for the hand
-            self.off_t = transform.getTransformLookingAt(
-                self.guide.pos[self.end_guide],
-                self.guide.pos["eff"],
-                self.blade_normal,
-                axis="xy",
-                negate=self.negate,
-            )
-            self.eff_jnt_off = primitive.addTransform(
-                self.end_ref, self.getName("eff_off"), self.off_t
-            )
-        else:
-            self.eff_jnt_off = self.end_ref
+        self.eff_jnt_off = self.end_ref
 
         self.jnt_pos.append(
             {

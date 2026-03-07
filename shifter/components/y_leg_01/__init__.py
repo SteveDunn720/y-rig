@@ -4,19 +4,21 @@ import ast
 import mgear.pymaya as pm
 from mgear.core import applyop, attribute, icon, node, primitive, string, transform, vector
 from mgear.pymaya import datatypes
-from mgear.shifter import component
 
-from yrig.skin.split import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.transform import matrix_constraint
+
+from ..y_limb_01 import Component as LimbComponent
 
 #############################################
 # COMPONENT
 #############################################
 
 
-class Component(component.Main):
+class Component(LimbComponent):
     """Shifter component Class"""
+
+    GUIDE_MAP = {"mid": "knee", "end": "ankle"}
 
     # =====================================================
     # OBJECTS
@@ -930,39 +932,6 @@ class Component(component.Main):
             )
             attribute.addProxyAttribute(self.roll_att, [self.ik_ctl, self.upv_ctl])
 
-        # Setup ------------------------------------------
-        # Eval Fcurve
-        # if self.guide.paramDefs["st_profile"].value:
-        #     self.st_value = self.guide.paramDefs["st_profile"].value
-        #     self.sq_value = self.guide.paramDefs["sq_profile"].value
-        # else:
-        #     self.st_value = fcurve.getFCurveValues(self.settings["st_profile"], self.divisions)
-        #     self.sq_value = fcurve.getFCurveValues(self.settings["sq_profile"], self.divisions)
-
-        # self.st_att = [
-        #     self.addSetupParam(
-        #         "stretch_%s" % i,
-        #         "Stretch %s" % i,
-        #         "double",
-        #         self.st_value[i],
-        #         -1,
-        #         0,
-        #     )
-        #     for i in range(self.divisions)
-        # ]
-
-        # self.sq_att = [
-        #     self.addSetupParam(
-        #         "squash_%s" % i,
-        #         "Squash %s" % i,
-        #         "double",
-        #         self.sq_value[i],
-        #         0,
-        #         1,
-        #     )
-        #     for i in range(self.divisions)
-        # ]
-
         self.resample_att = self.addSetupParam("resample", "Resample", "bool", True)
         self.absolute_att = self.addSetupParam("absolute", "Absolute", "bool", False)
         self.volume_blenshape_att = self.addSetupParam(
@@ -1414,27 +1383,7 @@ class Component(component.Main):
     # =====================================================
     def setRelation(self):
         """Set the relation beetween object from guide to rig"""
-        offset = int(self.extra_div / 2)
-        self.relatives["root"] = self.div_cns[0]
-        self.relatives["knee"] = self.div_cns[self.settings["div0"] + offset]
-        self.relatives["ankle"] = self.div_cns[-1]
-        self.relatives["eff"] = self.end_ref
-
-        self.controlRelatives["root"] = self.fk0_ctl
-        self.controlRelatives["knee"] = self.fk1_ctl
-        self.controlRelatives["ankle"] = self.ik_ctl
-        self.controlRelatives["eff"] = self.fk2_ctl
-
-        # we need to account with the extra joint for swing
-        if self.settings["div0"]:
-            offset = offset + 1
-
-        self.jointRelatives["root"] = 0
-        self.jointRelatives["knee"] = self.settings["div0"] + offset
-        self.jointRelatives["ankle"] = -1
-        self.jointRelatives["eff"] = -1
-
-        self.aliasRelatives["eff"] = "foot"
+        super().setRelation()
 
     def connect_standard(self):
         self.parent.addChild(self.root)
@@ -1462,14 +1411,4 @@ class Component(component.Main):
         the actual joints from self.jointList (populated by jointStructure).
         Each segment (upper arm / forearm) is tagged independently.
         """
-        if self.options["joint_rig"] and self.settings["weight_split_tag"]:
-            for segment_indices in (self.upperleg_jnt_indices, self.lowerleg_jnt_indices):
-                if len(segment_indices) > 1:
-                    segment_joints = [self.jointList[index].name() for index in segment_indices]
-                    tag_for_weight_split(
-                        influence=segment_joints[0],
-                        split_influences=segment_joints,
-                        degree=self.settings["weight_split_degree"],
-                    )
-
-        super(Component, self).finalize()
+        super().finalize()

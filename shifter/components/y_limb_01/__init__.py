@@ -48,9 +48,6 @@ class Component(component.Main):
         self.WIP = self.options["mode"]
         self.up_axis = pm.upAxis(q=True, axis=True)
 
-        self.blade_normal = self.guide.blades["blade"].z * -1
-        self.blade_binormal = self.guide.blades["blade"].x
-
         self.normal = self.getNormalFromPos(self.guide.apos)
         self.binormal = self.getBiNormalFromPos(self.guide.apos)
 

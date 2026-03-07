@@ -1,5 +1,8 @@
 # type: ignore
+from __future__ import annotations
+
 import ast
+from typing import TYPE_CHECKING
 
 import mgear.pymaya as pm
 from mgear.core import applyop, attribute, icon, node, primitive, string, transform, vector
@@ -8,7 +11,10 @@ from mgear.pymaya import datatypes
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.transform import matrix_constraint
 
-from ..y_limb_01 import Component as LimbComponent
+if TYPE_CHECKING:
+    from ..y_limb_01 import LimbComponent  # relative import within the package
+else:
+    from y_limb_01 import LimbComponent  # runtime: mGear adds parent dir to sys.path
 
 #############################################
 # COMPONENT
@@ -26,17 +32,7 @@ class Component(LimbComponent):
     def addObjects(self):
         """Add all the objects needed to create the component."""
 
-        self.WIP = self.options["mode"]
-
-        self.normal = self.getNormalFromPos(self.guide.apos)
-        self.up_axis = pm.upAxis(q=True, axis=True)
-
-        self.length0 = vector.getDistance(self.guide.apos[0], self.guide.apos[1])
-        self.length1 = vector.getDistance(self.guide.apos[1], self.guide.apos[2])
-        self.length2 = vector.getDistance(self.guide.apos[2], self.guide.apos[3])
-
-        # custom colors
-        self.color_offset_fk = [1, 0.25, 0]  # orange
+        self._add_common_setup()
 
         # 1 bone chain for upv ref
         self.legChainUpvRef = primitive.add2DChain(
@@ -547,8 +543,8 @@ class Component(LimbComponent):
         jdn_foot = jd_names[4]
 
         # Track jnt_pos indices per segment for weight split tagging in finalize
-        self.upperleg_jnt_indices = []
-        self.lowerleg_jnt_indices = []
+        self.upper_jnt_indices = []
+        self.lower_jnt_indices = []
 
         for i in range(self.divisions):
             div_cns = primitive.addTransform(self.root_ctl, self.getName("div%s_loc" % i))
@@ -601,7 +597,7 @@ class Component(LimbComponent):
                 else:
                     rot_off_root = rot_off
 
-                self.upperleg_jnt_indices.append(len(self.jnt_pos))
+                self.upper_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": self.leg_root_base,
@@ -629,7 +625,7 @@ class Component(LimbComponent):
                         }
                     )
             elif i == self.settings["div0"] + 1:
-                self.lowerleg_jnt_indices.append(len(self.jnt_pos))
+                self.lower_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": roll_off,
@@ -647,9 +643,9 @@ class Component(LimbComponent):
                 increment = -1
             else:
                 if twist_name == jdn_calf_twist:
-                    self.lowerleg_jnt_indices.append(len(self.jnt_pos))
+                    self.lower_jnt_indices.append(len(self.jnt_pos))
                 else:
-                    self.upperleg_jnt_indices.append(len(self.jnt_pos))
+                    self.upper_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": roll_off,

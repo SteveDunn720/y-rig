@@ -17,7 +17,7 @@ from yrig.transform.quat import create_swing_only_transform, twist_extract_quat
 #############################################
 
 
-class Component(component.Main):
+class LimbComponent(component.Main):
     """Shifter component Class"""
 
     # Override in subclasses to map guide locator names to canonical names
@@ -506,8 +506,8 @@ class Component(component.Main):
         self.roll_offset = []
 
         # Track jnt_pos indices per segment for weight split tagging in finalize
-        self.upperarm_jnt_indices = []
-        self.forearm_jnt_indices = []
+        self.upper_jnt_indices = []
+        self.lower_jnt_indices = []
 
         # joint Description Name
         jdn_upperarm = self.jd_names[0]
@@ -545,7 +545,7 @@ class Component(component.Main):
             if i == 0:
                 self.arm_root_base = roll_off
 
-                self.upperarm_jnt_indices.append(len(self.jnt_pos))
+                self.upper_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": self.arm_root_base,
@@ -571,7 +571,7 @@ class Component(component.Main):
                         }
                     )
             elif i == self.settings["div0"] + 1:
-                self.forearm_jnt_indices.append(len(self.jnt_pos))
+                self.lower_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": roll_off,
@@ -588,9 +588,9 @@ class Component(component.Main):
                 increment = -1
             else:
                 if twist_name == jdn_upperarm_twist:
-                    self.upperarm_jnt_indices.append(len(self.jnt_pos))
+                    self.upper_jnt_indices.append(len(self.jnt_pos))
                 else:
-                    self.forearm_jnt_indices.append(len(self.jnt_pos))
+                    self.lower_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
                         "obj": roll_off,
@@ -742,7 +742,16 @@ class Component(component.Main):
     # =====================================================
     def addAttributes(self):
         """Create the anim and setupr rig attributes for the component"""
+        self._add_common_attributes()
+        self._add_reference_array_attributes()
 
+        self.resample_att = self.addSetupParam("resample", "Resample", "bool", True)
+        self.absolute_att = self.addSetupParam("absolute", "Absolute", "bool", False)
+        self.volume_blenshape_att = self.addSetupParam(
+            "volume_blendshape", "Volume Blendshape", "double", 0, 0, 10
+        )
+
+    def _add_common_attributes(self):
         # Anim -------------------------------------------
         self.blend_att = self.addAnimParam(
             "blend", "Fk/Ik Blend", "double", self.settings["blend"], 0, 1
@@ -780,6 +789,7 @@ class Component(component.Main):
         self.midCtl_att = self.addAnimParam("mid_ctl_vis", "Mid Ctl Vis", "bool", False)
         self.ikCnsCtl_att = self.addAnimParam("ik_cns_ctl_vis", "IK Cns Ctl Vis", "bool", False)
 
+    def _add_reference_array_attributes(self):
         # Ref
         if self.settings["ikrefarray"]:
             ref_names = self.settings["ikrefarray"].split(",")
@@ -815,12 +825,6 @@ class Component(component.Main):
             )
             attribute.addProxyAttribute(self.roll_att, [self.ik_ctl, self.upv_ctl])
 
-        self.resample_att = self.addSetupParam("resample", "Resample", "bool", True)
-        self.absolute_att = self.addSetupParam("absolute", "Absolute", "bool", False)
-        self.volume_blenshape_att = self.addSetupParam(
-            "volume_blendshape", "Volume Blendshape", "double", 0, 0, 10
-        )
-
     # =====================================================
     # OPERATORS
     # =====================================================
@@ -838,7 +842,7 @@ class Component(component.Main):
         self._setup_ik_solver()
         self._setup_swing_twist()
         self._setup_roll_control()
-        self._setup_roll_control()
+        self._setup_twist_chains()
         self._setup_ik_fk_match()
         self._setup_joints()
 
@@ -1243,7 +1247,7 @@ class Component(component.Main):
         Each segment (upper arm / forearm) is tagged independently.
         """
         if self.options["joint_rig"] and self.settings["weight_split_tag"]:
-            for segment_indices in (self.upperarm_jnt_indices, self.forearm_jnt_indices):
+            for segment_indices in (self.upper_jnt_indices, self.lower_jnt_indices):
                 if len(segment_indices) > 1:
                     segment_joints = [self.jointList[index].name() for index in segment_indices]
                     tag_for_weight_split(
@@ -1252,4 +1256,4 @@ class Component(component.Main):
                         degree=self.settings["weight_split_degree"],
                     )
 
-        super(Component, self).finalize()
+        super().finalize()

@@ -762,6 +762,7 @@ class LimbComponent(component.Main):
         """Create the anim and setupr rig attributes for the component"""
         self._add_common_attributes()
         self._add_reference_array_attributes()
+        self._add_proxy_attributes()
 
         self.resample_att = self.addSetupParam("resample", "Resample", "bool", True)
         self.absolute_att = self.addSetupParam("absolute", "Absolute", "bool", False)
@@ -830,6 +831,8 @@ class LimbComponent(component.Main):
             ref_names = ["Auto"] + ref_names
             if len(ref_names) > 1:
                 self.pin_att = self.addAnimEnumParam("midref", "Mid Ref", 0, ref_names)
+
+    def _add_proxy_attributes(self):
         if self.validProxyChannels:
             attribute.addProxyAttribute(
                 [self.blend_att, self.roundness_att],
@@ -1242,7 +1245,10 @@ class LimbComponent(component.Main):
 
     def connect_standard(self):
         """standard connection definition for the component"""
+        self.parent.addChild(self.root)
+        self._connect_reference_array()
 
+    def _connect_reference_array(self):
         # Set the Ik Reference
         self.connectRef(self.settings["ikrefarray"], self.ik_cns)
         self.connectRef(self.settings["upvrefarray"], self.upv_cns, True)

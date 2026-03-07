@@ -29,8 +29,9 @@ class Component(LimbComponent):
         super().addObjects()
 
     def addAttributes(self):
-        self._add_common_attributes()
+        super().addAttributes()
 
+    def _add_reference_array_attributes(self):
         # Ref
         if self.settings["ikrefarray"]:
             ref_names = self.get_valid_alias_list(self.settings["ikrefarray"].split(","))
@@ -47,7 +48,7 @@ class Component(LimbComponent):
             ref_names = self.get_valid_alias_list(self.settings["pinrefarray"].split(","))
             ref_names = ["Auto"] + ref_names
             if len(ref_names) > 1:
-                self.pin_att = self.addAnimEnumParam("kneeref", "Knee Ref", 0, ref_names)
+                self.pin_att = self.addAnimEnumParam("midref", "Mid Control Space", 0, ref_names)
 
         if self.validProxyChannels:
             attribute.addProxyAttribute(
@@ -61,12 +62,6 @@ class Component(LimbComponent):
                 ],
             )
             attribute.addProxyAttribute(self.roll_att, [self.ik_ctl, self.upv_ctl])
-
-        self.resample_att = self.addSetupParam("resample", "Resample", "bool", True)
-        self.absolute_att = self.addSetupParam("absolute", "Absolute", "bool", False)
-        self.volume_blenshape_att = self.addSetupParam(
-            "volume_blendshape", "Volume Blendshape", "double", 0, 0, 10
-        )
 
     # =====================================================
     # OPERATORS
@@ -89,8 +84,9 @@ class Component(LimbComponent):
         super().setRelation()
 
     def connect_standard(self):
-        self.parent.addChild(self.root)
+        super().connect_standard()
 
+    def _connect_reference_array(self):
         # Set the Ik Reference
         self.connectRef(self.settings["ikrefarray"], self.ik_cns)
         if self.settings["upvrefarray"]:

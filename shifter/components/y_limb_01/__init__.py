@@ -17,7 +17,7 @@ from yrig.transform.quat import create_swing_only_transform, twist_extract_quat
 #############################################
 
 
-class LimbComponent(component.Main):
+class Component(component.Main):
     """Shifter component Class"""
 
     # Override in subclasses to map guide locator names to canonical names

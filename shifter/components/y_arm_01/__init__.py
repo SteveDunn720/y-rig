@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 import mgear.pymaya as pm
 
 if TYPE_CHECKING:
-    from ..y_limb_01 import LimbComponent  # relative import within the package
+    from ..y_limb_01 import Component as LimbComponent  # relative import within the package
 else:
-    from y_limb_01 import LimbComponent  # runtime: mGear adds parent dir to sys.path
+    from y_limb_01 import Component as LimbComponent  # runtime: mGear adds parent dir to sys.path
 
 
 #############################################

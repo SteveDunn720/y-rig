@@ -21,7 +21,8 @@ class LimbComponent(component.Main):
     """Shifter component Class"""
 
     # Override in subclasses to map guide locator names to canonical names
-    GUIDE_MAP = {}  # e.g. {"mid": "elbow", "end": "wrist"}
+    GUIDE_MAP: dict[str, str] = {}  # e.g. {"mid": "elbow", "end": "wrist"}
+    WORLD_ALIGN_IK: bool = False
 
     # =====================================================
     # OBJECTS
@@ -30,6 +31,7 @@ class LimbComponent(component.Main):
         """Add all the objects needed to create the component."""
 
         self._add_common_setup()
+        self._add_root_control()
         self._add_fk_controls()
         self._add_ik_upv()
         self._add_ik_controls()
@@ -63,6 +65,20 @@ class LimbComponent(component.Main):
         self.root_guide = self.GUIDE_MAP.get("root", "root")
         self.mid_guide = self.GUIDE_MAP.get("mid", "mid")
         self.end_guide = self.GUIDE_MAP.get("end", "end")
+
+    def _add_root_control(self):
+        t = transform.getTransformFromPos(self.guide.apos[0])
+
+        self.root_npo = primitive.addTransform(self.root, self.getName("root_npo"), t)
+        self.root_ctl = self.addCtl(
+            self.root_npo,
+            "root_ctl",
+            t,
+            self.color_fk,
+            "circle",
+            w=self.length0 / 6,
+            tp=self.parentCtlTag,
+        )
 
     def _add_fk_controls(self):
         # FK Controlers -----------------------------------
@@ -152,7 +168,7 @@ class LimbComponent(component.Main):
 
     def _add_ik_upv(self):
         # 1 bone chain for upv ref
-        self.armChainUpvRef = primitive.add2DChain(
+        self.limbChainUpvRef = primitive.add2DChain(
             self.root,
             self.getName("armUpvRef%s_jnt"),
             [self.guide.apos[0], self.guide.apos[2]],
@@ -161,31 +177,31 @@ class LimbComponent(component.Main):
             self.WIP,
         )
 
-        self.armChainUpvRef[1].setAttr(
-            "jointOrientZ", self.armChainUpvRef[1].getAttr("jointOrientZ") * -1
+        self.limbChainUpvRef[1].setAttr(
+            "jointOrientZ", self.limbChainUpvRef[1].getAttr("jointOrientZ") * -1
         )
 
         # IK upv ---------------------------------
 
         # create tip point
         self.tip_ref = primitive.addTransform(
-            self.armChainUpvRef[0],
+            self.limbChainUpvRef[0],
             self.getName("tip_ref"),
-            self.armChainUpvRef[0].getMatrix(worldSpace=True),
+            self.limbChainUpvRef[0].getMatrix(worldSpace=True),
         )
 
         # create interpolate obj
         self.interpolate_lvl = primitive.addTransform(
-            self.armChainUpvRef[0],
+            self.limbChainUpvRef[0],
             self.getName("int_lvl"),
-            self.armChainUpvRef[0].getMatrix(worldSpace=True),
+            self.limbChainUpvRef[0].getMatrix(worldSpace=True),
         )
 
         # create roll npo and ctl
         self.roll_ctl_npo = primitive.addTransform(
             self.root,
             self.getName("roll_ctl_npo"),
-            self.armChainUpvRef[0].getMatrix(worldSpace=True),
+            self.limbChainUpvRef[0].getMatrix(worldSpace=True),
         )
         if self.negate:
             off_x = -1.5708
@@ -236,7 +252,7 @@ class LimbComponent(component.Main):
 
         end_pos = self.guide.pos[self.end_guide]
 
-        self.ik_cns = primitive.addTransformFromPos(self.root, self.getName("ik_cns"), end_pos)
+        self.ik_cns = primitive.addTransformFromPos(self.root_ctl, self.getName("ik_cns"), end_pos)
 
         t = transform.getTransformFromPos(end_pos)
         self.ikcns_ctl = self.addCtl(
@@ -250,27 +266,29 @@ class LimbComponent(component.Main):
         )
 
         attribute.setInvertMirror(self.ikcns_ctl, ["tx", "ty", "tz"])
-        if self.settings["mirrorIK"] and self.negate:
-            self.ik_cns.sx.set(-1)
-
-        if self.negate:
-            m = transform.getTransformLookingAt(
-                self.guide.pos[self.end_guide],
-                self.guide.pos["eff"],
-                self.normal,
-                "x-y",
-                True,
-            )
-            if self.settings["mirrorIK"]:
-                m = transform.setMatrixScale(m, [-1, 1, 1])
+        # if self.settings["mirrorIK"] and self.negate:
+        #     self.ik_cns.sx.set(-1)
+        if self.WORLD_ALIGN_IK:
+            m = transform.getTransformFromPos(self.guide.pos[self.end_guide])
         else:
-            m = transform.getTransformLookingAt(
-                self.guide.pos[self.end_guide],
-                self.guide.pos["eff"],
-                self.normal,
-                "xy",
-                False,
-            )
+            if self.negate:
+                m = transform.getTransformLookingAt(
+                    self.guide.pos[self.end_guide],
+                    self.guide.pos["eff"],
+                    self.normal,
+                    "x-y",
+                    True,
+                )
+                # if self.settings["mirrorIK"]:
+                #     m = transform.setMatrixScale(m, [-1, 1, 1])
+            else:
+                m = transform.getTransformLookingAt(
+                    self.guide.pos[self.end_guide],
+                    self.guide.pos["eff"],
+                    self.normal,
+                    "xy",
+                    False,
+                )
         self.ik_ctl = self.addCtl(
             self.ikcns_ctl,
             "ik_ctl",
@@ -283,8 +301,8 @@ class LimbComponent(component.Main):
             tp=self.roll_ctl,
         )
 
-        if not self.settings["mirrorIK"]:
-            attribute.setInvertMirror(self.ik_ctl, ["tx", "ry", "rz"])
+        # if not self.settings["mirrorIK"]:
+        #     attribute.setInvertMirror(self.ik_ctl, ["tx", "ry", "rz"])
         attribute.setKeyableAttributes(self.ik_ctl)
         # we use same as fk2_ctl
         ik_ref_t = transform.getTransformLookingAt(
@@ -315,7 +333,7 @@ class LimbComponent(component.Main):
         # The outputs of the ikfk2bone solver
 
         self.bone0 = primitive.addLocator(
-            self.root,
+            self.root_ctl,
             self.getName("0_bone"),
             transform.getTransform(self.fk_ctl[0]),
         )
@@ -327,14 +345,14 @@ class LimbComponent(component.Main):
         bShape = self.bone0.getShape()
         bShape.setAttr("visibility", False)
         self.bone0_tr = primitive.addTransform(
-            parent=self.root,
+            parent=self.root_ctl,
             name=self.getName("0_bone_tr"),
             m=transform.getTransform(self.fk_ctl[0]),
         )
         self.bone0_tr.setAttr("visibility", False)
 
         t = transform.getTransform(self.fk_ctl[1])
-        self.bone1 = primitive.addLocator(self.root, self.getName("1_bone"), t)
+        self.bone1 = primitive.addLocator(self.root_ctl, self.getName("1_bone"), t)
 
         self.bone1_shp = self.bone1.getShape()
         self.bone1_shp.setAttr("localPositionX", self.n_factor * 0.5)
@@ -343,7 +361,7 @@ class LimbComponent(component.Main):
         bShape = self.bone1.getShape()
         bShape.setAttr("visibility", False)
         self.bone1_tr = primitive.addTransform(
-            parent=self.root,
+            parent=self.root_ctl,
             name=self.getName("1_bone_tr"),
             m=transform.getTransform(self.fk0_ctl),
         )
@@ -351,7 +369,7 @@ class LimbComponent(component.Main):
 
         # Eff locator
         self.eff_loc = primitive.addTransformFromPos(
-            self.root, self.getName("eff_loc"), self.guide.apos[2]
+            self.root_ctl, self.getName("eff_loc"), self.guide.apos[2]
         )
 
         # Mid bone1 ref — used as fallback when div1 == 0
@@ -516,7 +534,7 @@ class LimbComponent(component.Main):
         jdn_lowerarm_twist = self.jd_names[3]
 
         for i in range(self.divisions):
-            div_cns = primitive.addTransform(self.root, self.getName("div%s_loc" % i))
+            div_cns = primitive.addTransform(self.root_ctl, self.getName("div%s_loc" % i))
 
             self.div_cns.append(div_cns)
 
@@ -851,7 +869,7 @@ class LimbComponent(component.Main):
         self.ikHandleUpvRef = primitive.addIkHandle(
             self.root,
             self.getName("ikHandleArmChainUpvRef"),
-            self.armChainUpvRef,
+            self.limbChainUpvRef,
             "ikSCsolver",
         )
         pm.pointConstraint(self.ik_ctl, self.ikHandleUpvRef)
@@ -860,7 +878,7 @@ class LimbComponent(component.Main):
         # scaleY axis to -1
         if self.upv_cns.sy.get() < 0:
             references = []
-            for x in [self.armChainUpvRef[0]]:
+            for x in [self.limbChainUpvRef[0]]:
                 ref_trans_name = self.upv_cns.getName() + "_" + x.getName() + "_space_ref"
                 ref_trans = primitive.addTransform(
                     x,
@@ -871,8 +889,8 @@ class LimbComponent(component.Main):
             self.ikH_parCns = pm.parentConstraint(references[0], self.upv_cns, mo=True)
             self.ikH_cns_driver = references[0]
         else:
-            self.ikH_parCns = pm.parentConstraint(self.armChainUpvRef[0], self.upv_cns, mo=True)
-            self.ikH_cns_driver = self.armChainUpvRef[0]
+            self.ikH_parCns = pm.parentConstraint(self.limbChainUpvRef[0], self.upv_cns, mo=True)
+            self.ikH_cns_driver = self.limbChainUpvRef[0]
 
     def _setup_control_vis(self):
         # Visibilities -------------------------------------
@@ -933,7 +951,7 @@ class LimbComponent(component.Main):
         out = [self.bone0, self.bone1, self.ctrn_loc, self.eff_loc]
         o_node = applyop.gear_ikfk2bone_op(
             out,
-            self.root,
+            self.root_ctl,
             self.ik_ref,
             self.upv_ctl,
             self.fk_ctl[0],
@@ -1075,7 +1093,7 @@ class LimbComponent(component.Main):
     def _setup_roll_control(self):
         # interpolate transform  mid point locator
         int_matrix = applyop.gear_intmatrix_op(
-            self.armChainUpvRef[0].attr("worldMatrix"),
+            self.limbChainUpvRef[0].attr("worldMatrix"),
             self.tip_ref.attr("worldMatrix"),
             0.5,
         )

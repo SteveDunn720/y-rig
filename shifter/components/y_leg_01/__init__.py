@@ -25,6 +25,7 @@ class Component(LimbComponent):
     """Shifter component Class"""
 
     GUIDE_MAP = {"mid": "knee", "end": "ankle"}
+    WORLD_ALIGN_IK = True
 
     # =====================================================
     # OBJECTS
@@ -33,312 +34,12 @@ class Component(LimbComponent):
         """Add all the objects needed to create the component."""
 
         self._add_common_setup()
-
-        # 1 bone chain for upv ref
-        self.legChainUpvRef = primitive.add2DChain(
-            self.root,
-            self.getName("legUpvRef%s_jnt"),
-            [self.guide.apos[0], self.guide.apos[2]],
-            self.normal,
-            False,
-            self.WIP,
-        )
-        self.legChainUpvRef[1].setAttr(
-            "jointOrientZ", self.legChainUpvRef[1].getAttr("jointOrientZ") * -1
-        )
-
-        # extra neutral pose
-        t = transform.getTransformFromPos(self.guide.apos[0])
-
-        self.root_npo = primitive.addTransform(self.root, self.getName("root_npo"), t)
-        self.root_ctl = self.addCtl(
-            self.root_npo,
-            "root_ctl",
-            t,
-            self.color_fk,
-            "circle",
-            w=self.length0 / 6,
-            tp=self.parentCtlTag,
-        )
-
-        # FK Controlers -----------------------------------
-        # FK 0
-        t = transform.getTransformLookingAt(
-            self.guide.apos[0],
-            self.guide.apos[1],
-            self.normal,
-            "xz",
-            self.negate,
-        )
-        if self.settings["rest_T_Pose"]:
-            if self.negate:
-                x_dir = 1
-            else:
-                x_dir = -1
-
-            if self.up_axis == "y":
-                x = datatypes.Vector(0, x_dir, 0)
-            else:
-                x = datatypes.Vector(0, 0, x_dir)
-            z = datatypes.Vector(-1, 0, 0)
-
-            t_npo = transform.getRotationFromAxis(x, z, "xz", False)
-            t_npo = transform.setMatrixPosition(t_npo, self.guide.apos[0])
-        else:
-            t_npo = t
-
-        self.fk0_npo = primitive.addTransform(self.root_ctl, self.getName("fk0_npo"), t_npo)
-        self.fk0_ctl = self.addCtl(
-            self.fk0_npo,
-            "fk0_ctl",
-            t,
-            self.color_fk,
-            "circle",
-            w=self.size * 0.3,
-            ro=datatypes.Vector([0, 0, 1.5708]),
-            tp=self.parentCtlTag,
-        )
-
-        # FK 1
-        t = transform.getTransformLookingAt(
-            self.guide.apos[1],
-            self.guide.apos[2],
-            self.normal,
-            "xz",
-            self.negate,
-        )
-
-        if self.settings["rest_T_Pose"]:
-            t_npo = transform.setMatrixPosition(
-                transform.getTransform(self.fk0_ctl), self.guide.apos[1]
-            )
-        else:
-            t_npo = t
-
-        self.fk1_npo = primitive.addTransform(self.fk0_ctl, self.getName("fk1_npo"), t_npo)
-
-        self.fk1_ctl = self.addCtl(
-            self.fk1_npo,
-            "fk1_ctl",
-            t,
-            self.color_fk,
-            "circle",
-            w=self.size * 0.3,
-            ro=datatypes.Vector([0, 0, 1.5708]),
-            tp=self.fk0_ctl,
-        )
-
-        for f_ctl in [
-            self.fk0_ctl,
-            self.fk1_ctl,
-        ]:
-            attribute.setKeyableAttributes(f_ctl, ["tx", "ty", "tz", "ro", "rx", "ry", "rz"])
-
-        # FK 2
-        t = transform.getTransformLookingAt(
-            self.guide.apos[2],
-            self.guide.apos[3],
-            self.normal,
-            "xz",
-            self.negate,
-        )
-
-        if self.settings["rest_T_Pose"]:
-            t_npo = transform.setMatrixPosition(
-                transform.getTransform(self.fk0_ctl), self.guide.apos[2]
-            )
-        else:
-            t_npo = t
-
-        self.fk2_npo = primitive.addTransform(self.fk1_ctl, self.getName("fk2_npo"), t_npo)
-
-        if self.settings["rest_T_Pose"]:
-            self.fk2_npo.rz.set(90)
-
-        self.fk2_ctl = self.addCtl(
-            self.fk2_npo,
-            "fk2_ctl",
-            t,
-            self.color_fk,
-            "circle",
-            w=self.size * 0.3,
-            ro=datatypes.Vector([0, 0, 1.5708]),
-            tp=self.fk1_ctl,
-        )
-        attribute.setKeyableAttributes(self.fk2_ctl)
-
-        self.fk_ctl = [self.fk0_ctl, self.fk1_ctl, self.fk2_ctl]
-
-        for x in self.fk_ctl:
-            attribute.setInvertMirror(x, ["tx", "ty", "tz"])
-
-        # IK upv ---------------------------------
-
-        # create tip point
-        self.tip_ref = primitive.addTransform(
-            self.legChainUpvRef[0],
-            self.getName("tip_ref"),
-            self.legChainUpvRef[0].getMatrix(worldSpace=True),
-        )
-
-        # create interpolate obj
-        self.interpolate_lvl = primitive.addTransform(
-            self.legChainUpvRef[0],
-            self.getName("int_lvl"),
-            self.legChainUpvRef[0].getMatrix(worldSpace=True),
-        )
-
-        # create roll npo and ctl
-        self.roll_ctl_npo = primitive.addTransform(
-            self.root,
-            self.getName("roll_ctl_npo"),
-            self.legChainUpvRef[0].getMatrix(worldSpace=True),
-        )
-        if self.negate:
-            off_x = -1.5708
-        else:
-            off_x = 1.5708
-        off_y = 1.5708
-
-        self.roll_ctl = self.addCtl(
-            self.roll_ctl_npo,
-            "roll_ctl",
-            transform.getTransform(self.roll_ctl_npo),
-            self.color_ik,
-            "compas",
-            w=self.size * 0.3,
-            ro=datatypes.Vector([off_x, off_y, 0]),
-            tp=self.parentCtlTag,
-        )
-        attribute.setKeyableAttributes(self.roll_ctl, ["rx"])
-        # create upv control
-        v = self.guide.apos[2] - self.guide.apos[0]
-        v = self.normal ^ v
-        v.normalize()
-        v *= self.size * 0.8
-        v += self.guide.apos[1]
-
-        self.upv_cns = primitive.addTransformFromPos(self.root, self.getName("upv_cns"), v)
-
-        self.upv_ctl = self.addCtl(
-            self.upv_cns,
-            "upv_ctl",
-            transform.getTransform(self.upv_cns),
-            self.color_ik,
-            "diamond",
-            w=self.size * 0.12,
-            tp=self.parentCtlTag,
-        )
-
-        if self.settings["mirrorMid"]:
-            if self.negate:
-                self.upv_cns.rz.set(180)
-                self.upv_cns.sy.set(-1)
-        else:
-            attribute.setInvertMirror(self.upv_ctl, ["tx"])
-        attribute.setKeyableAttributes(self.upv_ctl, self.t_params)
-
-        # IK Controlers -----------------------------------
-
-        if self.settings["rest_T_Pose"]:
-            leg_length = vector.getDistance(
-                self.guide.pos["root"], self.guide.pos["knee"]
-            ) + vector.getDistance(self.guide.pos["knee"], self.guide.pos["ankle"])
-            if self.up_axis == "y":
-                ankle_pos = self.guide.pos["root"] - datatypes.Vector(0, leg_length, 0)
-            else:
-                ankle_pos = self.guide.pos["root"] - datatypes.Vector(0, 0, leg_length)
-
-        else:
-            ankle_pos = self.guide.pos["ankle"]
-
-        self.ik_cns = primitive.addTransformFromPos(
-            self.root_ctl, self.getName("ik_cns"), ankle_pos
-        )
-
-        t = transform.getTransformFromPos(ankle_pos)
-        self.ikcns_ctl = self.addCtl(
-            self.ik_cns,
-            "ikcns_ctl",
-            t,
-            self.color_ik,
-            "null",
-            w=self.size * 0.12,
-            tp=self.root_ctl,
-        )
-
-        attribute.setInvertMirror(self.ikcns_ctl, ["tx"])
-
-        m = transform.getTransformFromPos(self.guide.pos["ankle"])
-
-        self.ik_ctl = self.addCtl(
-            self.ikcns_ctl,
-            "ik_ctl",
-            m,
-            self.color_ik,
-            "cube",
-            w=self.size * 0.12,
-            h=self.size * 0.12,
-            d=self.size * 0.12,
-            tp=self.roll_ctl,
-        )
-
-        pos = self.guide.pos["ankle"]
-        pos[1] = 0
-        self.ik_squash = primitive.addTransformFromPos(self.ik_ctl, self.getName("ik_squash"), pos)
-        attribute.setKeyableAttributes(self.ik_ctl)
-        attribute.setRotOrder(self.ik_ctl, "XZY")
-        attribute.setInvertMirror(self.ik_ctl, ["tx", "ry", "rz"])
-
-        self.fk_ik_ctls = self.fk_ctl + [self.ik_ctl]
-
-        # References --------------------------------------
-        self.ik_ref = primitive.addTransform(
-            self.ik_ctl,
-            self.getName("ik_ref"),
-            transform.getTransform(self.ik_ctl),
-        )
-        self.fk_ref = primitive.addTransform(
-            self.fk_ctl[2],
-            self.getName("fk_ref"),
-            transform.getTransform(self.ik_ctl),
-        )
-
-        # Chain --------------------------------------------
-        # The outputs of the ikfk2bone solver
-        self.bone0 = primitive.addLocator(
-            self.root_ctl,
-            self.getName("0_bone"),
-            transform.getTransform(self.fk_ctl[0]),
-        )
-        self.bone0_shp = self.bone0.getShape()
-        self.bone0_shp.setAttr("localPositionX", self.n_factor * 0.5)
-        self.bone0_shp.setAttr("localScale", 0.5, 0, 0)
-        self.bone0.setAttr("sx", self.length0)
-        self.bone0.setAttr("visibility", False)
-        self.bone0_tr = primitive.addTransform(
-            parent=self.root,
-            name=self.getName("0_bone_tr"),
-            m=transform.getTransform(self.fk_ctl[0]),
-        )
-        self.bone0_tr.setAttr("visibility", False)
-
-        self.bone1 = primitive.addLocator(
-            self.root_ctl,
-            self.getName("1_bone"),
-            transform.getTransform(self.fk_ctl[1]),
-        )
-        self.bone1_shp = self.bone1.getShape()
-        self.bone1_shp.setAttr("localPositionX", self.n_factor * 0.5)
-        self.bone1_shp.setAttr("localScale", 0.5, 0, 0)
-        self.bone1.setAttr("sx", self.length1)
-        self.bone1.setAttr("visibility", False)
-        self.bone1_tr = primitive.addTransform(
-            parent=self.root,
-            name=self.getName("1_bone_tr"),
-            m=transform.getTransform(self.fk_ctl[0]),
-        )
-        self.bone1_tr.setAttr("visibility", False)
+        self._add_ik_upv()
+        self._add_root_control()
+        self._add_fk_controls()
+        self._add_ik_controls()
+        self._add_reference_objects()
+        self._add_solver_chain()
 
         # Elbow bone1 ref
         t = transform.getTransform(self.fk_ctl[1])
@@ -950,7 +651,7 @@ class Component(LimbComponent):
         self.ikHandleUpvRef = primitive.addIkHandle(
             self.root,
             self.getName("ikHandleLegChainUpvRef"),
-            self.legChainUpvRef,
+            self.limbChainUpvRef,
             "ikSCsolver",
         )
         pm.pointConstraint(self.ik_ctl, self.ikHandleUpvRef)
@@ -958,7 +659,7 @@ class Component(LimbComponent):
         # scaleY axis to -1
         if self.upv_cns.sy.get() < 0:
             references = []
-            for x in [self.legChainUpvRef[0], self.ik_ctl]:
+            for x in [self.limbChainUpvRef[0], self.ik_ctl]:
                 ref_trans_name = self.upv_cns.getName() + "_" + x.getName() + "_space_ref"
                 ref_trans = primitive.addTransform(
                     x,
@@ -968,7 +669,7 @@ class Component(LimbComponent):
                 references.append(ref_trans)
             pm.parentConstraint(references[0], references[1], self.upv_cns, mo=True)
         else:
-            pm.parentConstraint(self.legChainUpvRef[0], self.ik_ctl, self.upv_cns, mo=True)
+            pm.parentConstraint(self.limbChainUpvRef[0], self.ik_ctl, self.upv_cns, mo=True)
 
         # Visibilities -------------------------------------
         # shape.dispGeometry
@@ -1051,7 +752,7 @@ class Component(LimbComponent):
 
         # interpolate transform  mid point locator
         int_matrix = applyop.gear_intmatrix_op(
-            self.legChainUpvRef[0].attr("worldMatrix"),
+            self.limbChainUpvRef[0].attr("worldMatrix"),
             self.tip_ref.attr("worldMatrix"),
             0.5,
         )

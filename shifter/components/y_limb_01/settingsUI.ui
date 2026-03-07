@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>330</width>
-    <height>932</height>
+    <width>364</width>
+    <height>914</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,7 +30,7 @@
           <item row="0" column="0">
            <widget class="QLabel" name="ikfk_label">
             <property name="text">
-             <string>IK/FK Blend</string>
+             <string>FK/IK Blend</string>
             </property>
            </widget>
           </item>
@@ -134,6 +134,22 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="mirrorIK_checkBox">
+          <property name="toolTip">
+           <string extracomment="This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ">This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour </string>
+          </property>
+          <property name="statusTip">
+           <string extracomment="This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ">This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour </string>
+          </property>
+          <property name="whatsThis">
+           <string>This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour </string>
+          </property>
+          <property name="text">
+           <string>Mirror IK Ctl  axis behaviour</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QCheckBox" name="mirrorMid_checkBox">
           <property name="toolTip">
            <string extracomment="This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ">This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour </string>
@@ -145,7 +161,7 @@
            <string>This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour </string>
           </property>
           <property name="text">
-           <string>Mirror Mid Ctl and UPV  axis</string>
+           <string>Mirror Mid Ctl and UPV  axis behaviour</string>
           </property>
          </widget>
         </item>
@@ -192,7 +208,7 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QSpinBox" name="spinBox">
+           <widget class="QSpinBox" name="spline_degree_spinBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -385,7 +401,7 @@
    <item row="3" column="0">
     <widget class="QGroupBox" name="pinRefArray_groupBox">
      <property name="title">
-      <string>Pin Knee Reference Array</string>
+      <string>Pin Mid Control Reference Array</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="0" column="0">

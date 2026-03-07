@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsUIygZUfW.ui'
+## Form generated from reading UI file 'settingsUIbzNJeH.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.10.2
 ##
@@ -37,7 +37,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName("Form")
-        Form.resize(330, 932)
+        Form.resize(364, 914)
         self.gridLayout = QGridLayout(Form)
         self.gridLayout.setObjectName("gridLayout")
         self.groupBox = QGroupBox(Form)
@@ -127,6 +127,11 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.leafJoints_checkBox)
 
+        self.mirrorIK_checkBox = QCheckBox(self.groupBox)
+        self.mirrorIK_checkBox.setObjectName("mirrorIK_checkBox")
+
+        self.verticalLayout.addWidget(self.mirrorIK_checkBox)
+
         self.mirrorMid_checkBox = QCheckBox(self.groupBox)
         self.mirrorMid_checkBox.setObjectName("mirrorMid_checkBox")
 
@@ -163,17 +168,19 @@ class Ui_Form(object):
             2, QFormLayout.ItemRole.LabelRole, self.spline_degree_label
         )
 
-        self.spinBox = QSpinBox(self.groupBox)
-        self.spinBox.setObjectName("spinBox")
+        self.spline_degree_spinBox = QSpinBox(self.groupBox)
+        self.spline_degree_spinBox.setObjectName("spline_degree_spinBox")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.spinBox.sizePolicy().hasHeightForWidth())
-        self.spinBox.setSizePolicy(sizePolicy2)
-        self.spinBox.setMinimum(1)
-        self.spinBox.setMaximum(5)
+        sizePolicy2.setHeightForWidth(self.spline_degree_spinBox.sizePolicy().hasHeightForWidth())
+        self.spline_degree_spinBox.setSizePolicy(sizePolicy2)
+        self.spline_degree_spinBox.setMinimum(1)
+        self.spline_degree_spinBox.setMaximum(5)
 
-        self.weight_split_formLayout.setWidget(2, QFormLayout.ItemRole.FieldRole, self.spinBox)
+        self.weight_split_formLayout.setWidget(
+            2, QFormLayout.ItemRole.FieldRole, self.spline_degree_spinBox
+        )
 
         self.verticalLayout.addLayout(self.weight_split_formLayout)
 
@@ -357,10 +364,40 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", "Form", None))
         self.groupBox.setTitle("")
-        self.ikfk_label.setText(QCoreApplication.translate("Form", "IK/FK Blend", None))
+        self.ikfk_label.setText(QCoreApplication.translate("Form", "FK/IK Blend", None))
         self.maxStretch_label.setText(QCoreApplication.translate("Form", "Max Stretch", None))
         self.divisions_label.setText(QCoreApplication.translate("Form", "Divisions", None))
         self.leafJoints_checkBox.setText(QCoreApplication.translate("Form", "Leaf Joints", None))
+        # if QT_CONFIG(tooltip)
+        self.mirrorIK_checkBox.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                "This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        # if QT_CONFIG(statustip)
+        self.mirrorIK_checkBox.setStatusTip(
+            QCoreApplication.translate(
+                "Form",
+                "This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(statustip)
+        # if QT_CONFIG(whatsthis)
+        self.mirrorIK_checkBox.setWhatsThis(
+            QCoreApplication.translate(
+                "Form",
+                "This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(whatsthis)
+        self.mirrorIK_checkBox.setText(
+            QCoreApplication.translate("Form", "Mirror IK Ctl  axis behaviour", None)
+        )
         # if QT_CONFIG(tooltip)
         self.mirrorMid_checkBox.setToolTip(
             QCoreApplication.translate(
@@ -389,7 +426,7 @@ class Ui_Form(object):
         )
         # endif // QT_CONFIG(whatsthis)
         self.mirrorMid_checkBox.setText(
-            QCoreApplication.translate("Form", "Mirror Mid Ctl and UPV  axis", None)
+            QCoreApplication.translate("Form", "Mirror Mid Ctl and UPV  axis behaviour", None)
         )
         # if QT_CONFIG(tooltip)
         self.weight_split_enable_label.setToolTip(
@@ -425,7 +462,7 @@ class Ui_Form(object):
         # endif // QT_CONFIG(tooltip)
         self.spline_degree_label.setText(QCoreApplication.translate("Form", "Spline Degree", None))
         # if QT_CONFIG(tooltip)
-        self.spinBox.setToolTip(
+        self.spline_degree_spinBox.setToolTip(
             QCoreApplication.translate(
                 "Form",
                 'This corresponds to the degree of the spline used for the skin weight splitting. A higher value will result in a "smoother" weight split. A value of one is a linear spline, 2 quadratic, etc.',
@@ -453,7 +490,7 @@ class Ui_Form(object):
         self.upvRefArrayAdd_pushButton.setText(QCoreApplication.translate("Form", "<<", None))
         self.upvRefArrayRemove_pushButton.setText(QCoreApplication.translate("Form", ">>", None))
         self.pinRefArray_groupBox.setTitle(
-            QCoreApplication.translate("Form", "Pin Knee Reference Array", None)
+            QCoreApplication.translate("Form", "Pin Mid Control Reference Array", None)
         )
         self.pinRefArray_copyRef_pushButton.setText(
             QCoreApplication.translate("Form", "Copy from IK Ref", None)

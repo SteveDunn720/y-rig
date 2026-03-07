@@ -132,11 +132,6 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.mirrorMid_checkBox)
 
-        self.TPoseRest_checkBox = QCheckBox(self.groupBox)
-        self.TPoseRest_checkBox.setObjectName("TPoseRest_checkBox")
-
-        self.verticalLayout.addWidget(self.TPoseRest_checkBox)
-
         self.weight_split_formLayout = QFormLayout()
         self.weight_split_formLayout.setObjectName("weight_split_formLayout")
         self.weight_split_enable_label = QLabel(self.groupBox)
@@ -168,19 +163,17 @@ class Ui_Form(object):
             2, QFormLayout.ItemRole.LabelRole, self.spline_degree_label
         )
 
-        self.spline_degree_spinBox = QSpinBox(self.groupBox)
-        self.spline_degree_spinBox.setObjectName("spline_degree_spinBox")
+        self.spinBox = QSpinBox(self.groupBox)
+        self.spinBox.setObjectName("spinBox")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.spline_degree_spinBox.sizePolicy().hasHeightForWidth())
-        self.spline_degree_spinBox.setSizePolicy(sizePolicy2)
-        self.spline_degree_spinBox.setMinimum(1)
-        self.spline_degree_spinBox.setMaximum(5)
+        sizePolicy2.setHeightForWidth(self.spinBox.sizePolicy().hasHeightForWidth())
+        self.spinBox.setSizePolicy(sizePolicy2)
+        self.spinBox.setMinimum(1)
+        self.spinBox.setMaximum(5)
 
-        self.weight_split_formLayout.setWidget(
-            2, QFormLayout.ItemRole.FieldRole, self.spline_degree_spinBox
-        )
+        self.weight_split_formLayout.setWidget(2, QFormLayout.ItemRole.FieldRole, self.spinBox)
 
         self.verticalLayout.addLayout(self.weight_split_formLayout)
 
@@ -399,34 +392,6 @@ class Ui_Form(object):
             QCoreApplication.translate("Form", "Mirror Mid Ctl and UPV  axis", None)
         )
         # if QT_CONFIG(tooltip)
-        self.TPoseRest_checkBox.setToolTip(
-            QCoreApplication.translate(
-                "Form",
-                "<html><head/><body><p>If checked, the Rest pose for controls will be in T Pose</p></body></html>",
-                None,
-            )
-        )
-        # endif // QT_CONFIG(tooltip)
-        # if QT_CONFIG(statustip)
-        self.TPoseRest_checkBox.setStatusTip(
-            QCoreApplication.translate(
-                "Form",
-                "This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ",
-                None,
-            )
-        )
-        # endif // QT_CONFIG(statustip)
-        # if QT_CONFIG(whatsthis)
-        self.TPoseRest_checkBox.setWhatsThis(
-            QCoreApplication.translate(
-                "Form",
-                "This option set the axis of the mid CTL (elbow) and the up vector control to move in a mirror behaviour ",
-                None,
-            )
-        )
-        # endif // QT_CONFIG(whatsthis)
-        self.TPoseRest_checkBox.setText(QCoreApplication.translate("Form", "Rest T Pose", None))
-        # if QT_CONFIG(tooltip)
         self.weight_split_enable_label.setToolTip(
             QCoreApplication.translate(
                 "Form",
@@ -460,7 +425,7 @@ class Ui_Form(object):
         # endif // QT_CONFIG(tooltip)
         self.spline_degree_label.setText(QCoreApplication.translate("Form", "Spline Degree", None))
         # if QT_CONFIG(tooltip)
-        self.spline_degree_spinBox.setToolTip(
+        self.spinBox.setToolTip(
             QCoreApplication.translate(
                 "Form",
                 'This corresponds to the degree of the spline used for the skin weight splitting. A higher value will result in a "smoother" weight split. A value of one is a linear spline, 2 quadratic, etc.',
@@ -488,7 +453,7 @@ class Ui_Form(object):
         self.upvRefArrayAdd_pushButton.setText(QCoreApplication.translate("Form", "<<", None))
         self.upvRefArrayRemove_pushButton.setText(QCoreApplication.translate("Form", ">>", None))
         self.pinRefArray_groupBox.setTitle(
-            QCoreApplication.translate("Form", "Pin Elbow Reference Array", None)
+            QCoreApplication.translate("Form", "Pin Knee Reference Array", None)
         )
         self.pinRefArray_copyRef_pushButton.setText(
             QCoreApplication.translate("Form", "Copy from IK Ref", None)

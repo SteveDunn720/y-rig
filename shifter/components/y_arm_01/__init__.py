@@ -54,6 +54,7 @@ class Component(LimbComponent):
     def setRelation(self):
         """Set the relation beetween object from guide to rig"""
         super().setRelation()
+        self.aliasRelatives["eff"] = "hand"
 
     def addConnection(self):
         """Add more connection definition to the set"""

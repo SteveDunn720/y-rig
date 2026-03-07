@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from mgear.core import attribute
+import mgear.pymaya as pm
+from mgear.core import attribute, primitive, transform
 
 if TYPE_CHECKING:
     from ..y_limb_01 import LimbComponent  # relative import within the package
@@ -76,12 +77,38 @@ class Component(LimbComponent):
         """
         super().addOperators()
 
+    def _setup_ik_upv(self):
+        # 1 bone chain Upv ref ==============================
+        self.ikHandleUpvRef = primitive.addIkHandle(
+            self.root,
+            self.getName("ikHandleLimbChainUpvRef"),
+            self.limbChainUpvRef,
+            "ikSCsolver",
+        )
+        pm.pointConstraint(self.ik_ctl, self.ikHandleUpvRef)
+        # handle special case for full mirror behaviour negating
+        # scaleY axis to -1
+        if self.upv_cns.sy.get() < 0:
+            references = []
+            for x in [self.limbChainUpvRef[0], self.ik_ctl]:
+                ref_trans_name = self.upv_cns.getName() + "_" + x.getName() + "_space_ref"
+                ref_trans = primitive.addTransform(
+                    x,
+                    ref_trans_name,
+                )
+                transform.matchWorldTransform(self.upv_cns, ref_trans)
+                references.append(ref_trans)
+            pm.parentConstraint(references[0], references[1], self.upv_cns, mo=True)
+        else:
+            pm.parentConstraint(self.limbChainUpvRef[0], self.ik_ctl, self.upv_cns, mo=True)
+
     # =====================================================
     # CONNECTOR
     # =====================================================
     def setRelation(self):
         """Set the relation beetween object from guide to rig"""
         super().setRelation()
+        self.aliasRelatives["eff"] = "foot"
 
     def connect_standard(self):
         super().connect_standard()

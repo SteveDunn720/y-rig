@@ -170,7 +170,7 @@ class LimbComponent(component.Main):
         # 1 bone chain for upv ref
         self.limbChainUpvRef = primitive.add2DChain(
             self.root,
-            self.getName("armUpvRef%s_jnt"),
+            self.getName("limbUpvRef%s_jnt"),
             [self.guide.apos[0], self.guide.apos[2]],
             self.normal,
             False,
@@ -471,7 +471,7 @@ class LimbComponent(component.Main):
 
     def _add_twist_chains(self):
         # Roll twist chain ---------------------------------
-        # Arm
+        # Upper
         self.upperChainPos = []
         ii = 1.0 / max(self.settings["div0"], 1)
         i = 0.0
@@ -491,7 +491,7 @@ class LimbComponent(component.Main):
             self.WIP,
         )
 
-        # Forearm
+        # Lower
         self.lowerChainPos = []
         ii = 1.0 / max(self.settings["div1"], 1)
         i = 0.0
@@ -528,10 +528,10 @@ class LimbComponent(component.Main):
         self.lower_jnt_indices = []
 
         # joint Description Name
-        jdn_upperarm = self.jd_names[0]
-        jdn_lowerarm = self.jd_names[1]
-        jdn_upperarm_twist = self.jd_names[2]
-        jdn_lowerarm_twist = self.jd_names[3]
+        jdn_upper = self.jd_names[0]
+        jdn_lower = self.jd_names[1]
+        jdn_upper_twist = self.jd_names[2]
+        jdn_lower_twist = self.jd_names[3]
 
         for i in range(self.divisions):
             div_cns = primitive.addTransform(self.root_ctl, self.getName("div%s_loc" % i))
@@ -561,20 +561,20 @@ class LimbComponent(component.Main):
 
             # setting the joints
             if i == 0:
-                self.arm_root_base = roll_off
+                self.limb_root_base = roll_off
 
                 self.upper_jnt_indices.append(len(self.jnt_pos))
                 self.jnt_pos.append(
                     {
-                        "obj": self.arm_root_base,
-                        "name": jdn_upperarm,
+                        "obj": self.limb_root_base,
+                        "name": jdn_upper,
                         "guide_relative": "root",
                         "data_contracts": "Ik",
                         "leaf_joint": self.settings["leafJoints"],
                     }
                 )
                 current_parent = "root"
-                twist_name = jdn_upperarm_twist
+                twist_name = jdn_upper_twist
                 twist_idx = 1
                 increment = 1
 
@@ -583,7 +583,7 @@ class LimbComponent(component.Main):
                     self.jnt_pos.append(
                         {
                             "obj": roll_off,
-                            "name": jdn_upperarm + "_swing",
+                            "name": jdn_upper + "_swing",
                             "data_contracts": "Twist,Squash",
                             "newActiveJnt": current_parent,
                         }
@@ -593,19 +593,19 @@ class LimbComponent(component.Main):
                 self.jnt_pos.append(
                     {
                         "obj": roll_off,
-                        "name": jdn_lowerarm,
+                        "name": jdn_lower,
                         "newActiveJnt": current_parent,
-                        "guide_relative": "mid",
+                        "guide_relative": self.mid_guide,
                         "data_contracts": "Ik",
                         "leaf_joint": self.settings["leafJoints"],
                     }
                 )
-                twist_name = jdn_lowerarm_twist
-                current_parent = "mid"
+                twist_name = jdn_lower_twist
+                current_parent = self.mid_guide
                 twist_idx = self.settings["div1"]
                 increment = -1
             else:
-                if twist_name == jdn_upperarm_twist:
+                if twist_name == jdn_upper_twist:
                     self.upper_jnt_indices.append(len(self.jnt_pos))
                 else:
                     self.lower_jnt_indices.append(len(self.jnt_pos))
@@ -868,12 +868,12 @@ class LimbComponent(component.Main):
         # 1 bone chain Upv ref ======================================
         self.ikHandleUpvRef = primitive.addIkHandle(
             self.root,
-            self.getName("ikHandleArmChainUpvRef"),
+            self.getName("ikHandleLimbChainUpvRef"),
             self.limbChainUpvRef,
             "ikSCsolver",
         )
         pm.pointConstraint(self.ik_ctl, self.ikHandleUpvRef)
-        # pm.parentConstraint(self.armChainUpvRef[0], self.upv_cns, mo=True)
+        # pm.parentConstraint(self.limbChainUpvRef[0], self.upv_cns, mo=True)
         # handle special case for full mirror behaviour negating
         # scaleY axis to -1
         if self.upv_cns.sy.get() < 0:
@@ -1196,17 +1196,17 @@ class LimbComponent(component.Main):
     def _setup_joints(self):
         self._setup_divisions()
         # force translation for mid joint to mid ctl
-        lastArmDiv = None
+        lastLimbDiv = None
         if not self.settings["div0"]:
-            lastArmDiv = self.div_cns[1]
+            lastLimbDiv = self.div_cns[1]
         elif not self.settings["div1"]:
-            lastArmDiv = self.div_cns[-1]
+            lastLimbDiv = self.div_cns[-1]
 
-        if lastArmDiv:
+        if lastLimbDiv:
             applyop.gear_mulmatrix_op(
                 self.midBendy_ctl.worldMatrix,
-                lastArmDiv.parentInverseMatrix,
-                lastArmDiv,
+                lastLimbDiv.parentInverseMatrix,
+                lastLimbDiv,
                 "t",
             )
 
@@ -1262,7 +1262,7 @@ class LimbComponent(component.Main):
 
         Uses the jnt_pos indices recorded during addObjects to look up
         the actual joints from self.jointList (populated by jointStructure).
-        Each segment (upper arm / forearm) is tagged independently.
+        Each segment (upper / lower) is tagged independently.
         """
         if self.options["joint_rig"] and self.settings["weight_split_tag"]:
             for segment_indices in (self.upper_jnt_indices, self.lower_jnt_indices):

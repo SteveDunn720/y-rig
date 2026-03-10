@@ -368,8 +368,8 @@ class Component(component.Main):
         self.bone1_tr.setAttr("visibility", False)
 
         # Eff locator
-        self.eff_loc = primitive.addTransformFromPos(
-            self.root_ctl, self.getName("eff_loc"), self.guide.apos[2]
+        self.eff_loc = primitive.addTransform(
+            self.root_ctl, self.getName("eff_loc"), transform.getTransform(self.fk2_ctl)
         )
 
         # Mid bone1 ref — used as fallback when div1 == 0
@@ -418,10 +418,20 @@ class Component(component.Main):
                 parent=self.root,
             )
         )
+        lower_twist_pos = transform.getPositionFromMatrix(transform.getTransform(self.fk2_ctl))
+        lower_twist_matrix = transform.setMatrixPosition(
+            transform.getTransform(self.fk1_ctl), lower_twist_pos
+        )
+        self.end_eff_twist_out = primitive.addTransform(
+            parent=self.eff_loc,
+            name=self.getName("eff_twist_out"),
+            m=lower_twist_matrix,
+        )
+
         self.lower_twist = primitive.addTransform(
             parent=self.bone1_tr,
             name=self.getName("lower_twist"),
-            m=transform.getTransform(self.fk1_ctl),
+            m=lower_twist_matrix,
         )
 
     def _add_mid_control(self):
@@ -1082,7 +1092,9 @@ class Component(component.Main):
         upper_twist_mid.output_quat.connect_to(upper_twist_mid_euler.input_quat)
         upper_twist_mid_euler.output_rotate.x.connect_to(f"{self.upperBendy_twist}.rotateX")
 
-        lower_twist_quat = twist_extract_quat(str(self.eff_loc), str(self.bone1_tr), axis="x")
+        lower_twist_quat = twist_extract_quat(
+            str(self.end_eff_twist_out), str(self.bone1_tr), axis="x"
+        )
         lower_twist_euler = QuatToEulerNode(f"{self.bone1}_twist")
         lower_twist_euler.input_quat.connect_from(lower_twist_quat)
         lower_twist_euler.output_rotate.x.connect_to(f"{self.lower_twist}.rotateX")

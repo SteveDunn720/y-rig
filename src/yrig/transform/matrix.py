@@ -1,3 +1,4 @@
+import logging
 from typing import Sequence, TypeAlias
 
 import maya.cmds as cmds
@@ -12,8 +13,11 @@ from maya.api.OpenMaya import (
 )
 
 from yrig.maya_api import node
+from yrig.maya_api.attribute import MatrixAttribute
 from yrig.maya_api.node import DecomposeMatrixNode, MultMatrixNode
 from yrig.name import get_short_name
+
+log = logging.getLogger(__name__)
 
 # fmt: off
 MatrixTuple: TypeAlias = tuple[
@@ -194,6 +198,55 @@ def localize_and_decompose_matrix(transform: str, parent: str) -> DecomposeMatri
     decompose = DecomposeMatrixNode(f"{get_short_name(transform)}_decompose")
     localize_matrix.matrix_sum.connect_to(decompose.input_matrix)
     return decompose
+
+
+def drive_transform_with_matrix(
+    matrix_attr: MatrixAttribute | str,
+    transform: str,
+    translate: bool = True,
+    rotate: bool = True,
+    scale: bool = True,
+    shear: bool = True,
+    lock_joint_orient: bool = True,
+):
+    """
+    Drive a transforms translate rotate scale and shear with a matrix attribute.
+
+    Args:
+        matrix_attr: The matrix attribute to use as the driver.
+        transform: The transform to be driven.
+        translate: whether to constrain translation.
+        lock_joint_orient: When True, if the transform is a joint
+            it's joint orient will be locked after being zeroed to keep maya from screwing it up later when re-parenting.
+    """
+    constraint_name: str = get_short_name(transform)
+
+    # Create the decomposed matrix and connect it's inputs
+    decompose_matrix = DecomposeMatrixNode(f"{constraint_name}_driver_decompose")
+    decompose_matrix.input_matrix.connect_from(matrix_attr)
+    decompose_matrix.input_rotate_order.connect_from(f"{transform}.rotateOrder")
+
+    # Drive transform with decomposed values
+    # If it's a joint we have to do a whole bunch of other nonsense to account for joint orient
+    if cmds.nodeType(transform) == "joint":
+        if scale:
+            cmds.setAttr(f"{transform}.segmentScaleCompensate", 0)  # type: ignore
+        if rotate:
+            cmds.setAttr(f"{transform}.jointOrient", lock=False)
+            cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0, type="float3")  # type: ignore
+            log.debug(f"unlocked and reset orient on {transform} to drive it with {matrix_attr}")
+            if lock_joint_orient:
+                cmds.setAttr(f"{transform}.jointOrient", lock=True)
+
+    if rotate:
+        decompose_matrix.output_rotate.connect_to(f"{transform}.rotate")
+        cmds.setAttr(f"{transform}.rotateAxis", 0, 0, 0, type="float3")  # type: ignore
+    if translate:
+        decompose_matrix.output_translate.connect_to(f"{transform}.translate")
+    if scale:
+        decompose_matrix.output_scale.connect_to(f"{transform}.scale")
+    if shear:
+        decompose_matrix.output_shear.connect_to(f"{transform}.shear")
 
 
 def matrix_constraint(

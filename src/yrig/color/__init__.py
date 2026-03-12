@@ -6,6 +6,7 @@ arithmetic helpers for blending and clamping colors, and a spline-based
 gradient sampler for generating smooth color ramps.
 """
 
+from . import bake as bake
 from . import convert as convert
 from . import core as core
 from . import gradient as gradient

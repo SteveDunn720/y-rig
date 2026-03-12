@@ -12,6 +12,10 @@ from yrig.skin.split import tag_for_weight_split
 from yrig.spline import pin_to_matrix_spline
 from yrig.spline.curve import bound_curve_from_transforms
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
+from yrig.transform.matrix import (
+    drive_transform_with_matrix,
+    localize_world_matrix,
+)
 
 #############################################
 # COMPONENT
@@ -97,6 +101,9 @@ class Component(component.Main):
         # Mid control and tangents
         mid_name = "mid"
         mid_transform = transform.setMatrixPosition(ik_t, self.guide.pos["chestPivot"])
+        self.mid_stretch_pin = primitive.addTransform(
+            self.root, self.getName(f"{mid_name}_stretch_pin"), mid_transform
+        )
         self.mid_npo = primitive.addTransform(
             self.root, self.getName(f"{mid_name}_npo"), mid_transform
         )
@@ -245,8 +252,17 @@ class Component(component.Main):
         )
         pin_to_matrix_spline(
             self.mid_matrix_spline,
-            self.mid_npo,
+            self.mid_stretch_pin,
             stretch=True,
+            parameter=0.5,
+            normalize_parameter=True,
+            primary_axis=(0, 1, 0),
+            secondary_axis=(1, 0, 0),
+        )
+        pin_to_matrix_spline(
+            self.mid_matrix_spline,
+            self.mid_npo,
+            stretch=False,
             parameter=0.5,
             normalize_parameter=True,
             primary_axis=(0, 1, 0),
@@ -264,25 +280,38 @@ class Component(component.Main):
             hide=False if self.WIP else True,
         )
 
-        self.hip_tan = primitive.addTransform(
-            self.mid_ctl, self.getName("hip_tan"), hip_tan_transform
+        self.hip_tan_tr = primitive.addTransform(
+            self.mid_stretch_pin, self.getName("hip_tan_tr"), hip_tan_transform
         )
-        self.transform2Lock.append(self.hip_tan)
-        self.chest_tan = primitive.addTransform(
-            self.mid_ctl, self.getName("chest_tan"), chest_tan_transform
+        self.chest_tan_tr = primitive.addTransform(
+            self.mid_stretch_pin, self.getName("chest_tan_tr"), chest_tan_transform
         )
-        self.transform2Lock.append(self.chest_tan)
+
+        self.hip_tan_npo = primitive.addTransform(
+            self.mid_ctl, self.getName("hip_tan_npo"), hip_tan_transform
+        )
+
+        self.transform2Lock.append(self.hip_tan_npo)
+        self.chest_tan_npo = primitive.addTransform(
+            self.mid_ctl, self.getName("chest_tan_npo"), chest_tan_transform
+        )
+        self.transform2Lock.append(self.chest_tan_npo)
 
         # Division -----------------------------------------
         self.bind_spline = matrix_spline_from_transforms(
             name=self.getName("bind_spline"),
-            cv_transforms=[self.spine_base, self.hip_tan, self.chest_tan, self.spine_top],
+            cv_transforms=[
+                self.spine_base,
+                self.hip_tan_npo,
+                self.chest_tan_npo,
+                self.spine_top,
+            ],
             parent=self.root,
             pinned_transforms=int(self.settings["division"]),
             padded=False,
             primary_axis=(0, 1, 0),
             secondary_axis=(1, 0, 0),
-            stretch=True,
+            stretch=self.settings["joint_stretch"],
         )
         self.base_connection = self.spine_base
         self.top_connection = self.spine_top
@@ -326,6 +355,15 @@ class Component(component.Main):
         we shouldn't create any new object in this method.
 
         """
+        hip_tan_offset = localize_world_matrix(str(self.hip_tan_tr), str(self.mid_npo)).matrix_sum
+        chest_tan_offset = localize_world_matrix(
+            str(self.chest_tan_tr), str(self.mid_npo)
+        ).matrix_sum
+        drive_transform_with_matrix(hip_tan_offset, str(self.hip_tan_npo), scale=False, shear=False)
+        drive_transform_with_matrix(
+            chest_tan_offset, str(self.chest_tan_npo), scale=False, shear=False
+        )
+
         control_rotation_map = {
             self.torso_ctl: self.torso_rotation,
             self.chest_ctl: self.chest_rotation,

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsUIYzoiQS.ui'
+## Form generated from reading UI file 'settingsUImuEKjL.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.10.2
 ##
@@ -33,7 +33,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName("Form")
-        Form.resize(600, 480)
+        Form.resize(226, 480)
         self.gridLayout = QGridLayout(Form)
         self.gridLayout.setObjectName("gridLayout")
         self.verticalSpacer = QSpacerItem(
@@ -102,12 +102,12 @@ class Ui_Form(object):
         self.leafJoints_label = QLabel(self.groupBox)
         self.leafJoints_label.setObjectName("leafJoints_label")
 
-        self.formLayout.setWidget(3, QFormLayout.ItemRole.LabelRole, self.leafJoints_label)
+        self.formLayout.setWidget(4, QFormLayout.ItemRole.LabelRole, self.leafJoints_label)
 
         self.leafJoints_checkBox = QCheckBox(self.groupBox)
         self.leafJoints_checkBox.setObjectName("leafJoints_checkBox")
 
-        self.formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self.leafJoints_checkBox)
+        self.formLayout.setWidget(4, QFormLayout.ItemRole.FieldRole, self.leafJoints_checkBox)
 
         self.weight_split_tagging_label = QLabel(self.groupBox)
         self.weight_split_tagging_label.setObjectName("weight_split_tagging_label")
@@ -118,33 +118,33 @@ class Ui_Form(object):
         )
 
         self.formLayout.setWidget(
-            4, QFormLayout.ItemRole.SpanningRole, self.weight_split_tagging_label
+            5, QFormLayout.ItemRole.SpanningRole, self.weight_split_tagging_label
         )
 
         self.squashStretchProfile_pushButton = QPushButton(self.groupBox)
         self.squashStretchProfile_pushButton.setObjectName("squashStretchProfile_pushButton")
 
         self.formLayout.setWidget(
-            7, QFormLayout.ItemRole.SpanningRole, self.squashStretchProfile_pushButton
+            8, QFormLayout.ItemRole.SpanningRole, self.squashStretchProfile_pushButton
         )
 
         self.weight_split_enable_label = QLabel(self.groupBox)
         self.weight_split_enable_label.setObjectName("weight_split_enable_label")
 
-        self.formLayout.setWidget(5, QFormLayout.ItemRole.LabelRole, self.weight_split_enable_label)
+        self.formLayout.setWidget(6, QFormLayout.ItemRole.LabelRole, self.weight_split_enable_label)
 
         self.weight_split_enable_checkBox = QCheckBox(self.groupBox)
         self.weight_split_enable_checkBox.setObjectName("weight_split_enable_checkBox")
         self.weight_split_enable_checkBox.setChecked(True)
 
         self.formLayout.setWidget(
-            5, QFormLayout.ItemRole.FieldRole, self.weight_split_enable_checkBox
+            6, QFormLayout.ItemRole.FieldRole, self.weight_split_enable_checkBox
         )
 
         self.spline_degree_label = QLabel(self.groupBox)
         self.spline_degree_label.setObjectName("spline_degree_label")
 
-        self.formLayout.setWidget(6, QFormLayout.ItemRole.LabelRole, self.spline_degree_label)
+        self.formLayout.setWidget(7, QFormLayout.ItemRole.LabelRole, self.spline_degree_label)
 
         self.spline_degree_spinBox = QSpinBox(self.groupBox)
         self.spline_degree_spinBox.setObjectName("spline_degree_spinBox")
@@ -153,7 +153,18 @@ class Ui_Form(object):
         self.spline_degree_spinBox.setMinimum(1)
         self.spline_degree_spinBox.setMaximum(5)
 
-        self.formLayout.setWidget(6, QFormLayout.ItemRole.FieldRole, self.spline_degree_spinBox)
+        self.formLayout.setWidget(7, QFormLayout.ItemRole.FieldRole, self.spline_degree_spinBox)
+
+        self.joint_stretch_label = QLabel(self.groupBox)
+        self.joint_stretch_label.setObjectName("joint_stretch_label")
+
+        self.formLayout.setWidget(3, QFormLayout.ItemRole.LabelRole, self.joint_stretch_label)
+
+        self.joint_stretch_checkBox = QCheckBox(self.groupBox)
+        self.joint_stretch_checkBox.setObjectName("joint_stretch_checkBox")
+        self.joint_stretch_checkBox.setEnabled(True)
+
+        self.formLayout.setWidget(3, QFormLayout.ItemRole.FieldRole, self.joint_stretch_checkBox)
 
         self.gridLayout.addWidget(self.groupBox, 0, 0, 1, 1)
 
@@ -231,7 +242,26 @@ class Ui_Form(object):
                 None,
             )
         )
+        # endif // QT_CONFIG(tooltip)
+        # if QT_CONFIG(tooltip)
+        self.joint_stretch_label.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                "When enabled the joints along the spine will scale with the curve tangent. When False the scale along the spline will be interpolated as usual.",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        self.joint_stretch_label.setText(QCoreApplication.translate("Form", "Joint Stretch", None))
+        # if QT_CONFIG(tooltip)
+        self.joint_stretch_checkBox.setToolTip(
+            QCoreApplication.translate(
+                "Form",
+                "When enabled the joints along the spine will scale with the curve tangent. When False the scale along the spline will be interpolated as usual.",
+                None,
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        self.joint_stretch_checkBox.setText("")
 
-
-# endif // QT_CONFIG(tooltip)
-# retranslateUi
+    # retranslateUi

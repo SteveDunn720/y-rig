@@ -110,6 +110,7 @@ class Guide(guide.ComponentGuide):
 
         self.pPreserveLength = self.addParam("preserve_length", "double", 1, 0, 1)
         self.pCtlWorldOrient = self.addParam("ctl_world_orient", "bool", True)
+        self.pJointStretch = self.addParam("joint_stretch", "bool", False)
 
         # FCurves
         self.pSt_profile = self.addFCurveParam("st_profile", [[0, 0], [0.5, -1], [1, 0]])
@@ -191,6 +192,7 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         )
         self.settingsTab.division_spinBox.setValue(self.root.attr("division").get())
         self.populateCheck(self.settingsTab.ctl_world_orient_checkBox, "ctl_world_orient")
+        self.populateCheck(self.settingsTab.joint_stretch_checkBox, "joint_stretch")
         self.populateCheck(self.settingsTab.leafJoints_checkBox, "leafJoints")
         self.populateCheck(self.settingsTab.weight_split_enable_checkBox, "weight_split_tag")
         self.settingsTab.spline_degree_spinBox.setValue(self.root.attr("weight_split_degree").get())
@@ -225,6 +227,13 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
                 self.updateCheck,
                 self.settingsTab.ctl_world_orient_checkBox,
                 "ctl_world_orient",
+            )
+        )
+        self.settingsTab.joint_stretch_checkBox.stateChanged.connect(
+            partial(
+                self.updateCheck,
+                self.settingsTab.joint_stretch_checkBox,
+                "joint_stretch",
             )
         )
         self.settingsTab.squashStretchProfile_pushButton.clicked.connect(self.setProfile)

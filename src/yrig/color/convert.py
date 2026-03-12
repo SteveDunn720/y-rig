@@ -137,7 +137,7 @@ def lch_to_lab(color: tuple[float, float, float]) -> tuple[float, float, float]:
 
 def linear_to_srgb_color(linear_color: tuple[float, float, float]) -> tuple[float, float, float]:
     """
-    Convert a linear MColor to sRGB space.
+    Convert a linear color to sRGB space.
 
     Args:
         linear_color: Linear color with RGBA channels in [0,1].
@@ -166,7 +166,7 @@ def linear_to_srgb_color(linear_color: tuple[float, float, float]) -> tuple[floa
 
 def srgb_to_linear_color(srgb_color: tuple[float, float, float]) -> tuple[float, float, float]:
     """
-    Convert an sRGB MColor to linear color space.
+    Convert an sRGB color to linear color space.
 
     Args:
         srgb_color: sRGB color with RGBA channels in [0,1].

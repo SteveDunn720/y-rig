@@ -92,7 +92,7 @@ def build_from_path(
     rig_root_path: Path,
     dev_build: bool = False,
     progress_callback: Callable[[float, str | None], None] | None = None,
-):
+) -> bool:
     """Build an mGear Shifter rig from a rig path.
 
     Args:
@@ -100,14 +100,22 @@ def build_from_path(
         dev_build: When true the mGear shifter build will be set to WIP mode.
         progress_callback: A function to call at each step of the build.
             It will be called with a float (overall progress from 0-1) and a string (the current step)
+
+    Returns:
+        bool: True if the build was successful, else False
     """
 
     guide_path = rig_root_path / "data/guide.sgt"
     with temp_asset_root(rig_root_path):
         mgear_api_logger.info("Starting mGear Shifter build from file: %s", guide_path)
         try:
-            _build_from_shifter_file(guide_path, dev_build, progress_callback)
+            build_result = _build_from_shifter_file(guide_path, dev_build, progress_callback)
         except Exception as e:
             mgear_api_logger.error("mGear build failed: %s", e)
             raise RuntimeError(f"mGear Shifter build failed for '{guide_path.name}': {e}") from e
+            return False
         mgear_api_logger.info("Build from file complete.")
+        if build_result is not None:
+            return True
+        else:
+            return False

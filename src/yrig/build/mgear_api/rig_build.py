@@ -114,8 +114,10 @@ def build_from_path(
             mgear_api_logger.error("mGear build failed: %s", e)
             raise RuntimeError(f"mGear Shifter build failed for '{guide_path.name}': {e}") from e
             return False
-        mgear_api_logger.info("Build from file complete.")
+
         if build_result is not None:
+            mgear_api_logger.info("Build from file complete.")
             return True
         else:
+            mgear_api_logger.info("Build from file cancelled/failed.")
             return False

@@ -1282,7 +1282,7 @@ class Component(component.Main):
         the actual joints from self.jointList (populated by jointStructure).
         Each segment (upper / lower) is tagged independently.
         """
-        if self.options["joint_rig"] and self.settings["weight_split_tag"]:
+        if self.settings["weight_split_tag"]:
             for segment_indices in (self.upper_jnt_indices, self.lower_jnt_indices):
                 if len(segment_indices) > 1:
                     segment_joints = [self.jointList[index].name() for index in segment_indices]

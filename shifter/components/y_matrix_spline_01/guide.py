@@ -53,15 +53,17 @@ class Guide(guide.ComponentGuide):
     def addParameters(self):
         """Add the configurations settings"""
 
-        self.pKeepLength = self.addParam("keepLength", "bool", False)
-        self.pOverrideJointNb = self.addParam("overrideJntNb", "bool", False)
-        self.pIkNb = self.addParam("ikNb", "long", 3, 1)
-        self.pJntNb = self.addParam("jntNb", "long", 3, 1)
-        self.pExtraTweak = self.addParam("extraTweak", "bool", False)
+        self.pSegments = self.addParam("segments", "long", 5, 1)
+        self.pSplineDegree = self.addParam("spline_degree", "long", 3, 1)
+        self.pTweakControls = self.addParam("tweak_controls", "bool", False)
         self.pleafJoints = self.addParam("leafJoints", "bool", True)
 
         self.pUseIndex = self.addParam("useIndex", "bool", False)
         self.pParentJointIndex = self.addParam("parentJointIndex", "long", -1, None, None)
+
+        # Weight Split Tagging
+        self.pWeightSplitTag = self.addParam("weight_split_tag", "bool", True)
+        self.pWeightSplitDegree = self.addParam("weight_split_degree", "long", 2, 1)
 
 
 ##########################################################
@@ -112,11 +114,9 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         self.tabs.insertTab(1, self.settingsTab, "Component Settings")
 
         # populate component settings
-        self.populateCheck(self.settingsTab.keepLength_checkBox, "keepLength")
-        self.populateCheck(self.settingsTab.overrideJntNb_checkBox, "overrideJntNb")
-        self.populateCheck(self.settingsTab.extraTweak_checkBox, "extraTweak")
-        self.settingsTab.jntNb_spinBox.setValue(self.root.attr("jntNb").get())
-        self.settingsTab.ikNb_spinBox.setValue(self.root.attr("ikNb").get())
+        self.populateCheck(self.settingsTab.tweak_controls_checkBox, "tweak_controls")
+        self.settingsTab.segment_spinBox.setValue(self.root.attr("segments").get())
+        self.settingsTab.degree_spinBox.setValue(self.root.attr("spline_degree").get())
 
     def create_componentLayout(self):
         self.settings_layout = QtWidgets.QVBoxLayout()
@@ -126,24 +126,31 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         self.setLayout(self.settings_layout)
 
     def create_componentConnections(self):
-        self.settingsTab.keepLength_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.keepLength_checkBox, "keepLength")
+        self.settingsTab.segment_spinBox.valueChanged.connect(
+            partial(self.updateSpinBox, self.settingsTab.segment_spinBox, "segments")
+        )
+        self.settingsTab.degree_spinBox.valueChanged.connect(
+            partial(self.updateSpinBox, self.settingsTab.degree_spinBox, "spline_degree")
         )
 
-        self.settingsTab.overrideJntNb_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.overrideJntNb_checkBox, "overrideJntNb")
+        self.settingsTab.tweak_controls_checkBox.stateChanged.connect(
+            partial(self.updateCheck, self.settingsTab.tweak_controls_checkBox, "tweak_controls")
         )
 
-        self.settingsTab.jntNb_spinBox.valueChanged.connect(
-            partial(self.updateSpinBox, self.settingsTab.jntNb_spinBox, "jntNb")
+        self.settingsTab.weight_split_enable_checkBox.stateChanged.connect(
+            partial(
+                self.updateCheck,
+                self.settingsTab.weight_split_enable_checkBox,
+                "weight_split_tag",
+            )
         )
 
-        self.settingsTab.ikNb_spinBox.valueChanged.connect(
-            partial(self.updateSpinBox, self.settingsTab.ikNb_spinBox, "ikNb")
-        )
-
-        self.settingsTab.extraTweak_checkBox.stateChanged.connect(
-            partial(self.updateCheck, self.settingsTab.extraTweak_checkBox, "extraTweak")
+        self.settingsTab.spline_degree_spinBox.valueChanged.connect(
+            partial(
+                self.updateSpinBox,
+                self.settingsTab.spline_degree_spinBox,
+                "weight_split_degree",
+            )
         )
 
     def dockCloseEventTriggered(self):

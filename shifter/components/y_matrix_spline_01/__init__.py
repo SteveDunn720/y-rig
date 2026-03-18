@@ -5,6 +5,7 @@ from mgear.core import attribute, primitive, transform
 from mgear.pymaya import datatypes
 from mgear.shifter import component
 
+from yrig.skin.split import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 
 if TYPE_CHECKING:
@@ -62,10 +63,7 @@ class Component(component.Main):
         self.div_cns = []
         self.upv_cns = []
 
-        if self.settings["overrideJntNb"]:
-            self.def_number = self.settings["jntNb"]
-        else:
-            self.def_number = len(self.guide.apos)
+        self.def_number = self.settings["segments"]
 
         self.matrix_spline = matrix_spline_from_transforms(
             name=self.getName("spline"),
@@ -76,7 +74,7 @@ class Component(component.Main):
             padded=False,
             parent=parent,
         )
-
+        self.split_jnt_indices: list[int] = []
         for i, pinned_transform in enumerate(self.matrix_spline.pinned_transforms):
             self.jnt_pos.append(
                 {
@@ -85,6 +83,7 @@ class Component(component.Main):
                     "leaf_joint": self.settings["leafJoints"],
                 }
             )
+            self.split_jnt_indices.append(i)
 
     # =====================================================
     # ATTRIBUTES
@@ -123,3 +122,20 @@ class Component(component.Main):
         self.relatives[f"{(len(self.guide.apos) - 1)}_cv"] = self.cv_ctls[-1]
         self.controlRelatives[f"{(len(self.guide.apos) - 1)}_cv"] = self.cv_ctls[-1]
         self.jointRelatives[f"{(len(self.guide.apos) - 1)}_cv"] = len(self.guide.apos) - 1
+
+    def finalize(self):
+        """Tag split joints for automatic weight splitting.
+
+        Uses the jnt_pos indices recorded during addObjects to look up
+        the actual joints from self.jointList (populated by jointStructure).
+        """
+        if self.settings["weight_split_tag"]:
+            if len(self.split_jnt_indices) > 1:
+                segment_joints = [self.jointList[index].name() for index in self.split_jnt_indices]
+                tag_for_weight_split(
+                    influence=segment_joints[0],
+                    split_influences=segment_joints,
+                    degree=self.settings["weight_split_degree"],
+                )
+
+        super().finalize()

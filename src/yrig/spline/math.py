@@ -596,12 +596,12 @@ def resample(
 
     def get_normalized_u(index):
         if periodic:
-            base_u = i / (number_of_points)
+            base_u = index / (number_of_points)
         else:
             if padded:
-                base_u = (i + 0.5) / number_of_points
+                base_u = (index + 0.5) / number_of_points
             else:
-                base_u = i / (number_of_points - 1)
+                base_u = index / (number_of_points - 1)
         return base_u
 
     def get_target_u(index: int) -> float:
@@ -672,7 +672,7 @@ def resample(
         if arc_lengths[prev_index] == target_length:
             mapped_t = sample_params[next_index]
         elif i == number_of_points - 1:
-            mapped_t = get_target_u(number_of_points)
+            mapped_t = get_target_u(number_of_points - 1)
         else:
             length_before: float = arc_lengths[prev_index]
             sample_distance: float = arc_lengths[next_index] - arc_lengths[prev_index]

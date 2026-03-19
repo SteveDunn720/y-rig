@@ -18,6 +18,7 @@
                 "asset_path": {
                     "type": "raw"
                 },
+                "face_path": {},
                 "guide_filepath": {
                     "type": "raw",
                     "value": "${asset_path}"
@@ -38,13 +39,14 @@
                 "asset_path = yrig.build.context.get_asset_root()",
                 "if asset_path is None:",
                 "    raise RuntimeError(\"The asset root from the yrig.build.context hasn't been set. Please run a dev build of the rig you are working on before running the NXT graph directly.\")",
-                "STAGE.asset_path = asset_path"
+                "STAGE.asset_path = asset_path",
+                "STAGE.face_path = asset_path / \"face\""
             ]
         },
         "/setup/load_guides": {
             "code": [
-                "asset_path = STAGE.asset_path",
-                "guide_path = asset_path / \"guide.mb\"",
+                "face_path = STAGE.face_path",
+                "guide_path = face_path / \"guide.mb\"",
                 "if not guide_path.exists():",
                 "    raise RuntimeError(f\"There was no guide file found at {guide_path}\")",
                 "cmds.file(str(guide_path.resolve()), i=True, defaultNamespace=True)"

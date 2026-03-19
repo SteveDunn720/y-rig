@@ -78,6 +78,10 @@ def matrix_spline_from_transforms(
         return matrix_spline
 
     pins: list[str] = []
+    if isinstance(pinned_transforms, str):
+        raise ValueError(
+            f'pinned_transforms expects a sequence of strings, but was given the string "{pinned_transforms}"'
+        )
     if isinstance(pinned_transforms, int):
         for i in range(pinned_transforms):
             pin_name = f"{matrix_spline.name}_pin{i}"

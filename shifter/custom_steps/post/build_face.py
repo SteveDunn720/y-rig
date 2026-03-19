@@ -2,16 +2,23 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import mgear.shifter.custom_step as cstp
-from yrig.build.context import get_asset_root
+
+from yrig.build.nxt_api import execute_nxt_graph
+
+if TYPE_CHECKING:
+    from mgear.shifter import Rig
+
+    from ..pre.paths import CustomShifterStep as PathsStep
 
 log = logging.getLogger(__name__)
 
 
 class CustomShifterStep(cstp.customShifterMainStep):
     """
-    This step gives the needed metadata and path information for later steps like loading the model, applying skin weights, etc.
+    This step calls a face build step defined as an NXT graph.
     """
 
     def setup(self):
@@ -22,7 +29,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         i.e: Running  self.custom_step("{name}")  from steps ran after
              this one, will grant this step.
         """
-        self.name = "paths"
+        self.name = "build_face"
 
     def run(self):
         """Run method.
@@ -40,14 +47,12 @@ class CustomShifterStep(cstp.customShifterMainStep):
         Returns:
             None: None
         """
-        asset_root = get_asset_root()
-        self.rig_root_path: Path
-        if asset_root is None:
-            self.rig_root_path = Path(__file__).parents[1]
-            log.warning(
-                f"No asset root path set, assuming root is {self.rig_root_path} based on the file location of this step."
-            )
-        else:
-            self.rig_root_path = asset_root
-        self.rig_data_path = self.rig_root_path / "data"
-        self.rig_assets_path = self.rig_root_path / "assets"
+        paths_step: PathsStep = self.custom_step("paths")
+        mgear_rig: Rig = self.mgear_run  # noqa
+        data_path: Path = paths_step.rig_data_path
+        face_path: Path = data_path / "face"
+        face_graph_path: Path = face_path / "build.nxt"
+        if not face_path.exists():
+            raise RuntimeError(f"No face description graph found at {face_graph_path}")
+        log.info(f"Building face from graph at: {face_graph_path}")
+        execute_nxt_graph(face_graph_path)

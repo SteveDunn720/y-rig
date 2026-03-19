@@ -111,7 +111,7 @@ def build_from_path(
     """
 
     guide_path = rig_root_path / "data/guide.sgt"
-    with temp_asset_root(rig_root_path):
+    with temp_asset_root(rig_root_path, dev_build):
         mgear_api_logger.info("Starting mGear Shifter build from file: %s", guide_path)
         try:
             build_result = _build_from_shifter_file(guide_path, dev_build, progress_callback)

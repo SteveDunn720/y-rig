@@ -16,10 +16,12 @@ def get_asset_root() -> Path | None:
 
 
 @contextmanager
-def temp_asset_root(asset_root_path: Path):
+def temp_asset_root(asset_root_path: Path, dev_build: bool = False):
+    """Temporarily set the asset root, restoring it afterward unless dev_build is True."""
     default_asset_root_value = _ASSET_ROOT
     set_asset_root(asset_root_path)
     try:
         yield
     finally:
-        set_asset_root(default_asset_root_value)
+        if not dev_build:
+            set_asset_root(default_asset_root_value)

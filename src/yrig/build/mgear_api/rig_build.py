@@ -80,6 +80,11 @@ def _build_from_shifter_file(
 
         rig.from_dict_custom_step(merged_options, pre=False)
 
+        # Check if build was cancelled/failed during custom steps
+        if rig.stopBuild:
+            mgear_api_logger.info("\n" + "= SHIFTER BUILD CANCELLED " + "=" * 40)
+            return None
+
         # controls shapes buffer
         if guide_data["ctl_buffers_dict"]:
             curve.update_curve_from_data(

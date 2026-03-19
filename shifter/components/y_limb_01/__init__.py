@@ -1088,7 +1088,7 @@ class Component(component.Main):
         )
         matrix_spline_from_transforms(
             name=f"{self.lowerBendy_ctl}_aim_spline",
-            cv_transforms=[str(self.midBendy_ctl), str(self.lowerBendy_twist)],
+            cv_transforms=[str(self.midBendy_ctl), str(self.lower_twist)],
             pinned_transforms=[str(self.lowerBendy_npo)],
             twist=False,
             parent=str(self.lower_swing),

@@ -1077,7 +1077,7 @@ class Component(component.Main):
     def _setup_bendy_controls(self):
         matrix_spline_from_transforms(
             name=f"{self.upperBendy_ctl}_aim_spline",
-            cv_transforms=[str(self.bone0_tr), str(self.midBendy_ctl)],
+            cv_transforms=[str(self.bone0_tr), str(self.mid_ctl)],
             pinned_transforms=[str(self.upperBendy_npo)],
             twist=False,
             parent=str(self.upper_swing),
@@ -1088,7 +1088,7 @@ class Component(component.Main):
         )
         matrix_spline_from_transforms(
             name=f"{self.lowerBendy_ctl}_aim_spline",
-            cv_transforms=[str(self.midBendy_ctl), str(self.lower_twist)],
+            cv_transforms=[str(self.mid_ctl), str(self.lower_twist)],
             pinned_transforms=[str(self.lowerBendy_npo)],
             twist=False,
             parent=str(self.lower_swing),
@@ -1126,7 +1126,7 @@ class Component(component.Main):
         cns_list = [
             self.upper_swing,
             self.upperBendy_twist,
-            self.upper_twist,
+            self.midBendy_ctl,
         ]
 
         self.upper_twist_spline = matrix_spline_from_transforms(
@@ -1141,7 +1141,7 @@ class Component(component.Main):
         )
 
         cns_list = [
-            self.bone1_tr,
+            self.midBendy_ctl,
             self.lowerBendy_twist,
             self.lower_twist,
         ]

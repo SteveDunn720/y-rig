@@ -9,7 +9,9 @@ from mgear.shifter import component
 from yrig.maya_api.node import QuatSlerpNode, QuatToEulerNode
 from yrig.skin.split import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
-from yrig.transform.matrix import matrix_constraint
+from yrig.transform.matrix import (
+    matrix_constraint,
+)
 from yrig.transform.quat import create_swing_only_transform, twist_extract_quat
 
 #############################################
@@ -872,6 +874,7 @@ class Component(component.Main):
         self._setup_control_rotation_orders()
         self._setup_ik_solver()
         self._setup_swing_twist()
+        self._setup_bendy_controls()
         self._setup_roll_control()
         self._setup_twist_chains()
         self._setup_ik_fk_match()
@@ -1031,44 +1034,10 @@ class Component(component.Main):
 
     def _setup_swing_twist(self):
         matrix_constraint(
-            str(self.upperBendy_pin),
-            str(self.upperBendy_npo),
-            keep_offset=True,
-            rotate=False,
-            scale=False,
-            shear=False,
-        )
-        matrix_constraint(
-            str(self.upper_swing),
-            str(self.upperBendy_npo),
-            keep_offset=True,
-            translate=False,
-            rotate=True,
-            scale=False,
-            shear=False,
-        )
-        matrix_constraint(
-            str(self.bone1),
+            str(self.midBendy_ctl),
             str(self.upper_twist),
             keep_offset=False,
             rotate=False,
-            scale=False,
-            shear=False,
-        )
-        matrix_constraint(
-            str(self.lowerBendy_pin),
-            str(self.lowerBendy_npo),
-            keep_offset=True,
-            rotate=False,
-            scale=False,
-            shear=False,
-        )
-        matrix_constraint(
-            str(self.bone1_tr),
-            str(self.lowerBendy_npo),
-            keep_offset=True,
-            translate=False,
-            rotate=True,
             scale=False,
             shear=False,
         )
@@ -1104,6 +1073,30 @@ class Component(component.Main):
         lower_twist_mid_euler = QuatToEulerNode(f"{lower_twist_mid}_euler")
         lower_twist_mid.output_quat.connect_to(lower_twist_mid_euler.input_quat)
         lower_twist_mid_euler.output_rotate.x.connect_to(f"{self.lowerBendy_twist}.rotateX")
+
+    def _setup_bendy_controls(self):
+        matrix_spline_from_transforms(
+            name=f"{self.upperBendy_ctl}_aim_spline",
+            cv_transforms=[str(self.bone0_tr), str(self.midBendy_ctl)],
+            pinned_transforms=[str(self.upperBendy_npo)],
+            twist=False,
+            parent=str(self.upper_swing),
+            primary_axis=(1, 0, 0) if not self.negate else (-1, 0, 0),
+            arc_length=False,
+            degree=1,
+            stretch=False,
+        )
+        matrix_spline_from_transforms(
+            name=f"{self.lowerBendy_ctl}_aim_spline",
+            cv_transforms=[str(self.midBendy_ctl), str(self.lowerBendy_twist)],
+            pinned_transforms=[str(self.lowerBendy_npo)],
+            twist=False,
+            parent=str(self.lower_swing),
+            primary_axis=(1, 0, 0) if not self.negate else (-1, 0, 0),
+            arc_length=False,
+            degree=1,
+            stretch=False,
+        )
 
     def _setup_roll_control(self):
         # interpolate transform  mid point locator

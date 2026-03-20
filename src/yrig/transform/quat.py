@@ -102,6 +102,7 @@ def create_swing_only_transform(
     axis: Axis,
     name: str | None = None,
     parent: str | None = None,
+    constrain_translate: bool = True,
 ) -> str:
     """
     Extracts the swing of a transform relative to a specific space and specified axis and
@@ -112,6 +113,7 @@ def create_swing_only_transform(
         axis: Axis around which the twist should be isolated ("x", "y", or "z").
         name (optional): The name for the newly created swing transform
         parent (optional): Parent for the newly created swing transform. If None, will be set to the reference space.
+        constrain_translate: If True the swing transform will follow the translation of the source transform along with its swing.
 
     Returns:
         str: The name of the created swing transform.
@@ -124,6 +126,13 @@ def create_swing_only_transform(
     if parent is not None:
         matrix_constraint(reference_space, neutral_group)
     swing_quat = swing_extract_quat(transform, neutral_group, axis)
-    matrix_constraint(transform, swing_transform, rotate=False, scale=False, shear=False)
+    matrix_constraint(
+        transform,
+        swing_transform,
+        translate=constrain_translate,
+        rotate=False,
+        scale=False,
+        shear=False,
+    )
     drive_rotation_with_quat(swing_transform, swing_quat)
     return swing_transform

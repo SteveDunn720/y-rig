@@ -1,5 +1,3 @@
-from typing import Final, cast
-
 import maya.cmds as cmds
 
 from yrig.maya_api.attribute import (
@@ -19,12 +17,11 @@ from yrig.maya_api.attribute import (
     Vector4Attribute,
 )
 
-API_VERSION: Final[int] = cast(int, cmds.about(apiVersion=True))
-TARGET_API_VERSION = 20242000
+from .version import MAYA_API_VERSION, TARGET_API_VERSION
 
 
 def is_maya2026_or_newer() -> bool:
-    return API_VERSION >= 20260000
+    return MAYA_API_VERSION >= 20260000
 
 
 def is_target_2026_or_newer() -> bool:

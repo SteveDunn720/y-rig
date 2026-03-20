@@ -12,3 +12,6 @@ Submodules:
 
 from . import attribute as attribute
 from . import node as node
+from . import version as version
+from .version import MAYA_API_VERSION as MAYA_API_VERSION
+from .version import TARGET_API_VERSION as TARGET_API_VERSION

@@ -20,9 +20,8 @@ def create_curve(
     if isinstance(control_shape, str):
         control_shape: ControlShape = ControlShape[control_shape.strip().upper()]
     curve_data = get_curve_data(curve_shape=control_shape)
-    curve_transform: str = cmds.group(
-        empty=True, name=name if name is not None else control_shape.value
-    )
+
+    curve_transform: str = cmds.group(empty=True, name=control_shape.value)
 
     for index, named_curve in enumerate(curve_data.curves):
         curve = named_curve.curve
@@ -47,4 +46,6 @@ def create_curve(
         cmds.delete(child_curve_transform)
     if parent is not None:
         cmds.parent(curve_transform, parent)
+    if name is not None:
+        curve_transform = cmds.rename(curve_transform, name)
     return curve_transform

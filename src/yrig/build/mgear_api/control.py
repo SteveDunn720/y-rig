@@ -1,7 +1,10 @@
+from typing import Callable
+
 from maya import cmds
 from maya.api.OpenMaya import MMatrix
 from mgear import pymaya as pm
 from mgear.core import attribute, icon, node
+from mgear.core.attribute import setRotOrder
 
 from yrig.maya_api import MAYA_API_VERSION
 from yrig.maya_api.version import supports_shape_draw_on_top
@@ -19,7 +22,7 @@ CONTROLS_SET_NAME = "rig_controllers_grp"
 # This is taken from the mGear addCtl function and cleaned up since otherwise the interface is gross.
 def add_ctl(
     name: str,
-    parent: str,
+    parent: str | None,
     matrix: MMatrix,
     side: str,
     component: str | None = None,
@@ -27,6 +30,8 @@ def add_ctl(
     icon_shape: str | None = None,
     tp: str | None = None,
     add_to_control_set: bool = True,
+    control_icon_creator: Callable | None = None,
+    rotation_order: str | None = None,
     **kwargs,
 ):
     """
@@ -51,9 +56,10 @@ def add_ctl(
     if "degree" not in kwargs:
         kwargs["degree"] = 1
 
-    fullName = f"{name}{CONTROL_NAME_SUFFIX}"
-
-    ctl = icon.create(parent, fullName, matrix, color, icon_shape, **kwargs)
+    if control_icon_creator is not None:
+        ctl = pm.PyNode(control_icon_creator())
+    else:
+        ctl = icon.create(parent, name, matrix, color, icon_shape, **kwargs)
 
     # add metadata attirbutes.
     attribute.addAttribute(ctl, "isCtl", "bool", keyable=False)
@@ -71,7 +77,7 @@ def add_ctl(
         "shifter_name",
         "string",
         keyable=False,
-        value=fullName,
+        value=name,
     )
     attribute.addAttribute(ctl, "side_label", "string", keyable=False, value=side)
     attribute.addAttribute(
@@ -107,7 +113,8 @@ def add_ctl(
     # create the attributes to handle mirror and symmetrical pose
     attribute.add_mirror_config_channels(ctl)
     if add_to_control_set:
-        cmds.sets(CONTROLS_SET_NAME, addElement=str(ctl))
+        if cmds.objExists(CONTROLS_SET_NAME) and cmds.nodeType(CONTROLS_SET_NAME) == "objectSet":
+            cmds.sets(str(ctl), addElement=CONTROLS_SET_NAME)
 
     # Set the control shapes isHistoricallyInteresting
     # Use cmds for faster shape operations
@@ -148,5 +155,8 @@ def add_ctl(
 
         ctl.addAttr("compRoot", at="message", m=False)
         component_node.message >> ctl.compRoot
+
+    if rotation_order is not None:
+        setRotOrder(ctl, rotation_order)
 
     return ctl

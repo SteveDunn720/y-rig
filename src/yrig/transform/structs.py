@@ -14,3 +14,6 @@ class RotationOrder(Enum):
     XZY = 3
     YXZ = 4
     ZYX = 5
+
+    def __str__(self) -> str:
+        return self.name

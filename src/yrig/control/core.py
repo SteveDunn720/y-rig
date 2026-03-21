@@ -3,8 +3,8 @@ from maya.api.OpenMaya import MMatrix
 
 from yrig.control.curve import create_curve
 from yrig.control.serialize import ControlShape
-from yrig.structs.transform import RotationOrder
 from yrig.transform import match_transform, set_world_matrix
+from yrig.transform.structs import RotationOrder
 
 
 def create_control(

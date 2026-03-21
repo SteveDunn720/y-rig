@@ -1,16 +1,4 @@
 import math
-from enum import Enum
-
-
-class RotationOrder(Enum):
-    """Enum for Maya rotation orders."""
-
-    XYZ = 0
-    YZX = 1
-    ZXY = 2
-    XZY = 3
-    YXZ = 4
-    ZYX = 5
 
 
 class Vector3:

@@ -1,3 +1,4 @@
+from . import control as control
 from . import log as log
 from . import reload as reload
 from . import rig_build as rig_build

@@ -4,7 +4,11 @@ from yrig.control.serialize import ControlShape, get_curve_data
 from yrig.transform import get_shapes
 
 
-def create_curve(control_shape: ControlShape | str = ControlShape.CIRCLE) -> str:
+def create_curve(
+    name: str | None = None,
+    control_shape: ControlShape | str = ControlShape.CIRCLE,
+    parent: str | None = None,
+) -> str:
     """
     Creates a curve from the specified item in the shape library.
 
@@ -16,7 +20,9 @@ def create_curve(control_shape: ControlShape | str = ControlShape.CIRCLE) -> str
     if isinstance(control_shape, str):
         control_shape: ControlShape = ControlShape[control_shape.strip().upper()]
     curve_data = get_curve_data(curve_shape=control_shape)
-    curve_transform: str = cmds.group(empty=True, name=control_shape.value)
+    curve_transform: str = cmds.group(
+        empty=True, name=name if name is not None else control_shape.value
+    )
 
     for index, named_curve in enumerate(curve_data.curves):
         curve = named_curve.curve
@@ -39,5 +45,6 @@ def create_curve(control_shape: ControlShape | str = ControlShape.CIRCLE) -> str
         cmds.parent(curve_shape_node, curve_transform, shape=True, relative=True)
         curve_shape_node = cmds.rename(curve_shape_node, shape_name)
         cmds.delete(child_curve_transform)
-    cmds.select(curve_transform)
+    if parent is not None:
+        cmds.parent(curve_transform, parent)
     return curve_transform

@@ -761,10 +761,10 @@ class Component(component.Main):
         self.lower_mid_bendy_npo = primitive.addTransform(
             self.midBendy_ctl, self.getName("lowerMidBendy_npo"), t
         )
-
-        if self.negate:
-            self.midBendy_npo.rz.set(180)
-            self.midBendy_npo.sz.set(-1)
+        if self.settings["mirrorMid"]:
+            if self.negate:
+                self.midBendy_npo.rz.set(180)
+                self.midBendy_npo.sz.set(-1)
         attribute.setKeyableAttributes(self.midBendy_ctl)
 
     def _add_ik_visual_reference(self):

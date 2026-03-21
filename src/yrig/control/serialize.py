@@ -67,15 +67,26 @@ class NurbsCurveData:
 
 
 @dataclass(frozen=True)
+class NamedNurbsCurveData:
+    name: str
+    curve: NurbsCurveData
+
+
+@dataclass(frozen=True)
 class ControlShapeData:
-    curves: list[NurbsCurveData]
+    curves: list[NamedNurbsCurveData]
 
     def to_dict(self) -> dict:
-        return {"curves": [curve.to_dict() for curve in self.curves]}
+        return {curve.name: curve.curve for curve in self.curves}
 
     @classmethod
     def from_dict(cls, data: dict) -> "ControlShapeData":
-        return cls(curves=[NurbsCurveData.from_dict(c) for c in data["curves"]])
+        return cls(
+            curves=[
+                NamedNurbsCurveData(name, NurbsCurveData.from_dict(curve_data))
+                for name, curve_data in data.items()
+            ]
+        )
 
 
 def get_cv_positions(curve_shape: str) -> list[tuple[float, float, float]]:
@@ -159,7 +170,7 @@ def get_knots(curve_shape: str) -> list[float]:
 
 
 def get_control_shape_data(curve: str) -> ControlShapeData:
-    curves: list[NurbsCurveData] = []
+    curves: list[NamedNurbsCurveData] = []
     for curve in get_shapes(transform=curve):
         degree: int = cmds.getAttr(curve + ".degree")
         form: int = cmds.getAttr(curve + ".form")
@@ -168,7 +179,7 @@ def get_control_shape_data(curve: str) -> ControlShapeData:
         cv_positions, cv_weights = get_cv_data(curve_shape=curve)
         knots: list[float] = get_knots(curve_shape=curve)
         curve_data = NurbsCurveData(degree, form, cv_positions, cv_weights, knots)
-        curves.append(curve_data)
+        curves.append(NamedNurbsCurveData(curve, curve_data))
     return ControlShapeData(curves)
 
 

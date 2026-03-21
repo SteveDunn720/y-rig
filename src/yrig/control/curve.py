@@ -18,7 +18,8 @@ def create_curve(control_shape: ControlShape | str = ControlShape.CIRCLE) -> str
     curve_data = get_curve_data(curve_shape=control_shape)
     curve_transform: str = cmds.group(empty=True, name=control_shape.value)
 
-    for index, curve in enumerate(curve_data.curves):
+    for index, named_curve in enumerate(curve_data.curves):
+        curve = named_curve.curve
         positions: list[tuple[float, float, float]] = curve.cv_positions
         degree: int = curve.degree
         periodic: bool = True if curve.form == 2 else False

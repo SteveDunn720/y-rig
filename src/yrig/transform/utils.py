@@ -35,6 +35,12 @@ def get_shapes(transform: str) -> list[str]:
         raise RuntimeError(f"{transform} has no child shape nodes")
 
 
+def bake_shape(transform: str, zero_pivot: bool = True):
+    cmds.makeIdentity(transform, apply=True)
+    if zero_pivot:
+        cmds.xform(transform, pivots=(0, 0, 0))
+
+
 def get_position(transform: str, world_space: bool = True) -> MPoint:
     """Return the translation of a transform as an ``MPoint``.
 

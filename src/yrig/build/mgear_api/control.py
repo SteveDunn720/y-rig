@@ -16,21 +16,22 @@ RIGHT_SIDE_LABEL = "R"
 MIDDLE_SIDE_LABEL = "M"
 CONTROL_NAME_SUFFIX = "_ctl"
 RIG_ROOT_NODE = "rig"
-CONTROLS_SET_NAME = "rig_controllers_grp"
+CONTROLS_SET_NAME = f"{RIG_ROOT_NODE}_controllers_grp"
+CONTROL_XRAY_ATTR = f"{RIG_ROOT_NODE}.ctl_x_ray"
 
 
 # This is taken from the mGear addCtl function and cleaned up since otherwise the interface is gross.
 def add_ctl(
     name: str,
     parent: str | None,
-    matrix: MMatrix,
+    matrix: MMatrix | None,
     side: str,
     component: str | None = None,
     color: int | tuple[float, float, float] | None = None,
     icon_shape: str | None = None,
     tp: str | None = None,
     add_to_control_set: bool = True,
-    control_icon_creator: Callable | None = None,
+    control_icon_creator: Callable[[], str] | None = None,
     rotation_order: str | None = None,
     **kwargs,
 ):
@@ -56,10 +57,15 @@ def add_ctl(
     if "degree" not in kwargs:
         kwargs["degree"] = 1
 
-    if control_icon_creator is not None:
-        ctl = pm.PyNode(control_icon_creator())
-    else:
+    if control_icon_creator is None:
         ctl = icon.create(parent, name, matrix, color, icon_shape, **kwargs)
+
+    else:
+        ctl = pm.PyNode(control_icon_creator())
+        if parent is not None:
+            pm.parent(ctl, parent, relative=True)  # type: ignore
+        if matrix is not None:
+            ctl.setTransformation(matrix)
 
     # add metadata attirbutes.
     attribute.addAttribute(ctl, "isCtl", "bool", keyable=False)
@@ -125,7 +131,7 @@ def add_ctl(
         cmds.setAttr(f"{shape}.isHistoricallyInteresting", False)  # type: ignore
         # connecting the always draw shapes on top to global attribute
         if supports_shape_draw_on_top():
-            cmds.connectAttr(f"{RIG_ROOT_NODE}.ctl_x_ray", f"{shape}.alwaysDrawOnTop")
+            cmds.connectAttr(CONTROL_XRAY_ATTR, f"{shape}.alwaysDrawOnTop")
 
     # set controller tag
     if maya_version >= 201650:

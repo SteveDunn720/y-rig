@@ -1,0 +1,54 @@
+{
+    "version": "1.17",
+    "alias": "core",
+    "color": "#4287f5",
+    "mute": false,
+    "solo": false,
+    "meta_data": {
+        "positions": {
+            "/side": [
+                -208.82123418296544,
+                -291.92356207210474
+            ]
+        }
+    },
+    "nodes": {
+        "/": {
+            "code": [
+                "import yrig",
+                "from maya import cmds"
+            ]
+        },
+        "/side": {
+            "attrs": {
+                "control_color": {
+                    "type": "list",
+                    "value": "[0.105, 0.247, 0.411]"
+                },
+                "control_layer": {
+                    "type": "raw",
+                    "value": "${side}_ControlLayer"
+                },
+                "side": {
+                    "type": "raw",
+                    "value": "M"
+                },
+                "side_mult": {
+                    "type": "int",
+                    "value": "1"
+                }
+            },
+            "code": [
+                "settings = cmds.createNode(\"network\", name=\"${control_layer}\")",
+                "cmds.addAttr(settings, longName='controlColor', usedAsColor=True, attributeType='float3' )",
+                "cmds.addAttr(settings, longName='controlColorR', attributeType='float', parent='controlColor')",
+                "cmds.addAttr(settings, longName='controlColorG', attributeType='float', parent='controlColor')",
+                "cmds.addAttr(settings, longName='controlColorB', attributeType='float', parent='controlColor')",
+                "",
+                "cmds.setAttr(f\"{settings}.controlColor\", type=\"float3\", *${control_color})",
+                "",
+                "cmds.refresh()"
+            ]
+        }
+    }
+}

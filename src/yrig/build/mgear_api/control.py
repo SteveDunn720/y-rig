@@ -8,6 +8,7 @@ from mgear.core.attribute import setRotOrder
 
 from yrig.maya_api import MAYA_API_VERSION
 from yrig.maya_api.version import supports_shape_draw_on_top
+from yrig.transform import set_world_matrix
 
 # These are hardcoded despite the fact that any mGear guide can specify these.
 # That's fine for now since we want this to be standard between our rigs anyways.
@@ -65,7 +66,7 @@ def add_ctl(
         if parent is not None:
             pm.parent(ctl, parent, relative=True)  # type: ignore
         if matrix is not None:
-            ctl.setTransformation(matrix)
+            set_world_matrix(str(ctl), matrix)
 
     # add metadata attirbutes.
     attribute.addAttribute(ctl, "isCtl", "bool", keyable=False)

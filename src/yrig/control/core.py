@@ -8,7 +8,7 @@ from yrig.control.curve import create_curve
 from yrig.control.serialize import ControlShape
 from yrig.name import MIDDLE_SIDE_NAME, get_side
 from yrig.transform.matrix import get_world_matrix
-from yrig.transform.structs import RotationOrder
+from yrig.transform.structs import Direction, RotationOrder
 from yrig.transform.utils import bake_shape
 
 CONTROL_SUFFIX = "_ctl"
@@ -24,13 +24,41 @@ class Control:
 def _create_control_curve(
     name: str,
     control_shape: ControlShape | str = ControlShape.CIRCLE,
+    direction: Direction = "y",
     size: float = 1,
     dimensions: tuple[float, float, float] = (1, 1, 1),
 ) -> str:
     curve_transform = create_curve(name, control_shape)
+    bake: bool = False
+    match direction:
+        case "y":
+            pass
+        case "-y":
+            cmds.rotate(180, 0, 0, curve_transform)
+            bake = True
+        case "x":
+            cmds.rotate(0, 0, -90, curve_transform)
+            bake = True
+        case "-x":
+            cmds.rotate(0, 0, 90, curve_transform)
+            bake = True
+        case "z":
+            cmds.rotate(90, 0, 0, curve_transform)
+            bake = True
+        case "-z":
+            cmds.rotate(-90, 0, 0, curve_transform)
+            bake = True
+        case _:
+            raise RuntimeError(
+                f"{direction} is not a valid direction. It should be x,y,z or -x,-y,-z."
+            )
+
     if (size != 1) or (dimensions != (1, 1, 1)):
         scaled_dimensions = (size * dimension for dimension in dimensions)
         cmds.scale(*scaled_dimensions, curve_transform, relative=False)  # type: ignore
+        bake = True
+
+    if bake:
         bake_shape(transform=curve_transform)
     return curve_transform
 
@@ -41,6 +69,7 @@ def create_control(
     transform: str | MMatrix | None = None,
     control_shape: ControlShape | str = ControlShape.CIRCLE,
     create_offset: bool = True,
+    direction: Direction = "y",
     size: float = 1,
     dimensions: tuple[float, float, float] = (1, 1, 1),
     rotation_order: RotationOrder = RotationOrder.XYZ,
@@ -75,7 +104,7 @@ def create_control(
             transform_matrix,
             side=get_side(name) or MIDDLE_SIDE_NAME,
             control_icon_creator=lambda: _create_control_curve(
-                control_name, control_shape, size, dimensions
+                control_name, control_shape, direction, size, dimensions
             ),
             rotation_order=str(rotation_order),
         )

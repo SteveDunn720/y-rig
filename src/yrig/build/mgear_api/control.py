@@ -130,7 +130,7 @@ def add_ctl(
     for shape in shapes:
         cmds.setAttr(f"{shape}.isHistoricallyInteresting", False)  # type: ignore
         # connecting the always draw shapes on top to global attribute
-        if supports_shape_draw_on_top():
+        if supports_shape_draw_on_top() and cmds.objExists(CONTROL_XRAY_ATTR):
             cmds.connectAttr(CONTROL_XRAY_ATTR, f"{shape}.alwaysDrawOnTop")
 
     # set controller tag

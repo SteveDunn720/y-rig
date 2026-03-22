@@ -256,6 +256,10 @@ def write_curve_to_library(curve: str | None = None, name: str | None = None, fo
             if confirm == "Yes":
                 pass
             else:
+                log.info(
+                    f"The control shape file for {curve} was not written as there was already a file present at:"
+                    f"{json_path}"
+                )
                 return
 
     # get curve data
@@ -263,3 +267,4 @@ def write_curve_to_library(curve: str | None = None, name: str | None = None, fo
     json_dump = control_shape_data_to_json(curve_data)
     with open(file=json_path, mode="w") as json_file:
         json_file.write(json_dump)
+    log.info(f"The control shape for {curve} was written to the shape library at {json_path}")

@@ -77,7 +77,7 @@ class ControlShapeData:
     curves: list[NamedNurbsCurveData]
 
     def to_dict(self) -> dict:
-        return {curve.name: curve.curve for curve in self.curves}
+        return {curve.name: curve.curve.to_dict() for curve in self.curves}
 
     @classmethod
     def from_dict(cls, data: dict) -> "ControlShapeData":
@@ -184,7 +184,7 @@ def get_control_shape_data(curve: str) -> ControlShapeData:
 
 
 def control_shape_data_to_json(data: ControlShapeData) -> str:
-    return json.dumps(data.to_dict())
+    return json.dumps(data.to_dict(), indent=2)
 
 
 def control_shape_from_json(json_str: str) -> ControlShapeData:
@@ -214,3 +214,52 @@ def get_curve_data(curve_shape: ControlShape | str) -> ControlShapeData:
             json_data = json_file.read()
             _control_shape_data_cache[curve_shape] = control_shape_from_json(json_data)
     return _control_shape_data_cache[curve_shape]
+
+
+def write_curve_to_library(curve: str | None = None, name: str | None = None, force: bool = False):
+    """
+    Saves selected or defined curve to shape library.
+
+    Args:
+        control(str): Name of control to save. If None, uses the current selection.
+        name(str): Name of the json file to save. If None, uses the chosen control.
+    Returns:
+        list: A list of CV weight values.
+    """
+    # make sure we either define a curve or have one selected
+    # also make sure we're using the transform node
+    if not curve:
+        selection: list[str] = cmds.ls(selection=True)
+        if len(selection) == 0:
+            raise RuntimeError(
+                "Unable to write control shape to file, no control transform was defined, and no control is selected."
+            )
+        curve: str = selection[0]
+
+    # if a name is not defined, use the curves name instead
+    if not name:
+        name: str = curve
+
+    json_path: Path = SHAPE_LIBRARY_DIR / f"{name}.json"
+    if json_path.exists():
+        if force:
+            pass
+        else:
+            confirm: str = cmds.confirmDialog(
+                title="File Overwrite",
+                message=f"{json_path} already exists and will be overwritten, are you sure you want to write the file?",
+                button=["Yes", "No"],
+                defaultButton="Yes",
+                cancelButton="No",
+                dismissString="No",
+            )
+            if confirm == "Yes":
+                pass
+            else:
+                return
+
+    # get curve data
+    curve_data = get_control_shape_data(curve=curve)
+    json_dump = control_shape_data_to_json(curve_data)
+    with open(file=json_path, mode="w") as json_file:
+        json_file.write(json_dump)

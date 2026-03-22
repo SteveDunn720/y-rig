@@ -113,7 +113,9 @@ def get_world_matrix(transform: str) -> MMatrix:
     return dag_path.inclusiveMatrix()
 
 
-def set_local_matrix(transform: str, matrix: MMatrix, fallback=False) -> None:
+def set_local_matrix(
+    transform: str, matrix: MMatrix, use_joint_orient: bool = True, fallback=False
+) -> None:
     """Set the local transformation of a Maya transform node from a matrix.
 
     Decomposes the given matrix into translate, rotate, scale, and shear
@@ -125,6 +127,7 @@ def set_local_matrix(transform: str, matrix: MMatrix, fallback=False) -> None:
         transform: The name of the Maya transform (or joint) node to
             modify.
         matrix: The desired local-space matrix.
+        use_joint_orient: When ``True``, if the transform is a joint the rotation will be zeroed and applied to the jointOrient.
         fallback: When ``True``, use ``cmds.xform`` to set the matrix in
             one call instead of decomposing it into individual channels.
             This is less precise but can be useful as a workaround for
@@ -133,37 +136,45 @@ def set_local_matrix(transform: str, matrix: MMatrix, fallback=False) -> None:
     if fallback:
         cmds.xform(transform, worldSpace=False, matrix=matrix)  # type: ignore
     else:
+        sel = MSelectionList()
+        sel.add(str(transform))
+        dag_path: MDagPath = sel.getDagPath(0)
+        mfn_transform: MFnTransform = MFnTransform(dag_path)
+
         # Apply local matrix using transformation matrix
         transform_matrix: MTransformationMatrix = MTransformationMatrix(matrix)
         # Set translation
         translation = transform_matrix.translation(MSpace.kTransform)
-        cmds.setAttr(f"{transform}.translate", translation.x, translation.y, translation.z)
+        mfn_transform.setTranslation(translation, MSpace.kTransform)
+
+        xyz_rotation = transform_matrix.rotation()
+        transform_matrix.reorderRotation(mfn_transform.rotationOrder())
+        redordered_rotation = transform_matrix.rotation()
+        mfn_transform.setRotation(redordered_rotation, MSpace.kTransform)
         node_type = cmds.nodeType(transform)
-
-        rotate_order = cmds.getAttr(f"{transform}.rotateOrder")
-        transform_matrix.reorderRotation(rotate_order + 1)
-        rotation = transform_matrix.rotation()
-        cmds.setAttr(
-            f"{transform}.rotate",
-            MAngle(rotation.x).asDegrees(),
-            MAngle(rotation.y).asDegrees(),
-            MAngle(rotation.z).asDegrees(),
-        )
-
         if node_type == "joint":
-            # Zero the rotate channel
-            cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0)  # type: ignore
+            if use_joint_orient:
+                cmds.setAttr(
+                    f"{transform}.jointOrient",
+                    MAngle(xyz_rotation.x).asDegrees(),
+                    MAngle(xyz_rotation.y).asDegrees(),
+                    MAngle(xyz_rotation.z).asDegrees(),
+                )
+            else:
+                cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0)  # type: ignore
 
         # Set scale
         scale = transform_matrix.scale(MSpace.kTransform)
-        cmds.setAttr(f"{transform}.scale", scale[0], scale[1], scale[2])
+        mfn_transform.setScale(scale)
 
         # Set shear
         shear = transform_matrix.shear(MSpace.kTransform)
-        cmds.setAttr(f"{transform}.shear", shear[0], shear[1], shear[2])
+        mfn_transform.setShear(shear)
 
 
-def set_world_matrix(transform: str, matrix: MMatrix, fallback=False) -> None:
+def set_world_matrix(
+    transform: str, matrix: MMatrix, use_joint_orient: bool = True, fallback=False
+) -> None:
     """Set the world-space matrix of a transform by converting to local space first.
 
     The given world matrix is multiplied by the parent's inverse world
@@ -172,6 +183,7 @@ def set_world_matrix(transform: str, matrix: MMatrix, fallback=False) -> None:
     Args:
         transform: Maya transform node name.
         matrix: Target world space matrix.
+        use_joint_orient: When ``True``, if the transform is a joint the rotation will be zeroed and applied to the jointOrient.
         fallback: If True, use cmds.xform instead of manual decomposition.
     """
     if fallback:
@@ -179,7 +191,7 @@ def set_world_matrix(transform: str, matrix: MMatrix, fallback=False) -> None:
     else:
         inverse_matrix: MMatrix = get_parent_inverse_matrix(transform)
         local_matrix: MMatrix = matrix * inverse_matrix
-        set_local_matrix(transform, local_matrix)
+        set_local_matrix(transform, local_matrix, use_joint_orient)
 
 
 def localize_world_matrix(transform: str, target_space_transform: str) -> MultMatrixNode:

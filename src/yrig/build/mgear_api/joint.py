@@ -6,7 +6,6 @@ from mgear.core import applyop, attribute, primitive, transform
 # These are all values we assume, but that are properties of the mGear rig object and which we need to set.
 RIG_ROOT_NODE: str = "rig"
 ROTATION_OFFSET: tuple[float, float, float] = (0, 0, 0)
-JOINT_NAME_SUFFIX: str = "_jnt"
 SEPARATE_JOINT_STRUCTURE: bool = True
 USE_SEGMENT_SCALE_COMPENSATE: bool = False
 ROOT_JOINT_PARENT: str = "jnt_org"
@@ -14,6 +13,11 @@ JOINT_WORLD_ORIENT: bool = False
 FORCE_UNI_SCALE: bool = False
 JOINTS_SET_NAME: str = f"{RIG_ROOT_NODE}_deformers_grp"
 JOINT_VIS_ATTR: str = f"{RIG_ROOT_NODE}.jnt_vis"
+
+
+def add_to_joint_set(joint: str):
+    if cmds.objExists(JOINTS_SET_NAME) and cmds.nodeType(JOINTS_SET_NAME) == "objectSet":
+        cmds.sets(joint, addElement=JOINTS_SET_NAME)
 
 
 # This is taken from the mGear addJoint function and cleaned up since otherwise the interface is gross.
@@ -156,11 +160,7 @@ def add_joint(
                         pm.addAttr(jnt, ln="leaf_joint", at="message", m=True)  # type: ignore
                     pm.connectAttr(leaf_jnt.message, jnt.leaf_joint)  # type: ignore
 
-                    if (
-                        cmds.objExists(JOINTS_SET_NAME)
-                        and cmds.nodeType(JOINTS_SET_NAME) == "objectSet"
-                    ):
-                        cmds.sets(str(leaf_jnt), addElement=JOINTS_SET_NAME)
+                    add_to_joint_set(str(leaf_jnt))
                     # connect scale
                     jnt.disconnectAttr("scale")
                     jnt.disconnectAttr("shear")
@@ -213,9 +213,7 @@ def add_joint(
         )
         pm.connectAttr(JOINT_VIS_ATTR, jnt.attr("visibility"))  # type: ignore
         attribute.lockAttribute(jnt)
-
-    if cmds.objExists(JOINTS_SET_NAME) and cmds.nodeType(JOINTS_SET_NAME) == "objectSet":
-        cmds.sets(str(jnt), addElement=JOINTS_SET_NAME)
+    add_to_joint_set(str(jnt))
 
     if data_contracts:
         if not jnt.hasAttr("data_contracts"):

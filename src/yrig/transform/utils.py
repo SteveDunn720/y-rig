@@ -55,13 +55,14 @@ def get_position(transform: str, world_space: bool = True) -> MPoint:
     return MPoint(cmds.xform(transform, query=True, worldSpace=world_space, translation=True))
 
 
-def match_transform(transform: str, target_transform: str) -> None:
+def match_transform(transform: str, target_transform: str, use_joint_orient: bool = True) -> None:
     """
     Match a transform to another in world space.
 
     Args:
         transform: Object to be moved to the specified transform.
         target_transform: Name of the transform to match to.
+        use_joint_orient: When ``True``, if the transform is a joint the rotation will be zeroed and applied to the jointOrient.
     """
     source_matrix: MMatrix = get_world_matrix(transform=target_transform)
     set_world_matrix(transform=transform, matrix=source_matrix)

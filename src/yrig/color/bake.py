@@ -98,7 +98,7 @@ def sample_from_texture(
     return rgb_tuples
 
 
-def face_color_from_texture(mesh: str, anti_alias: bool = False) -> None:
+def face_color_from_texture(mesh: str, anti_alias: bool = True) -> None:
     """
     Samples texture color at each face of the given mesh and assigns the result as per-face vertex color.
 

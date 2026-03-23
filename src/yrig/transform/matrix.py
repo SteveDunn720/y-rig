@@ -136,40 +136,58 @@ def set_local_matrix(
     if fallback:
         cmds.xform(transform, worldSpace=False, matrix=matrix)  # type: ignore
     else:
-        sel = MSelectionList()
-        sel.add(str(transform))
-        dag_path: MDagPath = sel.getDagPath(0)
-        mfn_transform: MFnTransform = MFnTransform(dag_path)
-
         # Apply local matrix using transformation matrix
         transform_matrix: MTransformationMatrix = MTransformationMatrix(matrix)
+
         # Set translation
         translation = transform_matrix.translation(MSpace.kTransform)
-        mfn_transform.setTranslation(translation, MSpace.kTransform)
-
-        xyz_rotation = transform_matrix.rotation()
-        transform_matrix.reorderRotation(mfn_transform.rotationOrder())
-        redordered_rotation = transform_matrix.rotation()
-        mfn_transform.setRotation(redordered_rotation, MSpace.kTransform)
+        cmds.setAttr(f"{transform}.translate", translation.x, translation.y, translation.z)
         node_type = cmds.nodeType(transform)
+
+        rotate_order = cmds.getAttr(f"{transform}.rotateOrder")
+        xyz_rotation = transform_matrix.rotation()  # xyz rotation for jointOrient case
+
+        # Reorder for this transform's rotateOrder
+        transform_matrix.reorderRotation(rotate_order + 1)
+        rotation = transform_matrix.rotation()
+
+        rotation_deg = (
+            MAngle(rotation.x).asDegrees(),
+            MAngle(rotation.y).asDegrees(),
+            MAngle(rotation.z).asDegrees(),
+        )
+
+        xyz_rotation_deg = (
+            MAngle(xyz_rotation.x).asDegrees(),
+            MAngle(xyz_rotation.y).asDegrees(),
+            MAngle(xyz_rotation.z).asDegrees(),
+        )
+
+        cmds.setAttr(
+            f"{transform}.rotate",
+            MAngle(rotation.x).asDegrees(),
+            MAngle(rotation.y).asDegrees(),
+            MAngle(rotation.z).asDegrees(),
+        )
+
+        # Set rotation
         if node_type == "joint":
             if use_joint_orient:
-                cmds.setAttr(
-                    f"{transform}.jointOrient",
-                    MAngle(xyz_rotation.x).asDegrees(),
-                    MAngle(xyz_rotation.y).asDegrees(),
-                    MAngle(xyz_rotation.z).asDegrees(),
-                )
+                cmds.setAttr(f"{transform}.rotate", 0, 0, 0)  # type: ignore
+                cmds.setAttr(f"{transform}.jointOrient", *xyz_rotation_deg)
             else:
                 cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0)  # type: ignore
+                cmds.setAttr(f"{transform}.rotate", *rotation_deg)  # type: ignore
+        else:
+            cmds.setAttr(f"{transform}.rotate", *rotation_deg)  # type: ignore
 
         # Set scale
         scale = transform_matrix.scale(MSpace.kTransform)
-        mfn_transform.setScale(scale)
+        cmds.setAttr(f"{transform}.scale", scale[0], scale[1], scale[2])
 
         # Set shear
         shear = transform_matrix.shear(MSpace.kTransform)
-        mfn_transform.setShear(shear)
+        cmds.setAttr(f"{transform}.shear", shear[0], shear[1], shear[2])
 
 
 def set_world_matrix(

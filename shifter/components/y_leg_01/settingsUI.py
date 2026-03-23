@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsUIygZUfW.ui'
+## Form generated from reading UI file 'settingsUIbrEJUH.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.10.2
+## Created by: Qt User Interface Compiler version 6.11.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -163,17 +163,19 @@ class Ui_Form(object):
             2, QFormLayout.ItemRole.LabelRole, self.spline_degree_label
         )
 
-        self.spinBox = QSpinBox(self.groupBox)
-        self.spinBox.setObjectName("spinBox")
+        self.spline_degree_spinBox = QSpinBox(self.groupBox)
+        self.spline_degree_spinBox.setObjectName("spline_degree_spinBox")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.spinBox.sizePolicy().hasHeightForWidth())
-        self.spinBox.setSizePolicy(sizePolicy2)
-        self.spinBox.setMinimum(1)
-        self.spinBox.setMaximum(5)
+        sizePolicy2.setHeightForWidth(self.spline_degree_spinBox.sizePolicy().hasHeightForWidth())
+        self.spline_degree_spinBox.setSizePolicy(sizePolicy2)
+        self.spline_degree_spinBox.setMinimum(1)
+        self.spline_degree_spinBox.setMaximum(5)
 
-        self.weight_split_formLayout.setWidget(2, QFormLayout.ItemRole.FieldRole, self.spinBox)
+        self.weight_split_formLayout.setWidget(
+            2, QFormLayout.ItemRole.FieldRole, self.spline_degree_spinBox
+        )
 
         self.verticalLayout.addLayout(self.weight_split_formLayout)
 
@@ -425,7 +427,7 @@ class Ui_Form(object):
         # endif // QT_CONFIG(tooltip)
         self.spline_degree_label.setText(QCoreApplication.translate("Form", "Spline Degree", None))
         # if QT_CONFIG(tooltip)
-        self.spinBox.setToolTip(
+        self.spline_degree_spinBox.setToolTip(
             QCoreApplication.translate(
                 "Form",
                 'This corresponds to the degree of the spline used for the skin weight splitting. A higher value will result in a "smoother" weight split. A value of one is a linear spline, 2 quadratic, etc.',

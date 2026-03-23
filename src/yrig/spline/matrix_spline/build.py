@@ -35,6 +35,8 @@ def matrix_spline_from_transforms(
     secondary_axis: tuple[int, int, int] | None = (0, 0, 1),
     twist: bool = True,
     align_tangent: bool = True,
+    interpolate_rotation: bool = True,
+    interpolate_scale: bool = True,
     joint_config: JointConfig | None = None,
 ) -> MatrixSpline:
     """
@@ -60,6 +62,8 @@ def matrix_spline_from_transforms(
             as the up vector for the aim matrix. If False no vector is set and the orientation is the swing
             part of a swing twist decomposition.
         align_tangent: When True the pinned segments will align their primary axis along the spline.
+        interpolate_rotation: When True the rotation of the pinned transform will be interpolated with the CVs rotations.
+        interpolate_scale: When True the scale of the pinned transform will be a spline interpolation of the CVs scales.
         joint_config: A JointConfig object to define how or if joints should be created. Defaults to no joint creation.
 
     Returns:
@@ -121,6 +125,8 @@ def matrix_spline_from_transforms(
         secondary_axis=secondary_axis,
         twist=twist,
         align_tangent=align_tangent,
+        interpolate_rotation=interpolate_rotation,
+        interpolate_scale=interpolate_scale,
     )
     if joint_config is not None:
         joints: list[str] = []

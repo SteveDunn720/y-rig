@@ -163,13 +163,6 @@ def set_local_matrix(
             MAngle(xyz_rotation.z).asDegrees(),
         )
 
-        cmds.setAttr(
-            f"{transform}.rotate",
-            MAngle(rotation.x).asDegrees(),
-            MAngle(rotation.y).asDegrees(),
-            MAngle(rotation.z).asDegrees(),
-        )
-
         # Set rotation
         if node_type == "joint":  # TODO: figure out how to handle segmentScaleCompensate
             if use_joint_orient:

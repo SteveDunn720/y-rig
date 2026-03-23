@@ -171,7 +171,7 @@ def set_local_matrix(
         )
 
         # Set rotation
-        if node_type == "joint":
+        if node_type == "joint":  # TODO: figure out how to handle segmentScaleCompensate
             if use_joint_orient:
                 cmds.setAttr(f"{transform}.rotate", 0, 0, 0)  # type: ignore
                 cmds.setAttr(f"{transform}.jointOrient", *xyz_rotation_deg)

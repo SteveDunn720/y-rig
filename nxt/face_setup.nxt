@@ -10,6 +10,10 @@
                 977.0117312460196,
                 -329.0142175037931
             ],
+            "/remove_face": [
+                280,
+                20
+            ],
             "/setup": [
                 -901.0,
                 -363.0
@@ -24,7 +28,7 @@
                 },
                 "dev_build": {
                     "type": "bool",
-                    "value": "False"
+                    "value": "True"
                 },
                 "face_path": {},
                 "guide_filepath": {
@@ -39,14 +43,14 @@
         },
         "/cleanup": {
             "code": [
-                "if not ${dev_build}:",
-                "    cmds.delete(\"${guide_group}\")"
+                "cmds.delete(\"${guide_group}\")"
             ]
         },
         "/setup": {
             "start_point": true,
             "child_order": [
-                "load_guides"
+                "load_guides",
+                "remove_face"
             ],
             "code": [
                 "from maya import cmds",
@@ -62,26 +66,38 @@
             "code": [
                 "face_path = STAGE.face_path",
                 "guide_path = face_path / \"guide.mb\"",
-                "if not guide_path.exists():",
-                "    raise RuntimeError(f\"There was no guide file found at {guide_path}\")",
+                "if not cmds.objExists(\"${guide_group}\"):",
+                "    if not guide_path.exists():",
+                "        raise RuntimeError(f\"There was no guide file found at {guide_path}\")",
+                "        ",
+                "    imported_nodes = cmds.file(str(guide_path.resolve()), i=True, defaultNamespace=True, returnNewNodes=True)",
+                "    top_level_nodes = cmds.ls(imported_nodes, assemblies=True)",
+                "    if not top_level_nodes:",
+                "        raise RuntimeError(\"No transforms found in imported guides!\")",
                 "    ",
-                "imported_nodes = cmds.file(str(guide_path.resolve()), i=True, defaultNamespace=True, returnNewNodes=True)",
-                "top_level_nodes = cmds.ls(imported_nodes, assemblies=True)",
-                "if not top_level_nodes:",
-                "    raise RuntimeError(\"No transforms found in imported guides!\")",
-                "",
-                "# Case 1: exactly one root transform",
-                "if len(top_level_nodes) == 1:",
-                "    top_level_node = top_level_nodes[0]",
-                "    if cmds.nodeType(top_level_node) == \"transform\":",
-                "        guide_grp = top_level_node",
+                "    # Case 1: exactly one root transform",
+                "    if len(top_level_nodes) == 1:",
+                "        top_level_node = top_level_nodes[0]",
+                "        if cmds.nodeType(top_level_node) == \"transform\":",
+                "            guide_grp = top_level_node",
+                "        else:",
+                "            guide_grp = cmds.group(top_level_node, name=\"${guide_group}\", world=True)",
+                "        if guide_grp != \"${guide_group}\":",
+                "            guide_grp = cmds.rename(guide_grp)",
                 "    else:",
-                "        guide_grp = cmds.group(top_level_node, name=\"${guide_group}\", world=True)",
-                "    if guide_grp != \"${guide_group}\":",
-                "        guide_grp = cmds.rename(guide_grp)",
-                "else:",
-                "    # Case 2: multiple top level transforms (we need to group them)",
-                "    guide_grp = cmds.group(top_level_nodes, name=\"${guide_group}\", world=True) "
+                "        # Case 2: multiple top level transforms (we need to group them)",
+                "        guide_grp = cmds.group(top_level_nodes, name=\"${guide_group}\", world=True) "
+            ]
+        },
+        "/setup/remove_face": {
+            "code": [
+                "face_group = \"face_grp\"",
+                "face_joint = \"face_jnt\"",
+                "if ${dev_build}:",
+                "    if cmds.objExists(face_group):",
+                "        cmds.delete(face_group)",
+                "    if cmds.objExists(face_joint):",
+                "        cmds.delete(face_joint)"
             ]
         }
     }

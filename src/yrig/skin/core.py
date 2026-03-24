@@ -351,3 +351,31 @@ def get_weights(shape: str, skin_cluster: str | None = None) -> dict[int, dict[s
             weights_dict[vtx_id] = vtx_weights
 
     return weights_dict
+
+
+def transfer_skin_weights(
+    source: str, target: str, interpolate: bool = True, map_by_name: bool = True
+):
+    source_skin: str
+    if cmds.nodeType(source) == "skinCluster":
+        source_skin = source
+    else:
+        skin_cluster = get_skin_cluster(source)
+        if skin_cluster is None:
+            raise RuntimeError(f"No skin cluster found on {source}.")
+        source_skin = skin_cluster
+    target_skin: str
+    if cmds.nodeType(source) == "skinCluster":
+        target_skin = source
+    else:
+        skin_cluster = get_skin_cluster(target)
+        if skin_cluster is None:
+            raise RuntimeError(f"No skin cluster found on {target}.")
+        target_skin = skin_cluster
+    cmds.copySkinWeights(
+        sourceSkin=source_skin,
+        destinationSkin=target_skin,
+        noMirror=True,
+        smooth=interpolate,
+        influenceAssociation="name" if map_by_name else "closestJoint",
+    )

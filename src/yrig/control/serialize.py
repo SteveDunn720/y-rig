@@ -178,7 +178,9 @@ def control_shape_data_from_library(curve_shape: ControlShape | str) -> ControlS
     return _control_shape_data_cache[curve_shape]
 
 
-def create_shape_from_named_curve_data(named_curve: NamedNurbsCurveData, parent: str) -> str:
+def create_shape_from_named_curve_data(
+    named_curve: NamedNurbsCurveData, parent: str, use_name: bool = True
+) -> str:
     curve = named_curve.curve
     positions: list[tuple[float, float, float]] = curve.cv_positions
     degree: int = curve.degree
@@ -194,7 +196,8 @@ def create_shape_from_named_curve_data(named_curve: NamedNurbsCurveData, parent:
         pointWeight=position_weights, knot=knots, periodic=periodic, degree=degree
     )
     curve_shape_node: str = get_shapes(child_curve_transform)[0]
-    curve_shape_node = cmds.rename(curve_shape_node, shape_name)
+    if use_name:
+        curve_shape_node = cmds.rename(curve_shape_node, shape_name)
     cmds.parent(curve_shape_node, parent, shape=True, relative=True)
     cmds.delete(child_curve_transform)
     return curve_shape_node
@@ -207,7 +210,9 @@ def create_curve_from_data(
 ) -> str:
     curve_transform: str = create_transform(name=name or "curve")
     for index, named_curve in enumerate(curve_data.curves):
-        shape_node = create_shape_from_named_curve_data(named_curve, curve_transform)
+        shape_node = create_shape_from_named_curve_data(
+            named_curve, curve_transform, use_name=False
+        )
         shape_name = f"{curve_transform}Shape" if index == 0 else f"{curve_transform}Shape{index}"
         cmds.rename(shape_node, shape_name)
     if parent is not None:
@@ -317,10 +322,14 @@ def export_control_shapes_file(filepath: Path, force: bool = False):
     json_dump = json.dumps(controls_shape_dict_data, indent=2)
     with open(file=filepath, mode="w") as json_file:
         json_file.write(json_dump)
+    log.info(f"Successfully exported control shapes file to {filepath}")
 
 
+# Storing control data on the shape node is dumb, but for alwaysDrawOnTop it's the only way.
+# Also mGear hooks things like visibility to the shape for some reason, so we need to maintain these.
 @dataclass
 class NurbsCurveShapeState:
+    visibility: bool | str
     display_on_top: bool | str
     drawing_override: bool
     color_mode_rgb: bool
@@ -329,6 +338,10 @@ class NurbsCurveShapeState:
     color_alpha: float
 
     def apply_to_nurbs_curve_shape(self, shape_node: str):
+        if isinstance(self.visibility, str):
+            cmds.connectAttr(self.visibility, f"{shape_node}.visibility")
+        else:
+            cmds.setAttr(f"{shape_node}.visibility", self.visibility)  # type: ignore
         if isinstance(self.display_on_top, str):
             cmds.connectAttr(self.display_on_top, f"{shape_node}.alwaysDrawOnTop")
         else:
@@ -341,14 +354,24 @@ class NurbsCurveShapeState:
 
     @classmethod
     def from_nurbs_curve_shape(cls, shape_node: str) -> NurbsCurveShapeState:
+        visibility_attr = f"{shape_node}.visibility"
+        visibility_connections = cmds.listConnections(
+            visibility_attr, source=True, destination=False, plugs=True
+        )
+        if visibility_connections:
+            visibility = visibility_connections[0]
+        else:
+            visibility = bool(cmds.getAttr(visibility_attr))
+
         display_on_top_attr = f"{shape_node}.alwaysDrawOnTop"
         display_on_top_connections = cmds.listConnections(
-            display_on_top_attr, destination=True, source=False, plugs=True
+            display_on_top_attr, source=True, destination=False, plugs=True
         )
         if display_on_top_connections:
             display_on_top = display_on_top_connections[0]
         else:
             display_on_top = bool(cmds.getAttr(display_on_top_attr))
+
         drawing_override = bool(cmds.getAttr(f"{shape_node}.overrideEnabled"))
         color_mode_rgb = bool(cmds.getAttr(f"{shape_node}.drawOverride.overrideRGBColors"))
         color_index = int(cmds.getAttr(f"{shape_node}.drawOverride.overrideColor"))
@@ -357,20 +380,29 @@ class NurbsCurveShapeState:
         )[0]
         color_alpha: float = cmds.getAttr(f"{shape_node}.drawOverride.overrideColorA")
         return NurbsCurveShapeState(
-            display_on_top, drawing_override, color_mode_rgb, color_index, color_rgb, color_alpha
+            visibility,
+            display_on_top,
+            drawing_override,
+            color_mode_rgb,
+            color_index,
+            color_rgb,
+            color_alpha,
         )
 
 
 def apply_control_shape_data(control: str, data: ControlShapeData):
     old_control_shapes = get_shapes(control)
-    primary_shape = old_control_shapes[
-        0
-    ]  # Just pick one shape that'll be the source for shape state
+    # Just pick one shape that'll be the source for shape state
+    primary_shape = old_control_shapes[0]
     shape_state = NurbsCurveShapeState.from_nurbs_curve_shape(primary_shape)
-    cmds.delete(old_control_shapes)  # type: ignore
+    # Rename the old shapes so that there aren't name conflicts. We can't delete yet as Maya might delete connected nodes.
+    old_control_shapes = [
+        cmds.rename(control_shape, f"{control_shape}_old") for control_shape in old_control_shapes
+    ]
     for shape_data in data.curves:
         shape_node = create_shape_from_named_curve_data(shape_data, control)
         shape_state.apply_to_nurbs_curve_shape(shape_node)
+    cmds.delete(old_control_shapes)  # type: ignore
 
 
 def apply_control_shapes_file(filepath: Path):
@@ -387,3 +419,4 @@ def apply_control_shapes_file(filepath: Path):
             continue
         control_shape_data = ControlShapeData.from_dict(control_shape_data_dict)
         apply_control_shape_data(control, control_shape_data)
+    log.info(f"Control shapes loaded and applied from {filepath}")

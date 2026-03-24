@@ -4,8 +4,7 @@ from maya import cmds
 from maya.api.OpenMaya import MMatrix
 
 from yrig.build.mgear_api.control import add_ctl
-from yrig.control.curve import create_curve
-from yrig.control.serialize import ControlShape
+from yrig.control.serialize import ControlShape, create_curve
 from yrig.name import MIDDLE_SIDE_NAME, get_side
 from yrig.transform import create_transform
 from yrig.transform.matrix import get_world_matrix

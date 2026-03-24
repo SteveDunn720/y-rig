@@ -15,7 +15,8 @@ from maya.api.OpenMaya import (
     MSpace,
 )
 
-from yrig.transform import get_shapes
+from yrig.control.utils import get_tagged_controls
+from yrig.transform import create_transform, get_shapes
 
 log = logging.getLogger(__name__)
 
@@ -47,8 +48,6 @@ class ControlShape(Enum):
 class NurbsCurveData:
     degree: int
     form: int
-    cv_positions: list[tuple[float, float, float]]
-    cv_weights: list[float]
     cv_positions: list[tuple[float, float, float]]
     cv_weights: list[float]
     knots: list[float]
@@ -88,44 +87,6 @@ class ControlShapeData:
                 for name, curve_data in data.items()
             ]
         )
-
-
-def get_cv_positions(curve_shape: str) -> list[tuple[float, float, float]]:
-    """
-    Gets the positions of all CVs for a given curve shape.
-    Args:
-        curve_shape(str): Name of curve shape node.
-    Returns:
-        list: A list of CV positions as tuples
-    """
-    sel: MSelectionList = MSelectionList()
-    sel.add(curve_shape)
-    curve_obj = sel.getDependNode(0)
-    fn_curve: MFnNurbsCurve = MFnNurbsCurve(curve_obj)
-
-    cv_positions: MPointArray = fn_curve.cvPositions(space=MSpace.kObject)
-    positions: list[tuple[float, float, float]] = [
-        (point.x, point.y, point.z) for point in cv_positions
-    ]
-    return positions
-
-
-def get_cv_weights(curve_shape: str) -> list[float]:
-    """
-    Gets the weights of all CVs for a given curve shape.
-    Args:
-        curve_shape(str): Name of curve shape node.
-    Returns:
-        list: A list of CV weight values.
-    """
-    sel: MSelectionList = MSelectionList()
-    sel.add(curve_shape)
-    curve_obj = sel.getDependNode(0)
-    fn_curve: MFnNurbsCurve = MFnNurbsCurve(curve_obj)
-
-    cv_positions: MPointArray = fn_curve.cvPositions(space=MSpace.kObject)
-    weights: list[float] = [point.w for point in cv_positions]
-    return weights
 
 
 def get_cv_data(curve_shape: str) -> tuple[list[tuple[float, float, float]], list[float]]:
@@ -188,12 +149,12 @@ def control_shape_data_to_json(data: ControlShapeData) -> str:
     return json.dumps(data.to_dict(), indent=2)
 
 
-def control_shape_from_json(json_str: str) -> ControlShapeData:
+def control_shape_data_from_json(json_str: str) -> ControlShapeData:
     data = json.loads(json_str)
     return ControlShapeData.from_dict(data)
 
 
-def get_curve_data(curve_shape: ControlShape | str) -> ControlShapeData:
+def control_shape_data_from_library(curve_shape: ControlShape | str) -> ControlShapeData:
     """
     Args:
         curve_shape(ControlShape): Name of the control shape to retrieve.
@@ -213,8 +174,67 @@ def get_curve_data(curve_shape: ControlShape | str) -> ControlShapeData:
 
         with open(file_path, "r") as json_file:
             json_data = json_file.read()
-            _control_shape_data_cache[curve_shape] = control_shape_from_json(json_data)
+            _control_shape_data_cache[curve_shape] = control_shape_data_from_json(json_data)
     return _control_shape_data_cache[curve_shape]
+
+
+def create_shape_from_named_curve_data(named_curve: NamedNurbsCurveData, parent: str) -> str:
+    curve = named_curve.curve
+    positions: list[tuple[float, float, float]] = curve.cv_positions
+    degree: int = curve.degree
+    periodic: bool = True if curve.form == 2 else False
+    knots: list[float] = curve.knots
+    weights: list[float] = curve.cv_weights
+    position_weights: list[tuple[float, float, float, float]] = [
+        (position[0], position[1], position[2], weights[index])
+        for index, position in enumerate(positions)
+    ]
+    shape_name = named_curve.name
+    child_curve_transform: str = cmds.curve(
+        pointWeight=position_weights, knot=knots, periodic=periodic, degree=degree
+    )
+    curve_shape_node: str = get_shapes(child_curve_transform)[0]
+    curve_shape_node = cmds.rename(curve_shape_node, shape_name)
+    cmds.parent(curve_shape_node, parent, shape=True, relative=True)
+    cmds.delete(child_curve_transform)
+    return curve_shape_node
+
+
+def create_curve_from_data(
+    curve_data: ControlShapeData,
+    name: str | None = None,
+    parent: str | None = None,
+) -> str:
+    curve_transform: str = create_transform(name=name or "curve")
+    for index, named_curve in enumerate(curve_data.curves):
+        shape_node = create_shape_from_named_curve_data(named_curve, curve_transform)
+        shape_name = f"{curve_transform}Shape" if index == 0 else f"{curve_transform}Shape{index}"
+        cmds.rename(shape_node, shape_name)
+    if parent is not None:
+        cmds.parent(curve_transform, parent)
+    if name is not None:
+        curve_transform = cmds.rename(curve_transform, name)
+    return curve_transform
+
+
+def create_curve(
+    name: str | None = None,
+    control_shape: ControlShape | str = ControlShape.CIRCLE,
+    parent: str | None = None,
+) -> str:
+    """
+    Creates a curve from the specified item in the shape library.
+
+    Args:
+        curve_shape(ControlShape): Name of the control shape to generate.
+    Returns:
+        str: Name of the generated curve transform.
+    """
+    if isinstance(control_shape, str):
+        control_shape: ControlShape = ControlShape[control_shape.strip().upper()]
+    curve_data = control_shape_data_from_library(curve_shape=control_shape)
+    curve_transform = create_curve_from_data(curve_data, name or control_shape.name)
+    return curve_transform
 
 
 def write_curve_to_library(curve: str | None = None, name: str | None = None, force: bool = False):
@@ -269,3 +289,101 @@ def write_curve_to_library(curve: str | None = None, name: str | None = None, fo
     with open(file=json_path, mode="w") as json_file:
         json_file.write(json_dump)
     log.info(f"The control shape for {curve} was written to the shape library at {json_path}")
+
+
+def export_control_shapes_file(filepath: Path, force: bool = False):
+    controls = get_tagged_controls()
+    controls_shape_dict_data: dict[str, dict] = {
+        control: get_control_shape_data(control).to_dict() for control in controls
+    }
+
+    if filepath.exists():
+        if force:
+            pass
+        else:
+            confirm: str = cmds.confirmDialog(
+                title="File Overwrite",
+                message=f"{filepath} already exists and will be overwritten, are you sure you want to write the file?",
+                button=["Yes", "No"],
+                defaultButton="Yes",
+                cancelButton="No",
+                dismissString="No",
+            )
+            if confirm == "Yes":
+                pass
+            else:
+                return
+
+    json_dump = json.dumps(controls_shape_dict_data, indent=2)
+    with open(file=filepath, mode="w") as json_file:
+        json_file.write(json_dump)
+
+
+@dataclass
+class NurbsCurveShapeState:
+    display_on_top: bool | str
+    drawing_override: bool
+    color_mode_rgb: bool
+    color_index: int
+    color_rgb: tuple[float, float, float]
+    color_alpha: float
+
+    def apply_to_nurbs_curve_shape(self, shape_node: str):
+        if isinstance(self.display_on_top, str):
+            cmds.connectAttr(self.display_on_top, f"{shape_node}.alwaysDrawOnTop")
+        else:
+            cmds.setAttr(f"{shape_node}.alwaysDrawOnTop", self.display_on_top)  # type: ignore
+        cmds.setAttr(f"{shape_node}.overrideEnabled", self.drawing_override)  # type: ignore
+        cmds.setAttr(f"{shape_node}.drawOverride.overrideRGBColors", self.color_mode_rgb)  # type: ignore
+        cmds.setAttr(f"{shape_node}.drawOverride.overrideColor", self.color_index)  # type : ignore
+        cmds.setAttr(f"{shape_node}.drawOverride.overrideColorRGB", *self.color_rgb, type="float3")  # type: ignore
+        cmds.setAttr(f"{shape_node}.drawOverride.overrideColorA", self.color_alpha)  # type: ignore
+
+    @classmethod
+    def from_nurbs_curve_shape(cls, shape_node: str) -> NurbsCurveShapeState:
+        display_on_top_attr = f"{shape_node}.alwaysDrawOnTop"
+        display_on_top_connections = cmds.listConnections(
+            display_on_top_attr, destination=True, source=False, plugs=True
+        )
+        if display_on_top_connections:
+            display_on_top = display_on_top_connections[0]
+        else:
+            display_on_top = bool(cmds.getAttr(display_on_top_attr))
+        drawing_override = bool(cmds.getAttr(f"{shape_node}.overrideEnabled"))
+        color_mode_rgb = bool(cmds.getAttr(f"{shape_node}.drawOverride.overrideRGBColors"))
+        color_index = int(cmds.getAttr(f"{shape_node}.drawOverride.overrideColor"))
+        color_rgb: tuple[float, float, float] = cmds.getAttr(
+            f"{shape_node}.drawOverride.overrideColorRGB"
+        )[0]
+        color_alpha: float = cmds.getAttr(f"{shape_node}.drawOverride.overrideColorA")
+        return NurbsCurveShapeState(
+            display_on_top, drawing_override, color_mode_rgb, color_index, color_rgb, color_alpha
+        )
+
+
+def apply_control_shape_data(control: str, data: ControlShapeData):
+    old_control_shapes = get_shapes(control)
+    primary_shape = old_control_shapes[
+        0
+    ]  # Just pick one shape that'll be the source for shape state
+    shape_state = NurbsCurveShapeState.from_nurbs_curve_shape(primary_shape)
+    cmds.delete(old_control_shapes)  # type: ignore
+    for shape_data in data.curves:
+        shape_node = create_shape_from_named_curve_data(shape_data, control)
+        shape_state.apply_to_nurbs_curve_shape(shape_node)
+
+
+def apply_control_shapes_file(filepath: Path):
+    if not filepath.exists():
+        raise RuntimeError(f"There was no control shapes file found at {filepath}")
+
+    existing_controls: set[str] = set(get_tagged_controls())
+    control_dict: dict[str, dict]
+    with open(filepath, "r") as json_file:
+        json_data = json_file.read()
+        control_dict = json.loads(json_data)
+    for control, control_shape_data_dict in control_dict.items():
+        if control not in existing_controls:
+            continue
+        control_shape_data = ControlShapeData.from_dict(control_shape_data_dict)
+        apply_control_shape_data(control, control_shape_data)

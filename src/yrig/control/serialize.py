@@ -327,30 +327,47 @@ def export_control_shapes_file(filepath: Path, force: bool = False):
 
 # Storing control data on the shape node is dumb, but for alwaysDrawOnTop it's the only way.
 # Also mGear hooks things like visibility to the shape for some reason, so we need to maintain these.
+
+
 @dataclass
 class NurbsCurveShapeState:
-    visibility: bool | str
-    display_on_top: bool | str
-    drawing_override: bool
-    color_mode_rgb: bool
-    color_index: int
-    color_rgb: tuple[float, float, float]
-    color_alpha: float
+    visibility: bool | str = True
+    display_on_top: bool | str = False
+    drawing_override: bool = False
+    color_mode_rgb: bool = False
+    color_index: int = 0
+    color_rgb: tuple[float, float, float] = (0, 0, 0)
+    color_alpha: float = 1
 
     def apply_to_nurbs_curve_shape(self, shape_node: str):
-        if isinstance(self.visibility, str):
-            cmds.connectAttr(self.visibility, f"{shape_node}.visibility")
-        else:
-            cmds.setAttr(f"{shape_node}.visibility", self.visibility)  # type: ignore
-        if isinstance(self.display_on_top, str):
-            cmds.connectAttr(self.display_on_top, f"{shape_node}.alwaysDrawOnTop")
-        else:
-            cmds.setAttr(f"{shape_node}.alwaysDrawOnTop", self.display_on_top)  # type: ignore
-        cmds.setAttr(f"{shape_node}.overrideEnabled", self.drawing_override)  # type: ignore
-        cmds.setAttr(f"{shape_node}.drawOverride.overrideRGBColors", self.color_mode_rgb)  # type: ignore
-        cmds.setAttr(f"{shape_node}.drawOverride.overrideColor", self.color_index)  # type : ignore
-        cmds.setAttr(f"{shape_node}.drawOverride.overrideColorRGB", *self.color_rgb, type="float3")  # type: ignore
-        cmds.setAttr(f"{shape_node}.drawOverride.overrideColorA", self.color_alpha)  # type: ignore
+        default_state = NurbsCurveShapeState()
+        if self.visibility != default_state.visibility:
+            if isinstance(self.visibility, str):
+                cmds.connectAttr(self.visibility, f"{shape_node}.visibility")
+            else:
+                cmds.setAttr(f"{shape_node}.visibility", self.visibility)  # type: ignore
+        if self.display_on_top != default_state.display_on_top:
+            if isinstance(self.display_on_top, str):
+                cmds.connectAttr(self.display_on_top, f"{shape_node}.alwaysDrawOnTop")
+            else:
+                cmds.setAttr(f"{shape_node}.alwaysDrawOnTop", self.display_on_top)  # type: ignore
+        if self.drawing_override != default_state.drawing_override:
+            cmds.setAttr(f"{shape_node}.overrideEnabled", self.drawing_override)  # type: ignore
+        if self.color_mode_rgb != default_state.drawing_override:  # noqa
+            cmds.setAttr(f"{shape_node}.drawOverride.overrideRGBColors", self.color_mode_rgb)  # type: ignore
+        if self.color_index != default_state.color_index:
+            cmds.setAttr(
+                f"{shape_node}.drawOverride.overrideColor",
+                self.color_index,  # type : ignore
+            )
+        if self.color_rgb != default_state.color_rgb:
+            cmds.setAttr(
+                f"{shape_node}.drawOverride.overrideColorRGB",
+                *self.color_rgb,  # type : ignore
+                type="float3",
+            )
+        if self.color_alpha != default_state.color_alpha:
+            cmds.setAttr(f"{shape_node}.drawOverride.overrideColorA", self.color_alpha)  # type: ignore
 
     @classmethod
     def from_nurbs_curve_shape(cls, shape_node: str) -> NurbsCurveShapeState:

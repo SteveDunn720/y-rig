@@ -12,7 +12,7 @@ def create_joint(
     transform: str | MMatrix | None = None,
     parent: str | None = None,
     connect: bool = True,
-):
+) -> str:
     joint = cmds.createNode("joint", name=f"{name}{JOINT_SUFFIX}")
     if parent is not None:
         cmds.parent(joint, parent, relative=True)
@@ -27,3 +27,4 @@ def create_joint(
     else:
         raise RuntimeError(f"{transform} is not a valid transform name or MMatrix")
     add_to_joint_set(joint)
+    return joint

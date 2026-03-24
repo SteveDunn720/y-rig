@@ -1,5 +1,3 @@
-from maya import cmds
-
 from yrig.maya_api.attribute import QuatAttribute
 from yrig.maya_api.node import (
     QuatInvertNode,
@@ -10,7 +8,7 @@ from yrig.maya_api.node import (
 from yrig.name import get_short_name
 from yrig.transform.matrix import localize_and_decompose_matrix, matrix_constraint
 from yrig.transform.structs import Axis
-from yrig.transform.utils import match_transform
+from yrig.transform.utils import create_transform, match_transform
 
 
 def drive_rotation_with_quat(transform: str, quat_attribute: QuatAttribute):
@@ -121,8 +119,9 @@ def create_swing_only_transform(
     """
     used_name = name if name is not None else f"{get_short_name(transform)}_swing"
     used_parent = parent if parent is not None else reference_space
-    neutral_group = cmds.group(empty=True, name=f"{name}_npo", parent=used_parent)
-    swing_transform = cmds.group(empty=True, name=used_name, parent=neutral_group)
+
+    neutral_group = create_transform(name=f"{name}_npo", parent=used_parent)
+    swing_transform = create_transform(name=used_name, parent=neutral_group)
     match_transform(neutral_group, transform)
     if parent is not None:
         matrix_constraint(reference_space, neutral_group)

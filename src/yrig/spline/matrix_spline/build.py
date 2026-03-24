@@ -1,14 +1,13 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from maya import cmds
-
 from yrig.joint import create_joint
 from yrig.name import get_short_name
 from yrig.skin.split import tag_for_weight_split
 from yrig.spline.math import generate_knots
 from yrig.spline.matrix_spline.core import MatrixSpline
 from yrig.spline.matrix_spline.pin import pin_transforms_to_matrix_spline
+from yrig.transform import create_transform
 from yrig.transform.matrix import matrix_constraint
 
 
@@ -69,11 +68,7 @@ def matrix_spline_from_transforms(
     Returns:
         matrix_spline: The matrix spline.
     """
-    spline_group: str
-    if parent:
-        spline_group = cmds.group(empty=True, name=name, parent=parent)
-    else:
-        spline_group = cmds.group(empty=True, name=name, world=True)
+    spline_group: str = create_transform(name=name, parent=parent)
     spline_knots = (
         knots
         if knots is not None
@@ -82,7 +77,7 @@ def matrix_spline_from_transforms(
 
     cv_pins: list[str] = []
     for index, transform in enumerate(cv_transforms):
-        cv_pin = cmds.group(empty=True, name=f"{spline_group}_cv{index}", parent=spline_group)
+        cv_pin = create_transform(name=f"{spline_group}_cv{index}", parent=spline_group)
         matrix_constraint(transform, cv_pin, keep_offset=False)
         cv_pins.append(cv_pin)
     matrix_spline = MatrixSpline(
@@ -105,13 +100,13 @@ def matrix_spline_from_transforms(
     if isinstance(pinned_transforms, int):
         for i in range(pinned_transforms):
             pin_name = f"{matrix_spline.name}_pin{i}"
-            pin = cmds.group(empty=True, name=pin_name, parent=spline_group)
+            pin = create_transform(name=pin_name, parent=spline_group)
             pins.append(pin)
             segment_names.append(f"{matrix_spline.name}_seg{i}")
     else:
         for pinned_transform in pinned_transforms:
             pin_name = f"{get_short_name(pinned_transform)}_pin"
-            pin = cmds.group(empty=True, name=pin_name, parent=spline_group)
+            pin = create_transform(name=pin_name, parent=spline_group)
             matrix_constraint(pin, pinned_transform, keep_offset=False)
             pins.append(pin)
             segment_names.append(f"{get_short_name(pinned_transform)}_seg")

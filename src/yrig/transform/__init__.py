@@ -17,7 +17,7 @@ from .matrix import (
     mmatrix_to_list,
     set_world_matrix,
 )
-from .utils import get_shapes, match_location, match_transform, zero_rotate_axis
+from .utils import create_transform, get_shapes, match_location, match_transform, zero_rotate_axis
 
 __all__ = [
     "matrix",
@@ -32,6 +32,7 @@ __all__ = [
     "mmatrix_to_list",
     "set_world_matrix",
     # Utils
+    "create_transform",
     "get_shapes",
     "match_location",
     "match_transform",

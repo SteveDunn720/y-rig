@@ -4,7 +4,7 @@ from typing import Sequence
 from maya import cmds
 
 from yrig.spline import generate_knots
-from yrig.transform import matrix_constraint
+from yrig.transform import create_transform, matrix_constraint
 
 
 def bound_curve_from_transforms(
@@ -43,10 +43,7 @@ def bound_curve_from_transforms(
     curve_transform_name = name
     curve_group: str | None
     if create_pins:
-        if parent:
-            curve_group = cmds.group(empty=True, name=f"{curve_transform_name}_grp", parent=parent)
-        else:
-            curve_group = cmds.group(empty=True, name=f"{curve_transform_name}_grp", world=True)
+        curve_group = create_transform(name=f"{curve_transform_name}_grp", parent=parent)
     else:
         curve_group = None
 
@@ -79,10 +76,7 @@ def bound_curve_from_transforms(
     extended_cv_mapping: dict[str, str] = {}
     if create_pins:
         for index, transform in enumerate(transforms):
-            if curve_group is not None:
-                cv = cmds.group(empty=True, name=f"{curve_transform}_cv{index}", parent=curve_group)
-            else:
-                cv = cmds.group(empty=True, name=f"{curve_transform}_cv{index}", world=True)
+            cv = create_transform(name=f"{curve_transform}_cv{index}", parent=curve_group)
             matrix_constraint(
                 transform, cv, rotate=False, scale=False, shear=False, keep_offset=False
             )

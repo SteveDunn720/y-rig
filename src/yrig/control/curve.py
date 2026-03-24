@@ -1,7 +1,7 @@
 from maya import cmds
 
 from yrig.control.serialize import ControlShape, get_curve_data
-from yrig.transform import get_shapes
+from yrig.transform import create_transform, get_shapes
 
 
 def create_curve(
@@ -21,7 +21,7 @@ def create_curve(
         control_shape: ControlShape = ControlShape[control_shape.strip().upper()]
     curve_data = get_curve_data(curve_shape=control_shape)
 
-    curve_transform: str = cmds.group(empty=True, name=control_shape.value)
+    curve_transform: str = create_transform(name=control_shape.value)
 
     for index, named_curve in enumerate(curve_data.curves):
         curve = named_curve.curve

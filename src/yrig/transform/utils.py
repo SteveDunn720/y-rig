@@ -8,6 +8,37 @@ from yrig.transform.matrix import (
 )
 
 
+def create_transform(
+    name: str,
+    parent: str | None = None,
+    transform: str | MMatrix | None = None,
+) -> str:
+    """Create an transform node with optional parent and initial transform.
+
+    Args:
+        name: Name of the new node.
+        parent: Optional parent transform.
+        transform: ``None``, a transform name to match, or a world space ``MMatrix`` to apply.
+
+    Returns:
+        The created transform name.
+    """
+    created_transform: str
+    if parent:
+        created_transform = cmds.group(empty=True, name=name, parent=parent)
+    else:
+        created_transform = cmds.group(empty=True, name=name, world=True)
+    if transform is None:
+        pass
+    elif isinstance(transform, str):
+        match_transform(created_transform, transform)
+    elif isinstance(transform, MMatrix):
+        set_world_matrix(created_transform, transform, use_joint_orient=True)
+    else:
+        raise RuntimeError(f"{transform} is not a valid transform name or MMatrix")
+    return created_transform
+
+
 def get_shapes(transform: str) -> list[str]:
     """Return the non-intermediate shape nodes parented under a transform.
 
@@ -120,7 +151,7 @@ def zero_rotate_axis(transform: str) -> None:
     if node_type == "joint":
         cmds.joint(transform, edit=True, zeroScaleOrient=True)
     else:
-        temp_transform = cmds.group(empty=True, name=f"{transform}_temp")
+        temp_transform = create_transform(name=f"{transform}_temp")
         match_transform(temp_transform, transform)
         cmds.setAttr(f"{transform}.rotateAxis", 0, 0, 0, type="float3")  # type: ignore
         match_transform(transform, temp_transform)

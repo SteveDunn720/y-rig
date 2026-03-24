@@ -6,6 +6,10 @@
     "solo": false,
     "meta_data": {
         "positions": {
+            "/component": [
+                -837.1238353059683,
+                -516.4394988667842
+            ],
             "/side": [
                 -208.82123418296544,
                 -291.92356207210474
@@ -17,6 +21,25 @@
             "code": [
                 "import yrig",
                 "from maya import cmds"
+            ]
+        },
+        "/component": {
+            "attrs": {
+                "component_group": {
+                    "type": "raw",
+                    "value": "${name}_grp"
+                },
+                "control_parent": {},
+                "joint_parent": {},
+                "name": {},
+                "parent": {},
+                "socket": {
+                    "type": "raw",
+                    "value": "${pareent}"
+                }
+            },
+            "code": [
+                "cmds.group(empty=True, name=\"${component_group}\", empty=True, parent=\"${parent}\")"
             ]
         },
         "/side": {

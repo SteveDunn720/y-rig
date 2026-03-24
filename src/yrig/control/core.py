@@ -7,7 +7,7 @@ from yrig.build.mgear_api.control import add_ctl
 from yrig.control.curve import create_curve
 from yrig.control.serialize import ControlShape
 from yrig.name import MIDDLE_SIDE_NAME, get_side
-from yrig.transform import set_world_matrix
+from yrig.transform import create_transform
 from yrig.transform.matrix import get_world_matrix
 from yrig.transform.structs import Direction, RotationOrder
 from yrig.transform.utils import bake_shape
@@ -89,12 +89,9 @@ def create_control(
 
     offset_transform: str | None = None
     if create_offset:
-        if parent is not None:
-            offset_transform = cmds.group(empty=True, name=f"{name}{OFFSET_SUFFIX}", parent=parent)
-        else:
-            offset_transform = cmds.group(empty=True, name=f"{name}{OFFSET_SUFFIX}", world=True)
-        if transform_matrix is not None:
-            set_world_matrix(offset_transform, transform_matrix)
+        offset_transform = create_transform(
+            name=f"{name}{OFFSET_SUFFIX}", parent=parent, transform=transform_matrix
+        )
 
     control_parent = parent if offset_transform is None else offset_transform
     control_name = f"{name}{CONTROL_SUFFIX}"

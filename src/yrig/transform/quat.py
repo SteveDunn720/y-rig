@@ -126,13 +126,14 @@ def create_swing_only_transform(
     if parent is not None:
         matrix_constraint(reference_space, neutral_group)
     swing_quat = swing_extract_quat(transform, neutral_group, axis)
-    matrix_constraint(
-        transform,
-        swing_transform,
-        translate=constrain_translate,
-        rotate=False,
-        scale=False,
-        shear=False,
-    )
+    if constrain_translate:
+        matrix_constraint(
+            transform,
+            swing_transform,
+            translate=True,
+            rotate=False,
+            scale=False,
+            shear=False,
+        )
     drive_rotation_with_quat(swing_transform, swing_quat)
     return swing_transform

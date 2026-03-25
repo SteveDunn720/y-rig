@@ -44,10 +44,10 @@ def _build_from_shifter_file(
     pre_custom_step: dict = json.loads(param_values["preCustomStep"])
     post_custom_step: dict = json.loads(param_values["postCustomStep"])
     pre_custom_steps: list[BuildStep] = [
-        BuildStep(item["path"]) for item in pre_custom_step["items"]
+        BuildStep(item["name"]) for item in pre_custom_step["items"]
     ]
     post_custom_steps: list[BuildStep] = [
-        BuildStep(item["path"]) for item in post_custom_step["items"]
+        BuildStep(item["name"]) for item in post_custom_step["items"]
     ]
     num_components = len(guide_data["components_list"])
 

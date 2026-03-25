@@ -39,7 +39,7 @@
                 }
             },
             "code": [
-                "cmds.group(empty=True, name=\"${component_group}\", empty=True, parent=\"${parent}\")"
+                "self.component_group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")"
             ]
         },
         "/side": {

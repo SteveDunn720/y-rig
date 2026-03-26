@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Iterator
 
 from maya import cmds
 from maya.api.OpenMaya import MMatrix
@@ -13,6 +17,25 @@ from yrig.transform.utils import bake_shape
 
 CONTROL_SUFFIX = "_ctl"
 OFFSET_SUFFIX = "_npo"
+
+_control_collection_stack: list[list[Control]] = []
+
+
+def _register_control(ctrl: "Control") -> None:
+    if _control_collection_stack:
+        _control_collection_stack[-1].append(ctrl)
+
+
+@contextmanager
+def collect_controls() -> Iterator[list[Control]]:
+    # Create a bucket to collect the controls created in the with block
+    # then put it on the stack so that _register_control will add to this bucket
+    bucket: list[Control] = []
+    _control_collection_stack.append(bucket)
+    try:
+        yield bucket
+    finally:
+        _control_collection_stack.pop()
 
 
 @dataclass
@@ -121,4 +144,6 @@ def create_control(
             scaleZ=(min_scale, 1),
         )
 
-    return Control(control_transform=control_transform, offset_transform=offset_transform)
+    control = Control(control_transform=control_transform, offset_transform=offset_transform)
+    _register_control(control)
+    return control

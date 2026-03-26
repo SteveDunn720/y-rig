@@ -16,6 +16,7 @@ from yrig.maya_api.attribute import (
     Vector3Attribute,
     Vector4Attribute,
 )
+from yrig.maya_api.utils import ensure_plugin_loaded
 
 from .version import MAYA_API_VERSION, TARGET_API_VERSION
 
@@ -28,32 +29,52 @@ def is_target_2026_or_newer() -> bool:
     return TARGET_API_VERSION >= 20260000
 
 
+# Mapping of Node -> Actual name depending on maya version
+NODE_TYPES: dict[str, dict[str, str]] = {
+    "multiply": {"standard": "multiply", "DL": "multiplyDL"},
+    "subtract": {"standard": "subtract", "DL": "subtractDL"},
+    "sum": {"standard": "sum", "DL": "sumDL"},
+    "sin": {"standard": "sin", "DL": "sinDL"},
+    "cos": {"standard": "cos", "DL": "cosDL"},
+    "divide": {"standard": "divide", "DL": "divideDL"},
+    "clampRange": {"standard": "clampRange", "DL": "clampRangeDL"},
+    "distanceBetween": {"standard": "distanceBetween", "DL": "distanceBetweenDL"},
+    "crossProduct": {"standard": "crossProduct", "DL": "crossProductDL"},
+    "length": {"standard": "length", "DL": "lengthDL"},
+    "lerp": {"standard": "lerp", "DL": "lerpDL"},
+    "rowFromMatrix": {"standard": "rowFromMatrix", "DL": "rowFromMatrixDL"},
+    "multiplyPointByMatrix": {
+        "standard": "multiplyPointByMatrix",
+        "DL": "multiplyPointByMatrixDL",
+    },
+    "multiplyVectorByMatrix": {
+        "standard": "multiplyVectorByMatrix",
+        "DL": "multiplyVectorByMatrixDL",
+    },
+    "normalize": {"standard": "normalize", "DL": "normalizeDL"},
+}
+
+# Mapping of Node -> Required Plugin
+NODE_PLUGINS: dict[str, str] = {
+    "inverseMatrix": "matrixNodes",
+    "transposeMatrix": "matrixNodes",
+    "quatToEuler": "quatNodes",
+    "eulerToQuat": "quatNodes",
+    "quatToAxisAngle": "quatNodes",
+    "axisAngleToQuat": "quatNodes",
+    "quatInvert": "quatNodes",
+    "quatConjugate": "quatNodes",
+    "quatNegate": "quatNodes",
+    "quatNormalize": "quatNodes",
+    "quatAdd": "quatNodes",
+    "quatSub": "quatNodes",
+    "quatProd": "quatNodes",
+    "quatSlerp": "quatNodes",
+}
+
+
 class Node:
     """Base class for all Maya nodes."""
-
-    NODE_TYPES: dict[str, dict[str, str]] = {
-        "multiply": {"standard": "multiply", "DL": "multiplyDL"},
-        "subtract": {"standard": "subtract", "DL": "subtractDL"},
-        "sum": {"standard": "sum", "DL": "sumDL"},
-        "sin": {"standard": "sin", "DL": "sinDL"},
-        "cos": {"standard": "cos", "DL": "cosDL"},
-        "divide": {"standard": "divide", "DL": "divideDL"},
-        "clampRange": {"standard": "clampRange", "DL": "clampRangeDL"},
-        "distanceBetween": {"standard": "distanceBetween", "DL": "distanceBetweenDL"},
-        "crossProduct": {"standard": "crossProduct", "DL": "crossProductDL"},
-        "length": {"standard": "length", "DL": "lengthDL"},
-        "lerp": {"standard": "lerp", "DL": "lerpDL"},
-        "rowFromMatrix": {"standard": "rowFromMatrix", "DL": "rowFromMatrixDL"},
-        "multiplyPointByMatrix": {
-            "standard": "multiplyPointByMatrix",
-            "DL": "multiplyPointByMatrixDL",
-        },
-        "multiplyVectorByMatrix": {
-            "standard": "multiplyVectorByMatrix",
-            "DL": "multiplyVectorByMatrixDL",
-        },
-        "normalize": {"standard": "normalize", "DL": "normalizeDL"},
-    }
 
     def __init__(self, node_type: str, name: str | None = None) -> None:
         """
@@ -67,18 +88,26 @@ class Node:
         self.name: str = self._create_node(node_type, name=name or node_type)
         self._setup_attributes()
 
+    def _ensure_plugin(self, node_type: str):
+        plugin: str | None = NODE_PLUGINS.get(node_type)
+        if plugin is not None:
+            ensure_plugin_loaded(plugin)
+
+    def _resolve_node_type(self, node_type: str) -> str:
+        if node_type in NODE_TYPES:
+            types = NODE_TYPES[node_type]
+            if is_maya2026_or_newer() and not is_target_2026_or_newer():
+                return types["DL"]
+            else:
+                return types["standard"]
+        else:
+            return node_type
+
     def _create_node(self, node_type: str, name: str) -> str:
         """Create the Maya node with appropriate version handling."""
-        if node_type in self.NODE_TYPES:
-            types = self.NODE_TYPES[node_type]
-            if is_maya2026_or_newer() and not is_target_2026_or_newer():
-                maya_node_type = types["DL"]
-            else:
-                maya_node_type = types["standard"]
-        else:
-            maya_node_type = node_type
-
-        return cmds.createNode(maya_node_type, name=name)
+        resolved_type = self._resolve_node_type(node_type)
+        self._ensure_plugin(resolved_type)
+        return cmds.createNode(resolved_type, name=name)
 
     def _setup_attributes(self) -> None:
         """Override in subclasses to define node-specific attributes."""

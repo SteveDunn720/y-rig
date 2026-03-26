@@ -14,11 +14,11 @@ from maya.api.OpenMaya import (
     MSelectionList,
 )
 
-from yrig import spline
 from yrig.math import remap
 from yrig.skin.core import (
     get_mesh_points,
 )
+from yrig.spline.math import generate_knots, get_weights_along_spline
 
 # CV can be anything: a Vector3, a transform name, etc.
 CV = TypeVar("CV")
@@ -79,7 +79,7 @@ def get_mesh_spline_weights(
     else:
         extended_cv_positions = MPointArray(cv_positions)
         extended_cv_transforms = list(cv_transforms)
-    knots: list[float] = spline.generate_knots(
+    knots: list[float] = generate_knots(
         len(extended_cv_positions), degree=degree, periodic=periodic
     )
     maya_knots: list[float] = knots[1:-1]
@@ -128,7 +128,7 @@ def get_mesh_spline_weights(
         parameter: float = fn_curve.closestPoint(point, space=om2.MSpace.kObject)[1]
         parameters.append(parameter)
 
-    spline_weights_per_vertex: list[list[tuple[str, float]]] = spline.get_weights_along_spline(
+    spline_weights_per_vertex: list[list[tuple[str, float]]] = get_weights_along_spline(
         cvs=extended_cv_transforms, parameters=parameters, degree=degree, knots=knots
     )
 
@@ -183,7 +183,7 @@ def get_mesh_surface_weights(
         )
         parameters.append(new_parameter)
 
-    spline_weights_per_vertex: list[list[tuple[CV, float]]] = spline.get_weights_along_spline(
+    spline_weights_per_vertex: list[list[tuple[CV, float]]] = get_weights_along_spline(
         cvs=influence_transforms, parameters=parameters, degree=degree
     )
 

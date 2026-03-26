@@ -59,8 +59,8 @@ def _register_control(ctrl: "Control") -> None:
 
 @dataclass
 class Control:
-    control_transform: str
-    offset_transform: str | None = None
+    transform: str
+    offset: str | None = None
 
 
 def _create_control_curve(
@@ -107,7 +107,7 @@ def _create_control_curve(
 
 def create_control(
     name: str,
-    parent: str | None,
+    parent: str | Control | None,
     transform: str | MMatrix | None = None,
     control_shape: ControlShape | str = ControlShape.CIRCLE,
     create_offset: bool = True,
@@ -127,14 +127,14 @@ def create_control(
             raise RuntimeError(f"{transform} is not a valid transform name or MMatrix")
     else:
         transform_matrix = None
-
+    parent_transform = parent.transform if isinstance(parent, Control) else parent
     offset_transform: str | None = None
     if create_offset:
         offset_transform = create_transform(
-            name=f"{name}{OFFSET_SUFFIX}", parent=parent, transform=transform_matrix
+            name=f"{name}{OFFSET_SUFFIX}", parent=parent_transform, transform=transform_matrix
         )
 
-    control_parent = parent if offset_transform is None else offset_transform
+    control_parent = parent_transform if offset_transform is None else offset_transform
     control_name = f"{name}{CONTROL_SUFFIX}"
     # We call a function to create an mGear compatible control here, since mGear is rather specific about what it needs.
     # Feel free to replace this if you ditch mGear.
@@ -164,6 +164,6 @@ def create_control(
             scaleZ=(min_scale, 1),
         )
 
-    control = Control(control_transform=control_transform, offset_transform=offset_transform)
+    control = Control(transform=control_transform, offset=offset_transform)
     _register_control(control)
     return control

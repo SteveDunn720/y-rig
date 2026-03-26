@@ -6,6 +6,7 @@ from maya import cmds
 from maya.api.OpenMaya import MMatrix
 
 from yrig.build.mgear_api.joint import add_to_joint_set
+from yrig.control.core import Control
 from yrig.transform import match_transform, matrix_constraint, set_world_matrix
 
 JOINT_SUFFIX: str = "_jnt"
@@ -48,23 +49,28 @@ def _register_joint(joint: str) -> None:
 
 def create_joint(
     name: str,
-    transform: str | MMatrix | None = None,
+    transform: str | Control | MMatrix | None = None,
     parent: str | None = None,
     connect: bool = True,
 ) -> str:
     joint = cmds.createNode("joint", name=f"{name}{JOINT_SUFFIX}")
     if parent is not None:
         cmds.parent(joint, parent, relative=True)
+    source_transform: str | None = None
     if transform is None:
         pass
+    elif isinstance(transform, Control):
+        source_transform = transform.transform
     elif isinstance(transform, str):
-        match_transform(joint, transform, use_joint_orient=True)
-        if connect:
-            matrix_constraint(transform, joint, False, use_joint_orient=True)
+        source_transform = transform
     elif isinstance(transform, MMatrix):
         set_world_matrix(joint, transform, use_joint_orient=True)
     else:
         raise RuntimeError(f"{transform} is not a valid transform name or MMatrix")
+    if source_transform is not None:
+        match_transform(joint, source_transform, use_joint_orient=True)
+        if connect:
+            matrix_constraint(source_transform, joint, False, use_joint_orient=True)
     _register_joint(joint)
     # This is mGear specific and may need changed if you stop using mGear.
     add_to_joint_set(joint)

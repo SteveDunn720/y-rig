@@ -17,6 +17,7 @@ class JointConfig:
     parent: str | None = None
     weight_split_tag: bool = True
     weight_split_degree: int = 2
+    weight_split_influence: str | None = None
 
 
 def matrix_spline_from_transforms(
@@ -132,6 +133,7 @@ def matrix_spline_from_transforms(
                 )
                 joints.append(joint)
         if joint_config.weight_split_tag and joints:
-            tag_for_weight_split(joints[0], joints, joint_config.weight_split_degree)
+            influence = joint_config.weight_split_influence or joints[0]
+            tag_for_weight_split(influence, joints, joint_config.weight_split_degree)
 
     return matrix_spline

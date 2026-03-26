@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Iterator
 
@@ -13,29 +14,37 @@ from yrig.name import MIDDLE_SIDE_NAME, get_side
 from yrig.transform import create_transform
 from yrig.transform.matrix import get_world_matrix
 from yrig.transform.structs import Direction, RotationOrder
-from yrig.transform.utils import bake_shape
+from yrig.transform.utils import bake_shape, partial_path_name
 
 CONTROL_SUFFIX = "_ctl"
 OFFSET_SUFFIX = "_npo"
 
-_control_collection_stack: list[list[Control]] = []
-
-
-def _register_control(ctrl: "Control") -> None:
-    if _control_collection_stack:
-        _control_collection_stack[-1].append(ctrl)
+_control_collection: ContextVar[list[Control] | None] = ContextVar(
+    "control_collection", default=None
+)
 
 
 @contextmanager
 def collect_controls() -> Iterator[list[Control]]:
     # Create a bucket to collect the controls created in the with block
-    # then put it on the stack so that _register_control will add to this bucket
+    # then put it into the ContextVar so that _register_control will add to this bucket
     bucket: list[Control] = []
-    _control_collection_stack.append(bucket)
+    parent_bucket = _control_collection.get()
+    token = _control_collection.set(bucket)
     try:
         yield bucket
     finally:
-        _control_collection_stack.pop()
+        # Restore the previous state
+        _control_collection.reset(token)
+        # If there was a parent, bubble up the results
+        if parent_bucket is not None:
+            parent_bucket.extend(bucket)
+
+
+def _register_control(ctrl: "Control") -> None:
+    bucket = _control_collection.get()
+    if bucket is not None:
+        bucket.append(ctrl)
 
 
 @dataclass
@@ -119,7 +128,7 @@ def create_control(
     control_name = f"{name}{CONTROL_SUFFIX}"
     # We call a function to create an mGear compatible control here, since mGear is rather specific about what it needs.
     # Feel free to replace this if you ditch mGear.
-    control_transform = str(
+    control_transform_path = str(
         add_ctl(
             control_name,
             control_parent,
@@ -131,6 +140,7 @@ def create_control(
             rotation_order=str(rotation_order),
         )
     )
+    control_transform = partial_path_name(control_transform_path)
 
     if limit_min_scale:  # Comfort feature: make it so it's not possible to have negative scale
         min_scale: float = 0.01

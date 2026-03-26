@@ -1,11 +1,28 @@
 import maya.cmds as cmds
-from maya.api.OpenMaya import MAngle, MEulerRotation, MMatrix, MPoint
+from maya.api.OpenMaya import (
+    MAngle,
+    MDagPath,
+    MEulerRotation,
+    MFnDagNode,
+    MMatrix,
+    MPoint,
+    MSelectionList,
+)
 
 from yrig.transform.matrix import (
     get_world_matrix,
     set_local_matrix,
     set_world_matrix,
 )
+
+
+def partial_path_name(transform: str) -> str:
+    """Returns the minimum path string necessary to uniquely identify the object."""
+    sel = MSelectionList()
+    sel.add(transform)
+    dag_path: MDagPath = sel.getDagPath(0)
+    mfn_dag = MFnDagNode(dag_path)
+    return mfn_dag.partialPathName()
 
 
 def create_transform(

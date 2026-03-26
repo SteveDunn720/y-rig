@@ -50,7 +50,8 @@
             "start_point": true,
             "child_order": [
                 "load_guides",
-                "remove_face"
+                "remove_face",
+                "control_list"
             ],
             "code": [
                 "from maya import cmds",
@@ -60,6 +61,11 @@
                 "    raise RuntimeError(\"The asset root from the yrig.build.context hasn't been set. Please run a dev build of the rig you are working on before running the NXT graph directly.\")",
                 "STAGE.asset_path = asset_path",
                 "STAGE.face_path = asset_path / \"data/face\""
+            ]
+        },
+        "/setup/control_list": {
+            "code": [
+                "STAGE.control_list = []"
             ]
         },
         "/setup/load_guides": {

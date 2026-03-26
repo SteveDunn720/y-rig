@@ -15,6 +15,16 @@ _joint_collection: ContextVar[list[str] | None] = ContextVar("joint_collection",
 
 @contextmanager
 def collect_joints() -> Iterator[list[str]]:
+    """
+    Collect joints created inside this block.
+
+    Any joints created within the `with` statement are added to a list,
+    which is returned when the block finishes. Nested blocks are supported,
+    and inner results are included in the outer list.
+
+    Returns:
+        list[str]: Joint names created in the block.
+    """
     # Create a bucket to collect the joints created in the with block
     # then put it into the ContextVar so that _register_joint will add to this bucket
     bucket: list[str] = []

@@ -26,6 +26,16 @@ _control_collection: ContextVar[list[Control] | None] = ContextVar(
 
 @contextmanager
 def collect_controls() -> Iterator[list[Control]]:
+    """
+    Collect controls created inside this block.
+
+    Any controls created within the `with` statement are added to a list,
+    which is returned when the block finishes. Nested blocks are supported,
+    and inner results are included in the outer list.
+
+    Returns:
+        list[Control]: Controls created in the block.
+    """
     # Create a bucket to collect the controls created in the with block
     # then put it into the ContextVar so that _register_control will add to this bucket
     bucket: list[Control] = []

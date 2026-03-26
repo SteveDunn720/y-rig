@@ -62,6 +62,9 @@ class Control:
     transform: str
     offset: str | None = None
 
+    def __str__(self) -> str:
+        return self.transform
+
 
 def _create_control_curve(
     name: str,

@@ -43,7 +43,8 @@
         },
         "/cleanup": {
             "code": [
-                "cmds.delete(\"${guide_group}\")"
+                "cmds.delete(\"${guide_group}\")",
+                "cmds.refresh()"
             ]
         },
         "/setup": {

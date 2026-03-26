@@ -43,7 +43,10 @@
                 }
             },
             "code": [
-                "yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")"
+                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
+                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
+                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
+                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
             ]
         },
         "/side": {

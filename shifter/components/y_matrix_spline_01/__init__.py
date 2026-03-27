@@ -79,7 +79,7 @@ class Component(component.Main):
             self.jnt_pos.append(
                 {
                     "obj": pm.PyNode(pinned_transform),
-                    "name": self.getName(f"{i}"),
+                    "name": f"segment{i}",
                     "leaf_joint": self.settings["leafJoints"],
                 }
             )

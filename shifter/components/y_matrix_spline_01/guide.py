@@ -56,7 +56,7 @@ class Guide(guide.ComponentGuide):
         self.pSegments = self.addParam("segments", "long", 5, 1)
         self.pSplineDegree = self.addParam("spline_degree", "long", 3, 1)
         self.pTweakControls = self.addParam("tweak_controls", "bool", False)
-        self.pleafJoints = self.addParam("leafJoints", "bool", True)
+        self.pleafJoints = self.addParam("leafJoints", "bool", False)
 
         self.pUseIndex = self.addParam("useIndex", "bool", False)
         self.pParentJointIndex = self.addParam("parentJointIndex", "long", -1, None, None)

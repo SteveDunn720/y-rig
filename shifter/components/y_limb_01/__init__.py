@@ -373,6 +373,7 @@ class Component(component.Main):
         self.eff_loc = primitive.addTransform(
             self.root_ctl, self.getName("eff_loc"), transform.getTransform(self.fk2_ctl)
         )
+        self.tws2_rot = self.eff_loc  # tws2_rot is needed for proper connection to the foot.
 
         # Mid bone1 ref — used as fallback when div1 == 0
         t = transform.getTransform(self.fk_ctl[1])

@@ -1,34 +1,89 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import Callable
+
+_current_progress: ContextVar[ProgressStep | None] = ContextVar("_current_progress", default=None)
+
+
+@contextmanager
+def progress_step(name: str, weight: float = 1.0):
+    parent = _current_progress.get()
+
+    step = ProgressStep(name, weight)
+    if parent:
+        parent.add_child_step(step)
+    token = _current_progress.set(step)
+    try:
+        yield step
+    finally:
+        step.finish_step()
+        _current_progress.reset(token)
+
+
+@contextmanager
+def bind_progress_step(step: ProgressStep):
+    parent = _current_progress.get()
+    if parent:
+        parent.add_child_step(step)
+    token = _current_progress.set(step)
+    try:
+        yield step
+    finally:
+        step.finish_step()
+        _current_progress.reset(token)
+
+
+def get_current_progress_step() -> ProgressStep | None:
+    return _current_progress.get()
+
+
+def progress_update(value: float):
+    step = _current_progress.get()
+    if step:
+        step.update_progress(value)
+
+
+def finish_step():
+    step = _current_progress.get()
+    if step:
+        step.finish_step()
+
 
 class ProgressStep:
-    def __init__(self, name: str, weight: float = 1):
+    def __init__(
+        self, name: str, weight: float = 1, callback: Callable[[float, str], None] | None = None
+    ):
         self.name = name
         self._weight = weight
         self._progress: float = 0.0
-        self._child_steps: list[ProgressStep] = []
+        self._children: list[ProgressStep] = []
         self._parent: ProgressStep | None = None
         self._child_weight_sum: float = 0
         self._finished: bool = False
+        self._callback = callback
 
     def get_progress(self):
         return self._progress
 
     def add_child_step(self, step: ProgressStep):
         step._parent = self
-        self._child_steps.append(step)
+        self._children.append(step)
         self._child_weight_sum += step._weight
 
     def get_child_steps(self) -> list[ProgressStep]:
-        return self._child_steps
+        return self._children
 
     def _update_progress_from_children(self):
-        if all(child._finished for child in self._child_steps):
+        if not self._children:
+            return
+        if all(child._finished for child in self._children):
             self._set_finished()
             return
 
         cumulative_progress = 0
-        for child in self._child_steps:
+        for child in self._children:
             child_progress = child.get_progress()
             scaled_progress = child_progress * (child._weight / self._child_weight_sum)
             cumulative_progress += scaled_progress
@@ -38,14 +93,21 @@ class ProgressStep:
     def _propogate_progress(self):
         if self._parent is not None:
             self._parent._update_progress_from_children()
+        elif self._callback is not None:
+            current_step = get_current_progress_step() or self
+            name_path = "/".join(s.name for s in current_step.get_ancestors())
+            try:
+                self._callback(self._progress, name_path)
+            except Exception:
+                pass
 
     def update_progress(self, progress: float):
-        if self._child_steps:
+        if self._children:
             return
         if progress == 1:
             self.finish_step()
             return
-        self._progress = progress
+        self._progress = max(0.0, min(1.0, progress))
         self._propogate_progress()
 
     def _set_finished(self):
@@ -55,7 +117,15 @@ class ProgressStep:
     def finish_step(self):
         if self._finished:
             return
-        for child in self._child_steps:
+        for child in self._children:
             child.finish_step()
         self._set_finished()
         self._propogate_progress()
+
+    def get_ancestors(self) -> list[ProgressStep]:
+        node: ProgressStep | None = self
+        out: list[ProgressStep] = []
+        while node is not None:
+            out.append(node)
+            node = node._parent
+        return list(reversed(out))

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import mgear.shifter.custom_step as cstp
 from maya import cmds
 
+from yrig.build.progress import progress_step, progress_update
 from yrig.skin.core import skin_mesh
 from yrig.skin.ng import apply_ng_skin_weights
 
@@ -58,14 +59,17 @@ class CustomShifterStep(cstp.customShifterMainStep):
         geo_in_set: list[str] = cmds.sets("rig_geo_grp", query=True)  # type: ignore
         def_in_set = cmds.sets("rig_deformers_grp", query=True)
         def_joints = cmds.ls(def_in_set, type="joint")  # type: ignore
-        for geo in geo_in_set:
-            skin_mesh(def_joints, geo)
-            log.info(f"Skinned {geo} to {len(def_joints)} joint(s)")
-            skin_filepath: Path = skin_path / f"{geo}.json"
-            if not skin_filepath.exists():
-                geo_short_name = geo.rsplit("_", 1)[0]
-                skin_filepath: Path = skin_path / f"{geo_short_name}.json"
+        with progress_step("Skin Model"):
+            total = len(geo_in_set)
+            for i, geo in enumerate(geo_in_set):
+                skin_mesh(def_joints, geo)
+                log.info(f"Skinned {geo} to {len(def_joints)} joint(s)")
+                skin_filepath: Path = skin_path / f"{geo}.json"
                 if not skin_filepath.exists():
-                    continue
-            apply_ng_skin_weights(skin_filepath, geo)
-            log.info(f"Loaded ng skin file for {geo}")
+                    geo_short_name = geo.rsplit("_", 1)[0]
+                    skin_filepath: Path = skin_path / f"{geo_short_name}.json"
+                    if not skin_filepath.exists():
+                        continue
+                apply_ng_skin_weights(skin_filepath, geo)
+                log.info(f"Loaded ng skin file for {geo}")
+                progress_update(i / total)

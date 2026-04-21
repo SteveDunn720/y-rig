@@ -3,6 +3,7 @@ from typing import Iterable
 
 from maya import cmds
 
+from yrig.build.progress import progress_step, progress_update
 from yrig.skin.core import (
     get_skin_cluster,
     get_skin_cluster_influences,
@@ -123,24 +124,27 @@ def auto_split_weights(meshes: Iterable[str] | str) -> None:
     Args:
         meshes: A single mesh name or an iterable of mesh names to process.
     """
-    meshes_to_split = (meshes,) if isinstance(meshes, str) else meshes
-    for mesh in meshes_to_split:
-        skin_clusters: list[str] | None = get_skin_clusters(mesh)
-        if skin_clusters is None:
-            continue
-        for skin_cluster in skin_clusters:
-            weight_split_data_list = []
-            influences: list[str] = get_skin_cluster_influences(skin_cluster=skin_cluster)
-            for influence in influences:
-                weight_split_tag = get_weight_split_tag(influence)
-                if weight_split_tag is None:
-                    continue
-                weight_split_data = weight_split_tag.get_weight_split_data()
-                weight_split_data_list.append(weight_split_data)
-            if weight_split_data_list:
-                split_weights(
-                    mesh,
-                    split_data_collection=weight_split_data_list,
-                    skin_cluster=skin_cluster,
-                )
-                log.info(f"Finished splitting {skin_cluster} weights on {mesh}.")
+    meshes_to_split = (meshes,) if isinstance(meshes, str) else tuple(meshes)
+    with progress_step("Auto Split Weights"):
+        total = len(meshes_to_split)
+        for i, mesh in enumerate(meshes_to_split):
+            skin_clusters: list[str] | None = get_skin_clusters(mesh)
+            if skin_clusters is None:
+                continue
+            for skin_cluster in skin_clusters:
+                weight_split_data_list = []
+                influences: list[str] = get_skin_cluster_influences(skin_cluster=skin_cluster)
+                for influence in influences:
+                    weight_split_tag = get_weight_split_tag(influence)
+                    if weight_split_tag is None:
+                        continue
+                    weight_split_data = weight_split_tag.get_weight_split_data()
+                    weight_split_data_list.append(weight_split_data)
+                if weight_split_data_list:
+                    split_weights(
+                        mesh,
+                        split_data_collection=weight_split_data_list,
+                        skin_cluster=skin_cluster,
+                    )
+                    log.info(f"Finished splitting {skin_cluster} weights on {mesh}.")
+            progress_update(i / total)

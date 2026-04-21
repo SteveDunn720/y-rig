@@ -11,6 +11,7 @@ from yrig.build.mgear_api.log import (
     _temporary_log_handler,
 )
 from yrig.build.mgear_api.step import BuildStep
+from yrig.build.progress import bind_progress_step
 
 mgear_api_logger = logging.getLogger("yrig.build.mgear_api")
 
@@ -59,6 +60,7 @@ def _build_from_shifter_file(
         _capture_mgear_output(mgear_api_logger),
         _capture_mgear_logs(mgear_api_logger),
         _temporary_log_handler(mgear_api_logger, progress_handler),
+        bind_progress_step(progress_handler.root_step),
     ):
         mgear_api_logger.info("\n" + "= SHIFTER RIG SYSTEM " + "=" * 46)
 

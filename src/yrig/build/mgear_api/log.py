@@ -1,10 +1,11 @@
 import logging
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from contextvars import Token
 from io import TextIOBase
 from typing import Callable, Iterator, Sequence
 
 from yrig.build.mgear_api.step import BuildStep
-from yrig.build.progress import ProgressStep
+from yrig.build.progress import ProgressStep, _current_progress
 
 
 class StdoutToLogger(TextIOBase):
@@ -109,6 +110,7 @@ class BuildStepFilter(logging.Filter):
         super().__init__()
         self._build_prefix_set: set[str] = set(f"{step.name} : " for step in build_steps)
         self._custom_step_prefix_set: set[str] = {
+            "EXEC: Executing custom step: ",
             "SUCCEED: Custom Shifter Step Class: ",
         }
         self._valid_prefix_set = self._build_prefix_set | self._custom_step_prefix_set
@@ -130,6 +132,8 @@ class ProgressLogHandler(logging.Handler):
     ):
         super().__init__()
         self.progress_callback = progress_callback
+        self.active_steps: dict[str, ProgressStep] = {}
+        self.active_step_tokens: dict[str, Token] = {}
         self.pre_steps = pre_steps
         self.build_steps = build_steps
         self.post_steps = post_steps
@@ -139,7 +143,7 @@ class ProgressLogHandler(logging.Handler):
         self.pre_step_names: list[str] = [step.name for step in self.pre_steps]
         self.post_step_names: list[str] = [step.name for step in self.post_steps]
 
-        self.root_step = ProgressStep("Rig Build")
+        self.root_step = ProgressStep("Rig Build", callback=progress_callback)
         self.pre_build = ProgressStep("Pre Build", len(pre_steps) * 0.1)
         self.pre_step_map: dict[str, ProgressStep] = {}
         self.root_step.add_child_step(self.pre_build)
@@ -173,12 +177,30 @@ class ProgressLogHandler(logging.Handler):
 
         self.build_step_counter: dict[str, int] = {}
 
-    def _report_progress(self, progress: float, step_name: str | None = None):
-        if self.progress_callback:
-            try:
-                self.progress_callback(progress, step_name)
-            except Exception:
-                pass
+    def _start_step(self, name: str):
+        step = None
+        if name in self.pre_step_names:
+            step = self.pre_step_map[name]
+        if name in self.post_step_names:
+            step = self.post_step_map[name]
+        if step is not None:
+            self.active_steps[name] = step
+            token = _current_progress.set(step)
+            self.active_step_tokens[name] = token
+        return step
+
+    def _finish_step(self, name: str):
+        step = self.active_steps.pop(name, None)
+        token = self.active_step_tokens.pop(name, None)
+        if step is not None:
+            step.finish_step()
+        if token is not None:
+            _current_progress.reset(token)
+
+    def _update_step_progress(self, name: str, value: float):
+        step = self.active_steps.get(name)
+        if step is not None:
+            step.update_progress(value)
 
     def _on_build_step_progress(self, step_name: str):
         if not self.pre_step_finished:
@@ -194,26 +216,19 @@ class ProgressLogHandler(logging.Handler):
             step_child_index = self.build_step_counter[step_name] - 1
             if step_child_index < len(children):
                 children[step_child_index].finish_step()
-        self._report_progress(self.root_step.get_progress(), step_name)
-
-    def _on_custom_step_finished(self, step_name: str):
-        if step_name in self.pre_step_names:
-            self.pre_step_map[step_name].finish_step()
-        if step_name in self.post_step_names:
-            if not self.post_step_finished:
-                self.build_step.finish_step()
-                self.post_step_finished = True
-            self.post_step_map[step_name].finish_step()
-        self._report_progress(self.root_step.get_progress(), step_name)
 
     def emit(self, record: logging.LogRecord):
         message = record.getMessage()
 
+        if message.startswith("EXEC: Executing custom step: "):
+            path = message.split(": ")[2]
+            step_name = path
+            self._start_step(step_name)
+
         if message.startswith("SUCCEED: Custom Shifter Step Class: "):
             path = message.split(": ")[2].rsplit(".", 1)[0]
             step_name = path
-            self._on_custom_step_finished(step_name)
-            return
+            self._finish_step(step_name)
 
         prefix = message.partition(" : ")[0]
         step_name = prefix

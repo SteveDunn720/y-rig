@@ -17,6 +17,7 @@ YRIG_NXT_DIR = (  # Get the path (resolve symlinks first though)
 os.environ["YRIG_NXT_DIR"] = str(YRIG_NXT_DIR.resolve())
 
 
+# We wrap the NXT execution so we can have nice progress reporting :)
 class ProgressStage(Stage):
     def execute_nodes(self, node_paths, layer, parameters=None):
         """Execute nodes at given `node_paths` using given `layer`. Returns

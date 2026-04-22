@@ -8,10 +8,10 @@ _current_progress: ContextVar[ProgressStep | None] = ContextVar("_current_progre
 
 
 @contextmanager
-def progress_step(name: str, weight: float = 1.0):
+def progress_step(name: str, weight: float = 1.0, total: float | None = None):
     parent = _current_progress.get()
 
-    step = ProgressStep(name, weight)
+    step = ProgressStep(name, weight, total)
     if parent:
         parent.add_child_step(step)
     token = _current_progress.set(step)
@@ -53,13 +53,18 @@ def finish_step():
 
 class ProgressStep:
     def __init__(
-        self, name: str, weight: float = 1, callback: Callable[[float, str], None] | None = None
+        self,
+        name: str,
+        weight: float = 1,
+        total_weight: float | None = None,
+        callback: Callable[[float, str], None] | None = None,
     ):
         self.name = name
         self._weight = weight
         self._progress: float = 0.0
         self._children: list[ProgressStep] = []
         self._parent: ProgressStep | None = None
+        self._total_weight: float = total_weight
         self._child_weight_sum: float = 0
         self._finished: bool = False
         self._callback = callback
@@ -78,14 +83,11 @@ class ProgressStep:
     def _update_progress_from_children(self):
         if not self._children:
             return
-        if all(child._finished for child in self._children):
-            self._set_finished()
-            return
-
+        denominator = self._total_weight or self._child_weight_sum
         cumulative_progress = 0
         for child in self._children:
             child_progress = child.get_progress()
-            scaled_progress = child_progress * (child._weight / self._child_weight_sum)
+            scaled_progress = child_progress * (child._weight / denominator)
             cumulative_progress += scaled_progress
         self._progress = cumulative_progress
         self._propogate_progress()

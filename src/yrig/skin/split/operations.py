@@ -1,10 +1,9 @@
 import logging
 from typing import Iterable
 
-from maya import cmds
-
 from yrig.build.progress import progress_step, progress_update
 from yrig.skin.core import (
+    get_shape,
     get_skin_cluster,
     get_skin_cluster_influences,
     get_skin_clusters,
@@ -47,8 +46,9 @@ def split_weights(
         RuntimeError: If no skinCluster can be resolved for *mesh*.
     """
     # get the shape node
-    mesh_shape: str = cmds.listRelatives(mesh, shapes=True)[0]
-
+    mesh_shape = get_shape(mesh)
+    if mesh_shape is None:
+        raise RuntimeError(f"{mesh} has no attached shape node")
     # get the skinCluster and weights
     split_skin_cluster = skin_cluster if skin_cluster is not None else get_skin_cluster(mesh)
     original_weights: dict[int, dict[str, float]] = get_weights(

@@ -133,6 +133,27 @@ def skin_mesh(
     return skin_cluster
 
 
+def remove_unused_influences(geometry: str, skin_cluster: str | None = None) -> list[str]:
+    """
+    Removes unused joints from a skinCluster and returns the removed influences.
+    Args:
+        geometry: Mesh transform or shape that contains the skinCluster.
+        skin_cluster: Optional explicit skinCluster node name. When
+            ``None``, the first skinCluster in the shape's history is used.
+
+    Returns:
+        List of influence names that were removed from the skinCluster.
+    """
+    if not skin_cluster:
+        skin_cluster: str | None = get_skin_cluster(geometry)
+        if not skin_cluster:
+            raise RuntimeError(f"No skinCluster on {geometry}")
+    original_influences: set[str] = cmds.skinCluster(skin_cluster, query=True, influence=True) or []  # type: ignore
+    cmds.skinCluster(skin_cluster, edit=True, removeUnusedInfluence=True)
+    new_influences: set[str] = set(cmds.skinCluster(skin_cluster, query=True, influence=True) or [])  # type: ignore
+    return [influence for influence in original_influences if influence not in new_influences]
+
+
 def get_mesh_points(
     fn_mesh: om2.MFnMesh, vertex_indices: list[int] | None = None
 ) -> om2.MPointArray:
@@ -207,6 +228,7 @@ def set_weights(
     new_weights: dict[int, dict[str, float]],
     skin_cluster: str | None = None,
     normalize=True,
+    clear_old_weights: bool = False,
 ) -> None:
     """
     Sets skinCluster weights for all vertices of the given mesh shape.
@@ -219,7 +241,7 @@ def set_weights(
     """
     if not skin_cluster:
         skin_cluster = get_skin_cluster(shape)
-        if not skin_cluster:
+        if skin_cluster is None:
             raise RuntimeError(f"No skinCluster on {shape}")
 
     # Ensure all influences in new_weights exist on the skinCluster
@@ -233,26 +255,34 @@ def set_weights(
 
     # Add missing influences to the skinCluster
     influences_to_add: list[str] = sorted(all_influences_in_data - existing_influences)
-    cmds.skinCluster(skin_cluster, edit=True, addInfluence=influences_to_add, weight=0.0)
+    if influences_to_add:
+        cmds.skinCluster(skin_cluster, edit=True, addInfluence=influences_to_add, weight=0.0)
 
     # Get the actual MFnSkinCluster to apply weights with
     sel: om2.MSelectionList = om2.MSelectionList()
     sel.add(shape)
     sel.add(skin_cluster)
+    sel.add(f"{skin_cluster}.matrix")
     shape_dag: om2.MDagPath = sel.getDagPath(0)
     skin_cluster_mob: om2.MObject = sel.getDependNode(1)
+    matrix_list_plug: om2.MPlug = sel.getPlug(2)
     mfn_skin_cluster: oma.MFnSkinCluster = oma.MFnSkinCluster(skin_cluster_mob)
 
     # Get influence indices
+    logical_to_physical: dict[int, int] = {}
+    for i in range(matrix_list_plug.numElements()):
+        logical_idx = matrix_list_plug.elementByPhysicalIndex(i).logicalIndex()
+        logical_to_physical[logical_idx] = i
+
     influence_paths: om2.MDagPathArray = mfn_skin_cluster.influenceObjects()
     influence_indices: dict[str, int] = {
-        om2.MFnDependencyNode(path.node()).name(): mfn_skin_cluster.indexForInfluenceObject(path)
+        om2.MFnDependencyNode(path.node()).name(): logical_to_physical[
+            mfn_skin_cluster.indexForInfluenceObject(path)
+        ]
         for path in influence_paths
     }
 
-    ordered_influences: list[tuple[str, int]] = sorted(
-        influence_indices.items(), key=lambda item: item[1]
-    )
+    ordered_influences: list[tuple[str, int]] = list(influence_indices.items())
     ordered_influence_names = [name for name, index in ordered_influences]
     ordered_indices_only = [index for name, index in ordered_influences]
     num_influences: int = len(ordered_influence_names)
@@ -317,13 +347,21 @@ def get_weights(shape: str, skin_cluster: str | None = None) -> dict[int, dict[s
     sel: om2.MSelectionList = om2.MSelectionList()
     sel.add(shape)
     sel.add(skin_cluster)
+    sel.add(f"{skin_cluster}.matrix")
     shape_dag: om2.MDagPath = sel.getDagPath(0)
     skin_cluster_mob: om2.MObject = sel.getDependNode(1)
+    matrix_list_plug: om2.MPlug = sel.getPlug(2)
     mfn_skin_cluster: oma.MFnSkinCluster = oma.MFnSkinCluster(skin_cluster_mob)
 
     influence_paths = mfn_skin_cluster.influenceObjects()
+    logical_to_physical: dict[int, int] = {}
+    for i in range(matrix_list_plug.numElements()):
+        logical_idx = matrix_list_plug.elementByPhysicalIndex(i).logicalIndex()
+        logical_to_physical[logical_idx] = i
     influence_map = {
-        mfn_skin_cluster.indexForInfluenceObject(path): om2.MFnDependencyNode(path.node()).name()
+        logical_to_physical[mfn_skin_cluster.indexForInfluenceObject(path)]: om2.MFnDependencyNode(
+            path.node()
+        ).name()
         for path in influence_paths
     }
 

@@ -1,3 +1,4 @@
+import json
 import logging
 from functools import wraps
 from pathlib import Path
@@ -164,8 +165,22 @@ def write_ng_skin_weights(filepath: Path, geometry: str, force: bool = False) ->
                 return
 
     ng.export_json(target=geometry, file=str(filepath))
-
     return
+
+
+def get_influences_from_ng_skin_weights(
+    filepath: Path,
+) -> list[str]:
+    """Return influence paths from an ngSkinTools2 JSON weights file.
+
+    Args:
+        filepath: Path to the weights file.
+    """
+    if not filepath.exists():
+        raise RuntimeError(f"{filepath} doesn't exist, unable to load weights.")
+    with open(filepath) as file:
+        data: dict = json.loads(file.read())
+    return [influence["path"] for influence in data["influences"]]
 
 
 @require_ng_skin

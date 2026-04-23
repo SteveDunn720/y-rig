@@ -46,9 +46,6 @@ extra-paths = [
 [tool.ty.src]
 exclude = ["third_party"]
 
-[tool.ty.rules]
-unused-ignore-comment = "ignore"
-
 [tool.ruff]
 line-length = 100
 exclude = ["third_party", "maya-setup.py"]

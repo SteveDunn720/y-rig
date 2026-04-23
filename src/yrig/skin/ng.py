@@ -9,8 +9,8 @@ import maya.cmds as cmds
 log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import]
-    from ngSkinTools2.api.plugin import (  # ty: ignore[unresolved-import]
+    from ngSkinTools2 import api as ng
+    from ngSkinTools2.api.plugin import (
         is_plugin_loaded,
         load_plugin,
     )
@@ -21,8 +21,8 @@ else:
 
 HAS_NG_SKIN = False
 try:
-    from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import]
-    from ngSkinTools2.api.plugin import (  # ty: ignore[unresolved-import]
+    from ngSkinTools2 import api as ng
+    from ngSkinTools2.api.plugin import (
         is_plugin_loaded,
         load_plugin,
     )
@@ -52,7 +52,7 @@ def require_ng_skin(func):
             raise RuntimeError(
                 f"Execution failed for {func.__name__}. Dependency 'ngSkinTools2' is not available."
             )
-        if not is_plugin_loaded():
+        if is_plugin_loaded is not None and not is_plugin_loaded():
             load_plugin()
             log.info("Successfully loaded ngSkinTools2 plugin.")
         return func(*args, **kwargs)

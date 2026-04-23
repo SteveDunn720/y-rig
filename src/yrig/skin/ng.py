@@ -1,3 +1,4 @@
+# ty: ignore[unused-ignore-comment]
 import json
 import logging
 from functools import wraps
@@ -9,8 +10,8 @@ import maya.cmds as cmds
 log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import, unused-ignore-comment]
-    from ngSkinTools2.api.plugin import (  # ty: ignore[unresolved-import, unused-ignore-comment]
+    from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import]
+    from ngSkinTools2.api.plugin import (  # ty: ignore[unresolved-import]
         is_plugin_loaded,
         load_plugin,
     )
@@ -21,8 +22,8 @@ else:
 
 HAS_NG_SKIN = False
 try:
-    from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import, unused-ignore-comment]
-    from ngSkinTools2.api.plugin import (  # ty: ignore[unresolved-import, unused-ignore-comment]
+    from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import]
+    from ngSkinTools2.api.plugin import (  # ty: ignore[unresolved-import]
         is_plugin_loaded,
         load_plugin,
     )

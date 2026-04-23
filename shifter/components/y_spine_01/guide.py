@@ -95,7 +95,7 @@ class Guide(guide.ComponentGuide):
         self.disp_crv_chst = self.addDispCurve("crvChest", [self.spineTop, self.chest])
         centers = [self.spineBase, self.tan0, self.tan1, self.spineTop]
         self.dispcrv = self.addDispCurve("crv", centers, 3)
-        self.dispcrv.attr("lineWidth").set(5)  # type: ignore
+        self.dispcrv.attr("lineWidth").set(5)
 
         # tangent handles
         self.disp_tancrv0 = self.addDispCurve("crvTan0", [self.spineBase, self.tan0])

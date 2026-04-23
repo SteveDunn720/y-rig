@@ -137,7 +137,7 @@ class Guide(guide.ComponentGuide):
     def postDraw(self):
         "Add post guide draw elements to the guide"
         # hide blade if not in use
-        for shp in self.blade.getShapes():  # type: ignore
+        for shp in self.blade.getShapes():
             pm.connectAttr(self.root.use_blade, shp.attr("visibility"))  # type: ignore
 
 

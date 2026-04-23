@@ -170,9 +170,9 @@ def set_local_matrix(
                 cmds.setAttr(f"{transform}.jointOrient", *xyz_rotation_deg)
             else:
                 cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0)  # type: ignore
-                cmds.setAttr(f"{transform}.rotate", *rotation_deg)  # type: ignore
+                cmds.setAttr(f"{transform}.rotate", *rotation_deg)
         else:
-            cmds.setAttr(f"{transform}.rotate", *rotation_deg)  # type: ignore
+            cmds.setAttr(f"{transform}.rotate", *rotation_deg)
 
         # Set scale
         scale = transform_matrix.scale(MSpace.kTransform)
@@ -385,7 +385,7 @@ def matrix_constraint(
 
                     # If we have an offset it'll be our first matrix in the multiplier (same as above)
                     if keep_offset:
-                        orient_mult_matrix.matrix_in[orient_mult_index].set(offset_matrix)  # type: ignore
+                        orient_mult_matrix.matrix_in[orient_mult_index].set(offset_matrix)
                         orient_mult_index += 1
 
                     # Next we multiply by the world matrix of the source transform

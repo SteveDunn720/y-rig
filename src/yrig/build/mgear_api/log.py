@@ -72,14 +72,14 @@ def _capture_mgear_logs(target_logger: logging.Logger):
 
     try:
         mgear.pymaya.displayInfo = display_info  # type: ignore
-        mgear.pymaya.displayWarning = original_warning  # type: ignore
+        mgear.pymaya.displayWarning = original_warning
         mgear.pymaya.displayError = display_error  # type: ignore
         yield
 
     finally:
-        mgear.pymaya.displayInfo = original_info  # type: ignore
-        mgear.pymaya.displayWarning = original_warning  # type: ignore
-        mgear.pymaya.displayError = original_error  # type: ignore
+        mgear.pymaya.displayInfo = original_info
+        mgear.pymaya.displayWarning = original_warning
+        mgear.pymaya.displayError = original_error
 
 
 @contextmanager

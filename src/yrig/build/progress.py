@@ -64,7 +64,7 @@ class ProgressStep:
         self._progress: float = 0.0
         self._children: list[ProgressStep] = []
         self._parent: ProgressStep | None = None
-        self._total_weight: float = total_weight
+        self._total_weight: float | None = total_weight
         self._child_weight_sum: float = 0
         self._finished: bool = False
         self._callback = callback

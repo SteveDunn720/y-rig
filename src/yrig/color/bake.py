@@ -13,7 +13,7 @@ def get_texture_from_shader(shader: str) -> str | None:
     """
     Returns the texture node connected to the color input of a shader node if there is one connected.
     """
-    shader_color_attr_map = {
+    shader_color_attr_map: dict[str, str] = {
         "standardSurface": "baseColor",
         "aiStandardSurface": "baseColor",
         "phong": "color",
@@ -21,7 +21,7 @@ def get_texture_from_shader(shader: str) -> str | None:
         "usdPreviewSurface": "diffuseColor",
         "openPBRSurface": "baseColor",
     }
-    shader_type = cmds.nodeType(shader)
+    shader_type: str = cmds.nodeType(shader)  # type: ignore
     if shader_type not in shader_color_attr_map:
         log.warning(
             f"{shader} is a {shader_type} which isn't a recognized shader type for {get_texture_from_shader.__name__}."

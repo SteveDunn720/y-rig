@@ -61,29 +61,29 @@ class Guide(guide.ComponentGuide):
         self.chest = self.addLoc("chest", self.spineTop, vTemp)
 
         v_hip_pivot = vector.linearlyInterpolate(
-            self.spineBase.getTranslation(space="world"),  # type: ignore
-            self.spineTop.getTranslation(space="world"),  # type: ignore
+            self.spineBase.getTranslation(space="world"),
+            self.spineTop.getTranslation(space="world"),
             1 / 3,
         )
         self.hipPivot = self.addLoc("hipPivot", self.spineBase, v_hip_pivot)
 
         vTan0 = vector.linearlyInterpolate(
-            self.spineBase.getTranslation(space="world"),  # type: ignore
-            self.spineTop.getTranslation(space="world"),  # type: ignore
+            self.spineBase.getTranslation(space="world"),
+            self.spineTop.getTranslation(space="world"),
             1 / 3,
         )
         self.tan0 = self.addLoc("tan0", self.spineBase, vTan0)
 
         vTan1 = vector.linearlyInterpolate(
-            self.spineTop.getTranslation(space="world"),  # type: ignore
-            self.spineBase.getTranslation(space="world"),  # type: ignore
+            self.spineTop.getTranslation(space="world"),
+            self.spineBase.getTranslation(space="world"),
             1 / 3,
         )
         self.tan1 = self.addLoc("tan1", self.spineTop, vTan1)
 
         v_chest_pivot = vector.linearlyInterpolate(
-            self.spineBase.getTranslation(space="world"),  # type: ignore
-            self.spineTop.getTranslation(space="world"),  # type: ignore
+            self.spineBase.getTranslation(space="world"),
+            self.spineTop.getTranslation(space="world"),
             2 / 3,
         )
         self.chestPivot = self.addLoc("chestPivot", self.spineBase, v_chest_pivot)

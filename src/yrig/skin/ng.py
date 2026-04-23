@@ -9,8 +9,8 @@ import maya.cmds as cmds
 log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import]
-    from ngSkinTools2.api.plugin import (  # ty: ignore[unresolved-import]
+    from ngSkinTools2 import api as ng
+    from ngSkinTools2.api.plugin import (
         is_plugin_loaded,
         load_plugin,
     )
@@ -21,8 +21,8 @@ else:
 
 HAS_NG_SKIN = False
 try:
-    from ngSkinTools2 import api as ng  # ty: ignore[unresolved-import]
-    from ngSkinTools2.api.plugin import (  # ty: ignore[unresolved-import]
+    from ngSkinTools2 import api as ng
+    from ngSkinTools2.api.plugin import (
         is_plugin_loaded,
         load_plugin,
     )

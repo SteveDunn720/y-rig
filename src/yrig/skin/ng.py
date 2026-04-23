@@ -1,4 +1,3 @@
-# ty: ignore[unused-ignore-comment]
 import json
 import logging
 from functools import wraps

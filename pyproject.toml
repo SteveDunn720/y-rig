@@ -49,3 +49,9 @@ exclude = ["third_party"]
 [tool.ruff]
 line-length = 100
 exclude = ["third_party", "maya-setup.py"]
+
+[[tool.ty.overrides]]
+include = ["src/yrig/skin/ng.py"]
+
+[tool.ty.overrides.rules]
+unused-ignore-comment = "ignore"

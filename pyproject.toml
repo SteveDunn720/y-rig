@@ -51,4 +51,4 @@ extra-paths = [
 exclude = ["third_party"]
 
 [tool.ty.analysis]
-allowed-unresolved-imports = ["ngSkinTools2.**",]
+allowed-unresolved-imports = ["ngSkinTools2.**"]

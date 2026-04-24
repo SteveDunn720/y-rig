@@ -82,7 +82,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
                         )
 
                     # Only bind to joints specified in the skin file for final build
-                    bind_joints = def_joints if dev_build else valid_influences
+                    bind_joints = valid_influences
                     skin_mesh(bind_joints, geo)
                     log.info(f"Skinned {geo} to {len(bind_joints)} joint(s)")
 

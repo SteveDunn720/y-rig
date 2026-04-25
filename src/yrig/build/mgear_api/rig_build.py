@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import Callable
 
-from yrig.build.context import temp_asset_root
+from yrig.build.context import temp_asset_root, temp_build_scope
 from yrig.build.mgear_api.log import (
     ProgressLogHandler,
     _capture_mgear_logs,
@@ -12,6 +12,7 @@ from yrig.build.mgear_api.log import (
 )
 from yrig.build.mgear_api.step import BuildStep
 from yrig.build.progress import bind_progress_step
+from yrig.build.scope import BuildScope
 
 mgear_api_logger = logging.getLogger("yrig.build.mgear_api")
 
@@ -98,6 +99,7 @@ def _build_from_shifter_file(
 def build_from_path(
     rig_root_path: Path,
     dev_build: bool = False,
+    build_scope: BuildScope | None = None,
     progress_callback: Callable[[float, str | None], None] | None = None,
 ) -> bool:
     """Build an mGear Shifter rig from a rig path.
@@ -113,7 +115,7 @@ def build_from_path(
     """
 
     guide_path = rig_root_path / "data/guide.sgt"
-    with temp_asset_root(rig_root_path, dev_build):
+    with temp_asset_root(rig_root_path, dev_build), temp_build_scope(build_scope, dev_build):
         mgear_api_logger.info("Starting mGear Shifter build from file: %s", guide_path)
         try:
             build_result = _build_from_shifter_file(guide_path, dev_build, progress_callback)

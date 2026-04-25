@@ -99,7 +99,7 @@ def _build_from_shifter_file(
 def build_from_path(
     rig_root_path: Path,
     dev_build: bool = False,
-    build_scope: BuildScope | None = None,
+    build_scope: BuildScope | str | None = None,
     progress_callback: Callable[[float, str | None], None] | None = None,
 ) -> bool:
     """Build an mGear Shifter rig from a rig path.
@@ -115,7 +115,23 @@ def build_from_path(
     """
 
     guide_path = rig_root_path / "data/guide.sgt"
-    with temp_asset_root(rig_root_path, dev_build), temp_build_scope(build_scope, dev_build):
+    resolved_scope: BuildScope | None
+    if isinstance(build_scope, BuildScope):
+        resolved_scope = build_scope
+    elif isinstance(build_scope, str):
+        try:
+            resolved_scope = BuildScope(str)
+        except ValueError:
+            valid_options = [e.value for e in BuildScope]
+            mgear_api_logger.error(
+                "Invalid build_scope '%s'. Valid options: %s",
+                build_scope,
+                valid_options,
+            )
+            raise
+    else:
+        resolved_scope = None
+    with temp_asset_root(rig_root_path, dev_build), temp_build_scope(resolved_scope, dev_build):
         mgear_api_logger.info("Starting mGear Shifter build from file: %s", guide_path)
         try:
             build_result = _build_from_shifter_file(guide_path, dev_build, progress_callback)

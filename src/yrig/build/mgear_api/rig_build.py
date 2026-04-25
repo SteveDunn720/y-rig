@@ -14,6 +14,7 @@ from yrig.build.mgear_api.step import BuildStep
 from yrig.build.progress import bind_progress_step
 from yrig.build.scope import BuildScope
 
+build_logger = logging.getLogger("yrig.build")
 mgear_api_logger = logging.getLogger("yrig.build.mgear_api")
 
 BUILD_STEPS: list[BuildStep] = [
@@ -96,6 +97,19 @@ def _build_from_shifter_file(
     return rig
 
 
+def resolve_build_scope(value: str | BuildScope | None) -> BuildScope | None:
+    if value is None:
+        return None
+    if isinstance(value, BuildScope):
+        return value
+    try:
+        return BuildScope(value)
+    except ValueError:
+        valid = [e.value for e in BuildScope]
+        build_logger.error("Invalid BuildScope '%s'. Valid options: %s", value, valid)
+        raise
+
+
 def build_from_path(
     rig_root_path: Path,
     dev_build: bool = False,
@@ -115,22 +129,7 @@ def build_from_path(
     """
 
     guide_path = rig_root_path / "data/guide.sgt"
-    resolved_scope: BuildScope | None
-    if isinstance(build_scope, BuildScope):
-        resolved_scope = build_scope
-    elif isinstance(build_scope, str):
-        try:
-            resolved_scope = BuildScope(str)
-        except ValueError:
-            valid_options = [e.value for e in BuildScope]
-            mgear_api_logger.error(
-                "Invalid build_scope '%s'. Valid options: %s",
-                build_scope,
-                valid_options,
-            )
-            raise
-    else:
-        resolved_scope = None
+    resolved_scope = resolve_build_scope(build_scope)
     with temp_asset_root(rig_root_path, dev_build), temp_build_scope(resolved_scope, dev_build):
         mgear_api_logger.info("Starting mGear Shifter build from file: %s", guide_path)
         try:

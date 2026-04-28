@@ -15,6 +15,8 @@ from yrig.maya_api.attribute import (
     ScalarAttribute,
     Vector3Attribute,
     Vector4Attribute,
+    IndexableVector3Attribute,
+    IndexableVector2Attribute,
 )
 from yrig.maya_api.utils import ensure_plugin_loaded
 
@@ -463,6 +465,22 @@ class PickMatrixNode(Node):
         self.use_scale = BooleanAttribute(f"{self.name}.useScale")
         self.use_shear = BooleanAttribute(f"{self.name}.useShear")
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+
+class PlusMinusAverage(Node):
+    """Maya plusMinusAverage node with enhanced interface."""
+
+    def __init__(self, name: str = "plusMinusAverage") -> None:
+        super().__init__("plusMinusAverage", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_3d = IndexableVector3Attribute(f"{self.name}.input3D")
+        self.input_2d = IndexableVector2Attribute(f"{self.name}.input3D")
+        self.input_1d = IndexableScalarAttribute(f"{self.name}.input1D")
+        self.output_3d = IndexableVector3Attribute(f"{self.name}.output3D")
+        self.output_2d = IndexableVector2Attribute(f"{self.name}.output2D")
+        self.output_1d = IndexableScalarAttribute(f"{self.name}.output1D")
+        self.operation = EnumAttribute(f"{self.name}.operation")
 
 
 class RowFromMatrixNode(Node):

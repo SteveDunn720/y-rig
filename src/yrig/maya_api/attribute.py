@@ -217,6 +217,36 @@ class Vector3Attribute(Attribute):
         self.set(val)
 
 
+class Vector2Attribute(Attribute):
+    """A Maya attribute of the type double2 (XY)"""
+
+    def __init__(self, attr_path: str):
+        super().__init__(attr_path)
+
+        self.x = ScalarAttribute(f"{attr_path}X")
+        self.y = ScalarAttribute(f"{attr_path}Y")
+
+    def get(self) -> tuple[float, float]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[float, float]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore
+
+    @property
+    def value(self) -> tuple[float, float]:
+        """Get the value of this attribute."""
+        return self.get()
+
+    @value.setter
+    def value(self, val: tuple[float, float]) -> None:
+        """Set the value of this attribute."""
+        self.set(val)
+
+
 class Vector4Attribute(Attribute):
     """A Maya attribute of the type double4 (XYZW)"""
 
@@ -269,6 +299,22 @@ class IndexableScalarAttribute(IndexableAttribute[ScalarAttribute]):
     def __getitem__(self, index: int) -> ScalarAttribute:
         """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
         return ScalarAttribute(attr_path=f"{self.attr_path}[{index}]")
+
+
+class IndexableVector2Attribute(IndexableAttribute[Vector2Attribute]):
+    """A Maya attribute that supports indexing Vector3 attributes with bracket notation."""
+
+    def __getitem__(self, index: int) -> Vector2Attribute:
+        """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
+        return Vector2Attribute(attr_path=f"{self.attr_path}[{index}]")
+
+
+class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):
+    """A Maya attribute that supports indexing Vector3 attributes with bracket notation."""
+
+    def __getitem__(self, index: int) -> Vector3Attribute:
+        """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
+        return Vector3Attribute(attr_path=f"{self.attr_path}[{index}]")
 
 
 class IndexableMatrixAttribute(IndexableAttribute[MatrixAttribute]):

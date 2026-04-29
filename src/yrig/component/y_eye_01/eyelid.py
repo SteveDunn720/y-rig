@@ -1,3 +1,5 @@
+from xxlimited import Str
+from yrig.control.core import Control
 from typing import Any
 
 import maya.cmds as cmds
@@ -9,9 +11,17 @@ from maya.api.OpenMaya import MMatrix, MTransformationMatrix, MVector, MEulerRot
 from yrig.transform.utils import get_position
 import math
 
+from yrig.maya_api.node import (
+    PlusMinusAverage,
+    Condition,
+    MultMatrixNode,
+    DecomposeMatrixNode,
+    MultiplyDivideNode,
+)
+
 
 class Eyelid:
-    def __init__(self, side="L", guides={}, control_size=1, main_ctrl=None, parent=None):
+    def __init__(self, side="L", guides={}, control_size=1, main_ctrl: str = "", parent: str = ""):
         self.side = side
         self.guides = guides
         self.main_ctrl = main_ctrl
@@ -72,8 +82,11 @@ class Eyelid:
         self,
         Upper_driver: str,
         Lower_driver: str,
+        Upper_driven: str,
+        Lower_driven: str,
         parent: str,
         push=0.5,
+        rot_mult: int = -50,
     ):
 
         ctrl_list = [Lower_driver, Upper_driver]
@@ -82,42 +95,67 @@ class Eyelid:
 
         # shared logic to check how close our two drivers are
 
-        pma_calc = cmds.createNode("plusMinusAverage", name=f"{Upper_driver}_{Lower_driver}_PMA")
-        cmds.setAttr(f"{pma_calc}.operation", 2)  # type:ignore
+        pma_calc = PlusMinusAverage(name=f"{Upper_driver}_{Lower_driver}_PMA")
+        pma_calc.operation.set(2)
 
-        condition = cmds.createNode("condition", name=f"{Upper_driver}_{Lower_driver}_COND")
-        cmds.setAttr(f"{condition}.operation", 2)  # type:ignore
-        cmds.setAttr(f"{condition}.colorIfFalseR", 0)  # type:ignore
-        cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.colorIfTrueR")
-        cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.firstTerm")
+        condition = Condition(name=f"{Upper_driver}_{Lower_driver}_COND")
+        condition.operation.set(2)
+        condition.color_if_false.set((0, 0, 0))
+
+        pma_calc.output_1d.connect_to(condition.color_if_true.x)
+        pma_calc.output_1d.connect_to(condition.first_term)
+
+        # cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.colorIfTrueR")
+        # cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.firstTerm")
+
+        rot_md = MultiplyDivideNode(name=f"{Upper_driver}_{Lower_driver}_MD")
 
         for ctrl in ctrl_list:
-            # matix calc
-            mult_matrix = cmds.createNode("multMatrix", name=f"{ctrl}_MM")
-            dec_matrix = cmds.createNode("decomposeMatrix", name=f"{ctrl}_DM")
+            cmds.addAttr(ctrl, longName="push", at="double", dv=push, k=True)  # type:ignore
+            cmds.addAttr(ctrl, longName="rot_mult_DEV", at="double", dv=rot_mult, k=True)  # type:ignore
+            mult_matrix = MultMatrixNode(name=f"{ctrl}_MM")
+            dec_matrix = DecomposeMatrixNode(name=f"{ctrl}_DM")
 
-            cmds.connectAttr(f"{ctrl}.worldMatrix[0]", f"{mult_matrix}.matrixIn[0]")
-            cmds.connectAttr(f"{parent}.worldInverseMatrix[0]", f"{mult_matrix}.matrixIn[1]")
-            cmds.connectAttr(f"{mult_matrix}.matrixSum", f"{dec_matrix}.inputMatrix")
+            # Connect world matrix → multMatrix
+            mult_matrix.matrix_in[0].connect_from(f"{ctrl}.worldMatrix[0]")
+            mult_matrix.matrix_in[1].connect_from(f"{parent}.worldInverseMatrix[0]")
 
+            # multMatrix → decomposeMatrix
+            dec_matrix.input_matrix.connect_from(mult_matrix.matrix_sum)
+
+            # Connect output Y into PMA
             if ctrl == ctrl_list[0]:
-                cmds.connectAttr(f"{dec_matrix}.outputTranslateY", f"{pma_calc}.input1D[0]")
+                dec_matrix.output_translate.y.connect_to(pma_calc.input_1d[0])
+                cmds.connectAttr(f"{ctrl}.rot_mult_DEV", f"{rot_md.input2.x}")
+                cmds.connectAttr(f"{rot_md.output.x}", f"{Lower_driven}.rotateX")
+
             else:
-                cmds.connectAttr(f"{dec_matrix}.outputTranslateY", f"{pma_calc}.input1D[1]")
+                dec_matrix.output_translate.y.connect_to(pma_calc.input_1d[1])
+                cmds.connectAttr(f"{ctrl}.rot_mult_DEV", f"{rot_md.input2.y}")
+                cmds.connectAttr(f"{rot_md.output.y}", f"{Upper_driven}.rotateX")
 
             out_matrix.append(dec_matrix)
 
             # push logic
 
-            push_mult = cmds.createNode("multiplyDivide", name=f"{ctrl}_MD")
-            cmds.setAttr(f"{push_mult}.input2X", 0.5 if ctrl == ctrl_list[0] else -0.5)  # type:ignore
-            cmds.connectAttr(f"{condition}.outColorR", f"{push_mult}.input1X")
+            # -------------------------
+            # push multiplyDivide
+            # -------------------------
+            push_mult = MultiplyDivideNode(name=f"{ctrl}_MD")
 
-            pma_drive = cmds.createNode("plusMinusAverage", name=f"{ctrl}_PMA")
-            cmds.setAttr(f"{pma_drive}.operation", 2)  # type:ignore
-            # axis = "X" if ctrl == ctrl_list[0] else "Y"
-            cmds.connectAttr(f"{dec_matrix}.outputTranslateY", f"{pma_drive}.input1D[0]")
-            cmds.connectAttr(f"{push_mult}.outputX", f"{pma_drive}.input1D[1]")
+            push_mult.input2.x.set(0.5 if i == 0 else -0.5)
+            push_mult.operation.set(1)  # assuming multiply
+
+            condition.out_color.x.connect_to(push_mult.input1.x)
+
+            # -------------------------
+            # plusMinusAverage driver
+            # -------------------------
+            pma_drive = PlusMinusAverage(name=f"{ctrl}_PMA")
+            pma_drive.operation.set(2)
+
+            dec_matrix.output_translate.y.connect_to(pma_drive.input_1d[0])
+            push_mult.output.x.connect_to(pma_drive.input_1d[1])
 
     def build_blink(self, z_offset: int = 1, x_offset: int = 1):
         ### get middle x pos for the blink
@@ -129,7 +167,7 @@ class Eyelid:
         blink_z: int = (upper_pos.z + lower_pos.z) / 2 + z_offset  # type:ignore
 
         self.main_blink_controls = []
-        self.sub_blink_controls = {}
+        self.sub_blink_controls: dict[str, Control] = {}
 
         sub_transform_grp = create_transform(
             name="sub_blink_offset_matrix_drivers",
@@ -155,6 +193,7 @@ class Eyelid:
             self.main_blink_controls.append[blink_ctrl]  # type:ignore
 
         for sub_blink in ["inner", "mid", "outer"]:
+            driven_grps_list: list[str] = []
             for side in ["upper", "lower"]:
                 # setting up mods
 
@@ -182,6 +221,17 @@ class Eyelid:
                     direction="z",
                 )
 
+                self.sub_blink_offset = create_transform(
+                    name=f"{sub_blink}_{side}_blink_SDK",
+                    parent=self.sub_blink_controls[f"{sub_blink}_{side}_blink_ctrl"].offset,
+                    transform=self.guides["center_piv"],
+                )
+
+                cmds.parent(
+                    self.sub_blink_controls[f"{sub_blink}_{side}_blink_ctrl"].transform,
+                    self.sub_blink_offset,
+                )
+
                 # setting up blink driver groups
 
                 aim: float = self.get_flat_y_aim_rotation(
@@ -200,6 +250,8 @@ class Eyelid:
                     parent=driver_offset,
                     transform=self.guides["center_piv"],
                 )
+
+                driven_grps_list.append(driver_driven)
 
                 driver_driver: str = create_transform(
                     name=f"{sub_blink}_{side}_blink_driver",
@@ -221,3 +273,12 @@ class Eyelid:
                 sphere = cmds.polySphere(name="mySphere")[0]  # type:ignore
                 cmds.delete(cmds.parentConstraint(driven_transform, sphere))  # type:ignore
                 cmds.parent(sphere, driven_transform)  # type:ignore
+
+            self.soft_colide(
+                Upper_driver=self.sub_blink_controls[f"{sub_blink}_upper_blink_ctrl"].transform,
+                Lower_driver=self.sub_blink_controls[f"{sub_blink}_lower_blink_ctrl"].transform,
+                Upper_driven=driven_grps_list[0],
+                Lower_driven=driven_grps_list[0],
+                parent=self.main_ctrl,
+                push=0.5,
+            )

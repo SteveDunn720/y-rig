@@ -187,7 +187,7 @@ class Condition(Node):
     """Maya condition node with enhanced interface."""
 
     def __init__(self, name: str = "condition") -> None:
-        super().__init__("cos", name)
+        super().__init__("condition", name)
 
     def _setup_attributes(self) -> None:
         self.first_term: ScalarAttribute = ScalarAttribute(f"{self.name}.firstTerm")
@@ -195,6 +195,7 @@ class Condition(Node):
         self.color_if_true: Vector3Attribute = Vector3Attribute(f"{self.name}.colorIfTrue")
         self.color_if_false: Vector3Attribute = Vector3Attribute(f"{self.name}.colorIfFalse")
         self.operation = EnumAttribute(f"{self.name}.operation")
+        self.out_color = Vector3Attribute(f"{self.name}.outColor")
 
 
 class CosNode(Node):

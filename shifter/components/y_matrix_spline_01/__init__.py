@@ -22,7 +22,7 @@ class Component(component.Main):
     # =====================================================
     # OBJECTS
     # =====================================================
-    def addObjects(self):
+    def addObjects(self) -> None:
         """Add all the objects needed to create the component."""
         self.WIP = self.options["mode"]
 
@@ -88,14 +88,14 @@ class Component(component.Main):
     # =====================================================
     # ATTRIBUTES
     # =====================================================
-    def addAttributes(self):
+    def addAttributes(self) -> None:
         """Setup rig attributes for the component"""
         pass
 
     # =====================================================
     # OPERATORS
     # =====================================================
-    def addOperators(self):
+    def addOperators(self) -> None:
         """Create operators and set the relations for the component rig
 
         Apply operators, constraints, expressions to the hierarchy.
@@ -109,7 +109,7 @@ class Component(component.Main):
     # CONNECTOR
     # =====================================================
 
-    def setRelation(self):
+    def setRelation(self) -> None:
         """Set the relation beetween object from guide to rig"""
 
         self.relatives["root"] = self.cv_ctls[0]
@@ -123,7 +123,7 @@ class Component(component.Main):
         self.controlRelatives[f"{(len(self.guide.apos) - 1)}_cv"] = self.cv_ctls[-1]
         self.jointRelatives[f"{(len(self.guide.apos) - 1)}_cv"] = len(self.guide.apos) - 1
 
-    def finalize(self):
+    def finalize(self) -> None:
         """Tag split joints for automatic weight splitting.
 
         Uses the jnt_pos indices recorded during addObjects to look up

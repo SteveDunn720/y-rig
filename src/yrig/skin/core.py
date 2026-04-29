@@ -227,7 +227,7 @@ def set_weights(
     shape: str,
     new_weights: dict[int, dict[str, float]],
     skin_cluster: str | None = None,
-    normalize=True,
+    normalize: bool = True,
     clear_old_weights: bool = False,
 ) -> None:
     """
@@ -393,7 +393,7 @@ def get_weights(shape: str, skin_cluster: str | None = None) -> dict[int, dict[s
 
 def transfer_skin_weights(
     source: str, target: str, interpolate: bool = True, map_by_name: bool = True
-):
+) -> None:
     source_skin: str
     if cmds.nodeType(source) == "skinCluster":
         source_skin = source

@@ -28,7 +28,7 @@ class Component(component.Main):
     # =====================================================
     # OBJECTS
     # =====================================================
-    def addObjects(self):
+    def addObjects(self) -> None:
         """Add all the objects needed to create the component."""
 
         self.WIP = self.options["mode"]
@@ -330,7 +330,7 @@ class Component(component.Main):
                 }
             )
 
-    def addAttributes(self):
+    def addAttributes(self) -> None:
         # Anim -------------------------------------------
         self.preserve_length_att = self.addAnimParam(
             "preserveLength", "Preserve Length", "double", self.settings["preserve_length"], 0, 1
@@ -347,7 +347,7 @@ class Component(component.Main):
     # =====================================================
     # OPERATORS
     # =====================================================
-    def addOperators(self):
+    def addOperators(self) -> None:
         """Create operators and set the relations for the component rig
 
         Apply operators, constraints, expressions to the hierarchy.
@@ -389,7 +389,7 @@ class Component(component.Main):
     # =====================================================
     # CONNECTOR
     # =====================================================
-    def setRelation(self):
+    def setRelation(self) -> None:
         """Set the relation between object from guide to rig"""
         self.relatives["root"] = self.torso_ctl
         self.relatives["spineBase"] = self.hip_ctl
@@ -420,7 +420,7 @@ class Component(component.Main):
 
         self.aliasRelatives["root"] = "torso"
 
-    def finalize(self):
+    def finalize(self) -> None:
         """
         This runs after all the connections are made and the
         hierarchy is built.

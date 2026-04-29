@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Callable
+from typing import Callable, Generator
 
 _current_progress: ContextVar[ProgressStep | None] = ContextVar("_current_progress", default=None)
 
 
 @contextmanager
-def progress_step(name: str, weight: float = 1.0, total: float | None = None):
+def progress_step(
+    name: str, weight: float = 1.0, total: float | None = None
+) -> Generator[ProgressStep, None, None]:
     parent = _current_progress.get()
 
     step = ProgressStep(name, weight, total)
@@ -23,7 +25,7 @@ def progress_step(name: str, weight: float = 1.0, total: float | None = None):
 
 
 @contextmanager
-def bind_progress_step(step: ProgressStep):
+def bind_progress_step(step: ProgressStep) -> Generator[ProgressStep, None, None]:
     parent = _current_progress.get()
     if parent:
         parent.add_child_step(step)
@@ -39,13 +41,13 @@ def get_current_progress_step() -> ProgressStep | None:
     return _current_progress.get()
 
 
-def progress_update(value: float):
+def progress_update(value: float) -> None:
     step = _current_progress.get()
     if step:
         step.update_progress(value)
 
 
-def finish_step():
+def finish_step() -> None:
     step = _current_progress.get()
     if step:
         step.finish_step()
@@ -58,7 +60,7 @@ class ProgressStep:
         weight: float = 1,
         total_weight: float | None = None,
         callback: Callable[[float, str], None] | None = None,
-    ):
+    ) -> None:
         self.name = name
         self._weight = weight
         self._progress: float = 0.0
@@ -69,10 +71,10 @@ class ProgressStep:
         self._finished: bool = False
         self._callback = callback
 
-    def get_progress(self):
+    def get_progress(self) -> float:
         return self._progress
 
-    def add_child_step(self, step: ProgressStep):
+    def add_child_step(self, step: ProgressStep) -> None:
         step._parent = self
         self._children.append(step)
         self._child_weight_sum += step._weight
@@ -80,7 +82,7 @@ class ProgressStep:
     def get_child_steps(self) -> list[ProgressStep]:
         return self._children
 
-    def _update_progress_from_children(self):
+    def _update_progress_from_children(self) -> None:
         if not self._children:
             return
         denominator = self._total_weight or self._child_weight_sum
@@ -92,7 +94,7 @@ class ProgressStep:
         self._progress = cumulative_progress
         self._propogate_progress()
 
-    def _propogate_progress(self):
+    def _propogate_progress(self) -> None:
         if self._parent is not None:
             self._parent._update_progress_from_children()
         elif self._callback is not None:
@@ -103,7 +105,7 @@ class ProgressStep:
             except Exception:
                 pass
 
-    def update_progress(self, progress: float):
+    def update_progress(self, progress: float) -> None:
         if self._children:
             return
         if progress == 1:
@@ -112,11 +114,11 @@ class ProgressStep:
         self._progress = max(0.0, min(1.0, progress))
         self._propogate_progress()
 
-    def _set_finished(self):
+    def _set_finished(self) -> None:
         self._finished = True
         self._progress = 1
 
-    def finish_step(self):
+    def finish_step(self) -> None:
         if self._finished:
             return
         for child in self._children:

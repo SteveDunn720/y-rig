@@ -113,7 +113,9 @@ class MatrixSpline:
         self.cv_matrices: list[str] = cv_matrices
         self.cv_position_attrs: list[tuple[str, str, str]] = cv_position_attrs
 
-    def create_bound_curve(self, curve_name: str | None = None, curve_parent: str | None = None):
+    def create_bound_curve(
+        self, curve_name: str | None = None, curve_parent: str | None = None
+    ) -> str:
         """
         Creates a NURBS curve driven by the MatrixSpline’s control transforms.
 

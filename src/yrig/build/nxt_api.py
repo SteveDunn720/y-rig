@@ -19,7 +19,7 @@ os.environ["YRIG_NXT_DIR"] = str(YRIG_NXT_DIR.resolve())
 
 # We wrap the NXT execution so we can have nice progress reporting :)
 class ProgressStage(Stage):
-    def execute_nodes(self, node_paths, layer, parameters=None):
+    def execute_nodes(self, node_paths, layer, parameters=None):  # noqa: ANN001, ANN201
         """Execute nodes at given `node_paths` using given `layer`. Returns
         runtime layer object that if passed as layer argument to successive
         calls will "continue" execution with the same cached values.
@@ -76,6 +76,6 @@ class ProgressStage(Stage):
         return runtime_layer
 
 
-def execute_nxt_graph(filepath: Path):
+def execute_nxt_graph(filepath: Path) -> None:
     stage = ProgressStage.load_from_filepath(str(filepath))
     stage.execute()

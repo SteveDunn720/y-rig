@@ -28,7 +28,7 @@ BUILD_STEPS: list[BuildStep] = [
 ]
 
 
-def _build_from_shifter_file(
+def _build_from_shifter_file(  # noqa: ANN202
     file_path: Path,
     dev_build: bool,
     progress_callback: Callable[[float, str | None], None] | None = None,

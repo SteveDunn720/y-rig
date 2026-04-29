@@ -35,7 +35,7 @@ class Guide(guide.ComponentGuide):
 
     joint_names_description = ["pelvis", "spine_##"]
 
-    def postInit(self):
+    def postInit(self) -> None:
         """Initialize the position for the guide"""
         self.save_transform = [
             "root",
@@ -49,7 +49,7 @@ class Guide(guide.ComponentGuide):
         ]
         self.save_blade = ["blade"]
 
-    def addObjects(self):
+    def addObjects(self) -> None:
         """Add the Guide Root, blade and locators"""
 
         self.root = self.addRoot()
@@ -101,7 +101,7 @@ class Guide(guide.ComponentGuide):
         self.disp_tancrv0 = self.addDispCurve("crvTan0", [self.spineBase, self.tan0])
         self.disp_tancrv1 = self.addDispCurve("crvTan1", [self.spineTop, self.tan1])
 
-    def addParameters(self):
+    def addParameters(self) -> None:
         """Add the configurations settings"""
 
         # Default values
@@ -141,7 +141,7 @@ class Guide(guide.ComponentGuide):
 class settingsTab(QtWidgets.QDialog, sui.Ui_Form):
     """The Component settings UI"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super(settingsTab, self).__init__(parent)
         self.setupUi(self)
 
@@ -149,7 +149,7 @@ class settingsTab(QtWidgets.QDialog, sui.Ui_Form):
 class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings):  # type: ignore
     """Create the component setting window"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         self.toolName = TYPE
         # Delete old instances of the componet settings window.
         pyqt.deleteInstances(self, MayaQDockWidget)
@@ -162,7 +162,7 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         self.create_componentLayout()
         self.create_componentConnections()
 
-    def setup_componentSettingWindow(self):
+    def setup_componentSettingWindow(self) -> None:
         self.mayaMainWindow = pyqt.maya_main_window()
 
         self.setObjectName(self.toolName)
@@ -170,10 +170,10 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         self.setWindowTitle(TYPE)
         self.resize(350, 360)
 
-    def create_componentControls(self):
+    def create_componentControls(self) -> None:
         return
 
-    def populate_componentControls(self):
+    def populate_componentControls(self) -> None:
         """Populate the controls values.
 
         Populate the controls values from the custom attributes of the
@@ -197,14 +197,14 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         self.populateCheck(self.settingsTab.weight_split_enable_checkBox, "weight_split_tag")
         self.settingsTab.spline_degree_spinBox.setValue(self.root.attr("weight_split_degree").get())
 
-    def create_componentLayout(self):
+    def create_componentLayout(self) -> None:
         self.settings_layout = QtWidgets.QVBoxLayout()
         self.settings_layout.addWidget(self.tabs)
         self.settings_layout.addWidget(self.close_button)
 
         self.setLayout(self.settings_layout)
 
-    def create_componentConnections(self):
+    def create_componentConnections(self) -> None:
         self.settingsTab.preserve_length_slider.valueChanged.connect(
             partial(self.updateSlider, self.settingsTab.preserve_length_slider, "preserve_length")
         )
@@ -262,5 +262,5 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
             )
         )
 
-    def dockCloseEventTriggered(self):
+    def dockCloseEventTriggered(self) -> None:
         pyqt.deleteInstances(self, MayaQDockWidget)

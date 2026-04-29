@@ -48,7 +48,7 @@ OKLCH_HEATMAP_GRADIENT = Gradient(
 )
 
 
-def get_gradient_knots(gradient: Gradient):
+def get_gradient_knots(gradient: Gradient) -> list[float]:
     """Generate a clamped knot vector for the given gradient.
 
     Builds a knot vector suitable for B-spline evaluation over the gradient's

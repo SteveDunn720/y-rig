@@ -2,7 +2,7 @@ import logging
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from contextvars import Token
 from io import TextIOBase
-from typing import Callable, Iterator, Sequence
+from typing import Callable, Generator, Iterator, Sequence
 
 from yrig.build.mgear_api.step import BuildStep
 from yrig.build.progress import ProgressStep, _current_progress
@@ -36,7 +36,9 @@ class StdoutToLogger(TextIOBase):
 
 
 @contextmanager
-def _redirect_external_logger(external_logger: logging.Logger, target_logger: logging.Logger):
+def _redirect_external_logger(
+    external_logger: logging.Logger, target_logger: logging.Logger
+) -> Generator[logging.Logger, None, None]:
     """Temporarily hooks an external logger into a specified target."""
 
     # Store original state
@@ -54,16 +56,16 @@ def _redirect_external_logger(external_logger: logging.Logger, target_logger: lo
 
 
 @contextmanager
-def _capture_mgear_logs(target_logger: logging.Logger):
+def _capture_mgear_logs(target_logger: logging.Logger) -> Generator[None, None, None]:
     import mgear.pymaya
 
-    def display_info(msg: str):
+    def display_info(msg: str) -> None:
         target_logger.info(msg)
 
-    def display_warning(msg: str):
+    def display_warning(msg: str) -> None:
         target_logger.warning(msg)
 
-    def display_error(msg: str):
+    def display_error(msg: str) -> None:
         target_logger.error(msg)
 
     original_info = mgear.pymaya.displayInfo
@@ -83,7 +85,7 @@ def _capture_mgear_logs(target_logger: logging.Logger):
 
 
 @contextmanager
-def _capture_mgear_output(target_logger: logging.Logger):
+def _capture_mgear_output(target_logger: logging.Logger) -> Generator[None, None, None]:
     """Redirect sys.stdout and sys.stderr into this module's logger."""
 
     stdout_logger = StdoutToLogger(target_logger)
@@ -106,7 +108,7 @@ def _temporary_log_handler(logger: logging.Logger, handler: logging.Handler) -> 
 
 
 class BuildStepFilter(logging.Filter):
-    def __init__(self, build_steps: Sequence[BuildStep]):
+    def __init__(self, build_steps: Sequence[BuildStep]) -> None:
         super().__init__()
         self._build_prefix_set: set[str] = set(f"{step.name} : " for step in build_steps)
         self._custom_step_prefix_set: set[str] = {
@@ -129,7 +131,7 @@ class ProgressLogHandler(logging.Handler):
         post_steps: Sequence[BuildStep],
         number_of_components: int,
         progress_callback: Callable[[float, str | None], None] | None = None,
-    ):
+    ) -> None:
         super().__init__()
         self.progress_callback = progress_callback
         self.active_steps: dict[str, ProgressStep] = {}
@@ -177,7 +179,7 @@ class ProgressLogHandler(logging.Handler):
 
         self.build_step_counter: dict[str, int] = {}
 
-    def _start_step(self, name: str):
+    def _start_step(self, name: str) -> ProgressStep | None:
         step = None
         if name in self.pre_step_names:
             step = self.pre_step_map[name]
@@ -189,7 +191,7 @@ class ProgressLogHandler(logging.Handler):
             self.active_step_tokens[name] = token
         return step
 
-    def _finish_step(self, name: str):
+    def _finish_step(self, name: str) -> None:
         step = self.active_steps.pop(name, None)
         token = self.active_step_tokens.pop(name, None)
         if step is not None:
@@ -197,12 +199,12 @@ class ProgressLogHandler(logging.Handler):
         if token is not None:
             _current_progress.reset(token)
 
-    def _update_step_progress(self, name: str, value: float):
+    def _update_step_progress(self, name: str, value: float) -> None:
         step = self.active_steps.get(name)
         if step is not None:
             step.update_progress(value)
 
-    def _on_build_step_progress(self, step_name: str):
+    def _on_build_step_progress(self, step_name: str) -> None:
         if not self.pre_step_finished:
             self.pre_build.finish_step()
             self.pre_step_finished = True
@@ -217,7 +219,7 @@ class ProgressLogHandler(logging.Handler):
             if step_child_index < len(children):
                 children[step_child_index].finish_step()
 
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
         message = record.getMessage()
 
         if message.startswith("EXEC: Executing custom step: "):

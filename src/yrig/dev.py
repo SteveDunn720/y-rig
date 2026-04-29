@@ -6,7 +6,7 @@ from yrig.build.mgear_api.reload import reload_components
 log = logging.getLogger(__name__)
 
 
-def reload_yrig():
+def reload_yrig() -> None:
     """
     This removes all the yrig modules so that on next import they will be updated.
     Useful when making live changes and wanting to test without re-starting Maya.
@@ -19,7 +19,7 @@ def reload_yrig():
     log.info("Reloaded yrig python modules")
 
 
-def reload():
+def reload() -> None:
     """
     This removes all the yrig modules, as well as reloading the mGear components.
     Useful when making live changes and wanting to test without re-starting Maya.

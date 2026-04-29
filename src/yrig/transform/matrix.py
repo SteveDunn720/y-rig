@@ -114,7 +114,7 @@ def get_world_matrix(transform: str) -> MMatrix:
 
 
 def set_local_matrix(
-    transform: str, matrix: MMatrix, use_joint_orient: bool = True, fallback=False
+    transform: str, matrix: MMatrix, use_joint_orient: bool = True, fallback: bool = False
 ) -> None:
     """Set the local transformation of a Maya transform node from a matrix.
 
@@ -184,7 +184,7 @@ def set_local_matrix(
 
 
 def set_world_matrix(
-    transform: str, matrix: MMatrix, use_joint_orient: bool = True, fallback=False
+    transform: str, matrix: MMatrix, use_joint_orient: bool = True, fallback: bool = False
 ) -> None:
     """Set the world-space matrix of a transform by converting to local space first.
 
@@ -231,7 +231,7 @@ def drive_transform_with_matrix(
     scale: bool = True,
     shear: bool = True,
     lock_joint_orient: bool = True,
-):
+) -> None:
     """
     Drive a transforms translate rotate scale and shear with a matrix attribute.
 

@@ -25,14 +25,14 @@ class Component(LimbComponent):
     # =====================================================
     # OBJECTS
     # =====================================================
-    def addObjects(self):
+    def addObjects(self) -> None:
         """Add all the objects needed to create the component."""
         super().addObjects()
 
-    def addAttributes(self):
+    def addAttributes(self) -> None:
         super().addAttributes()
 
-    def _add_reference_array_attributes(self):
+    def _add_reference_array_attributes(self) -> None:
         # Ref
         if self.settings["ikrefarray"]:
             ref_names = self.get_valid_alias_list(self.settings["ikrefarray"].split(","))
@@ -67,7 +67,7 @@ class Component(LimbComponent):
     # =====================================================
     # OPERATORS
     # =====================================================
-    def addOperators(self):
+    def addOperators(self) -> None:
         """Create operators and set the relations for the component rig
 
         Apply operators, constraints, expressions to the hierarchy.
@@ -77,7 +77,7 @@ class Component(LimbComponent):
         """
         super().addOperators()
 
-    def _setup_ik_upv(self):
+    def _setup_ik_upv(self) -> None:
         # 1 bone chain Upv ref ==============================
         self.ikHandleUpvRef = primitive.addIkHandle(
             self.root,
@@ -105,15 +105,15 @@ class Component(LimbComponent):
     # =====================================================
     # CONNECTOR
     # =====================================================
-    def setRelation(self):
+    def setRelation(self) -> None:
         """Set the relation beetween object from guide to rig"""
         super().setRelation()
         self.aliasRelatives["eff"] = "foot"
 
-    def connect_standard(self):
+    def connect_standard(self) -> None:
         super().connect_standard()
 
-    def _connect_reference_array(self):
+    def _connect_reference_array(self) -> None:
         # Set the Ik Reference
         self.connectRef(self.settings["ikrefarray"], self.ik_cns)
         if self.settings["upvrefarray"]:
@@ -130,7 +130,7 @@ class Component(LimbComponent):
                 False,
             )
 
-    def finalize(self):
+    def finalize(self) -> None:
         """Tag split joints for automatic weight splitting.
 
         Uses the jnt_pos indices recorded during addObjects to look up

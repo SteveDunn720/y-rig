@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Generator
 
 from yrig.build.scope import BuildScope
 
@@ -28,7 +29,7 @@ def get_build_scope() -> BuildScope | None:
 
 
 @contextmanager
-def temp_asset_root(asset_root_path: Path, dev_build: bool = False):
+def temp_asset_root(asset_root_path: Path, dev_build: bool = False) -> Generator[None, None, None]:
     """Temporarily set the asset root, restoring it afterward unless dev_build is True."""
     default_asset_root_value = _ASSET_ROOT
     set_asset_root(asset_root_path)
@@ -40,7 +41,9 @@ def temp_asset_root(asset_root_path: Path, dev_build: bool = False):
 
 
 @contextmanager
-def temp_build_scope(build_scope: BuildScope | None, dev_build: bool = False):
+def temp_build_scope(
+    build_scope: BuildScope | None, dev_build: bool = False
+) -> Generator[None, None, None]:
     """Temporarily set the build scope, restoring it afterward unless dev_build is True."""
     default_build_scope = _BUILD_SCOPE
     set_build_scope(build_scope)

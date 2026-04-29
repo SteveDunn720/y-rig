@@ -2,7 +2,7 @@ import json
 import logging
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, ParamSpec, TypeVar
 
 import maya.cmds as cmds
 
@@ -31,8 +31,11 @@ try:
 except ImportError:
     log.warning("ngSkinTools2 not found. Skinning sub-module features will be limited.")
 
+P = ParamSpec("P")
+R = TypeVar("R")
 
-def require_ng_skin(func):
+
+def require_ng_skin(func: Callable[P, R]) -> Callable[P, R]:
     """Decorator that guards a function requiring ngSkinTools2 dependency.
 
     If ``ngSkinTools2`` is not installed the wrapped function errors with a message instead of executing.
@@ -47,10 +50,10 @@ def require_ng_skin(func):
     """
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         if not HAS_NG_SKIN:
             raise RuntimeError(
-                f"Execution failed for {func.__name__}. Dependency 'ngSkinTools2' is not available."
+                f"Execution failed for {getattr(func, '__name__', repr(func))}. Dependency 'ngSkinTools2' is not available."
             )
         if is_plugin_loaded is not None and not is_plugin_loaded():
             load_plugin()
@@ -184,7 +187,7 @@ def get_influences_from_ng_skin_weights(
 
 
 @require_ng_skin
-def cleanup_ng_data_nodes():
+def cleanup_ng_data_nodes() -> None:
     """
     Removes the `ngst2SkinLayerData` nodes in the scene for publish.
 

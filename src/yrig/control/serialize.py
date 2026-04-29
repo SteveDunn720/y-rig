@@ -242,7 +242,9 @@ def create_curve(
     return curve_transform
 
 
-def write_curve_to_library(curve: str | None = None, name: str | None = None, force: bool = False) -> None:
+def write_curve_to_library(
+    curve: str | None = None, name: str | None = None, force: bool = False
+) -> None:
     """
     Saves selected or defined curve to shape library.
 

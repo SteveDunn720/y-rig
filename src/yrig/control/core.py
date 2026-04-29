@@ -60,7 +60,8 @@ def _register_control(ctrl: "Control") -> None:
 @dataclass
 class Control:
     transform: str
-    offset: str | None = None
+    offset: str
+    name: str
 
     def __str__(self) -> str:
         return self.transform
@@ -113,7 +114,6 @@ def create_control(
     parent: str | Control | None,
     transform: str | MMatrix | None = None,
     control_shape: ControlShape | str = ControlShape.CIRCLE,
-    create_offset: bool = True,
     direction: Direction = "y",
     size: float = 1,
     dimensions: tuple[float, float, float] = (1, 1, 1),
@@ -131,13 +131,12 @@ def create_control(
     else:
         transform_matrix = None
     parent_transform = parent.transform if isinstance(parent, Control) else parent
-    offset_transform: str | None = None
-    if create_offset:
-        offset_transform = create_transform(
-            name=f"{name}{OFFSET_SUFFIX}", parent=parent_transform, transform=transform_matrix
-        )
 
-    control_parent = parent_transform if offset_transform is None else offset_transform
+    offset_transform = create_transform(
+        name=f"{name}{OFFSET_SUFFIX}", parent=parent_transform, transform=transform_matrix
+    )
+
+    control_parent = offset_transform
     control_name = f"{name}{CONTROL_SUFFIX}"
     # We call a function to create an mGear compatible control here, since mGear is rather specific about what it needs.
     # Feel free to replace this if you ditch mGear.
@@ -145,7 +144,7 @@ def create_control(
         add_ctl(
             control_name,
             control_parent,
-            transform_matrix if not create_offset else None,
+            None,
             side=get_side(name) or MIDDLE_SIDE_NAME,
             control_icon_creator=lambda: _create_control_curve(
                 control_name, control_shape, direction, size, dimensions
@@ -167,6 +166,6 @@ def create_control(
             scaleZ=(min_scale, 1),
         )
 
-    control = Control(transform=control_transform, offset=offset_transform)
+    control = Control(transform=control_transform, offset=offset_transform, name=name)
     _register_control(control)
     return control

@@ -1,4 +1,3 @@
-from xxlimited import Str
 from yrig.control.core import Control
 from typing import Any
 
@@ -86,7 +85,7 @@ class Eyelid:
         Lower_driven: str,
         parent: str,
         push=0.5,
-        rot_mult: int = -50,
+        rot_mult: float = -50,
     ):
 
         ctrl_list = [Lower_driver, Upper_driver]
@@ -143,7 +142,7 @@ class Eyelid:
             # -------------------------
             push_mult = MultiplyDivideNode(name=f"{ctrl}_MD")
 
-            push_mult.input2.x.set(0.5 if i == 0 else -0.5)
+            push_mult.input2.x.set(0.5 if ctrl == ctrl_list[0] else -0.5)
             push_mult.operation.set(1)  # assuming multiply
 
             condition.out_color.x.connect_to(push_mult.input1.x)
@@ -157,14 +156,14 @@ class Eyelid:
             dec_matrix.output_translate.y.connect_to(pma_drive.input_1d[0])
             push_mult.output.x.connect_to(pma_drive.input_1d[1])
 
-    def build_blink(self, z_offset: int = 1, x_offset: int = 1):
+    def build_blink(self, z_offset: float = 1, x_offset: float = 1):
         ### get middle x pos for the blink
 
         upper_pos: Any = get_position(transform=self.guides["eyelid_upper"])
         lower_pos: Any = get_position(transform=self.guides["eyelid_upper"])
 
-        blink_x: int = (upper_pos.x + lower_pos.x) / 2  # type:ignore
-        blink_z: int = (upper_pos.z + lower_pos.z) / 2 + z_offset  # type:ignore
+        blink_x: float = (upper_pos.x + lower_pos.x) / 2
+        blink_z: float = (upper_pos.z + lower_pos.z) / 2 + z_offset
 
         self.main_blink_controls = []
         self.sub_blink_controls: dict[str, Control] = {}

@@ -214,7 +214,7 @@ class Vector4Attribute(Attribute[tuple[float, float, float]]):
 
 
 class ColorAttribute(Attribute[tuple[float, float, float]]):
-    """A Maya attribute of the type double3 (XYZ)"""
+    """A Maya attribute of the type color (RGB)"""
 
     def __init__(self, attr_path: str):
         super().__init__(attr_path)

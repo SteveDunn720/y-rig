@@ -132,6 +132,17 @@ class Node:
         return self.name
 
 
+class Absolute(Node):
+    """Maya absolute node with enhanced interface."""
+
+    def __init__(self, name: str = "absolute") -> None:
+        super().__init__("absolute", name)
+
+    def _setup_attributes(self) -> None:
+        self.input = ScalarAttribute(f"{self.name}.input")
+        self.output = ScalarAttribute(f"{self.name}.output")
+
+
 class AimMatrixNode(Node):
     """Maya aimMatrix node with enhanced interface."""
 
@@ -497,6 +508,21 @@ class PlusMinusAverage(Node):
         self.output_2d = IndexableVector2Attribute(f"{self.name}.output2D")
         self.output_1d = IndexableScalarAttribute(f"{self.name}.output1D")
         self.operation = EnumAttribute(f"{self.name}.operation")
+
+
+class RemapValue(Node):
+    """Maya remapValue node with enhanced interface."""
+
+    def __init__(self, name: str = "remapValue") -> None:
+        super().__init__("remapValue", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_value = ScalarAttribute(f"{self.name}.inputValue")
+        self.output = ScalarAttribute(f"{self.name}.output")
+        self.input_max = ScalarAttribute(f"{self.name}.inputMax")
+        self.input_min = ScalarAttribute(f"{self.name}.inputMin")
+        self.output_max = ScalarAttribute(f"{self.name}.outputMax")
+        self.output_min = ScalarAttribute(f"{self.name}.outputMin")
 
 
 class RowFromMatrixNode(Node):

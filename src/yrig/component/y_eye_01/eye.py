@@ -1,3 +1,6 @@
+from typing import Any
+
+
 from yrig.control import create_control
 from yrig.joint import create_joint
 from yrig.transform import create_transform
@@ -7,20 +10,17 @@ from yrig.component.y_eye_01.eyelid import Eyelid
 class Eye:
     def __init__(
         self,
-        part="eye",
-        side="L",
-        parent="face_grp",
-        control_parent="neck_M0_head_ctl",
-        control_size=1,
+        part: str = "eye",
+        side: str = "L",
+        parent: str = "face_grp",
+        control_parent: str = "neck_M0_head_ctl",
+        control_size: float = 1.0,
     ):
         self.part: str = part
         self.side: str = side
         self.parent: str = parent
         self.control_parent: str = control_parent
-        self.control_size: int = control_size
-
-        # Store ALL outputs here
-        self.nodes = {}
+        self.control_size: float = control_size
 
         self.guides: dict[str, str] = {
             "root_name": f"eye_root_{side}",
@@ -40,10 +40,10 @@ class Eye:
     # Build steps
     # -------------------
 
-    def setup_structure(self):
+    def setup_structure(self) -> None:
         self.main_grp = create_transform(name=f"eye_{self.side}", parent=self.parent)
 
-    def create_controls(self):
+    def create_controls(self) -> None:
         self.main_ctrl = create_control(
             name=self.guides["root_name"],
             parent=self.main_grp,
@@ -53,14 +53,14 @@ class Eye:
             direction="z",
         )
 
-    def create_joints(self):
+    def create_joints(self) -> None:
         self.main_jnt = create_joint(
             name=self.guides["root_name"],
             parent=self.main_grp,
             transform=self.main_ctrl.transform,
         )
 
-    def build(self):
+    def build(self) -> None:
         self.setup_structure()
         self.create_controls()
         self.create_joints()
@@ -68,7 +68,7 @@ class Eye:
         self.eyelid = Eyelid(
             side=self.side,
             guides=self.guides,
-            control_size=1.0,
+            control_size=self.control_size,
             main_ctrl=self.main_ctrl.transform,
             parent=self.main_grp,
         )

@@ -213,6 +213,27 @@ class Vector4Attribute(Attribute[tuple[float, float, float]]):
         self.w = ScalarAttribute(f"{attr_path}W")
 
 
+class ColorAttribute(Attribute[tuple[float, float, float]]):
+    """A Maya attribute of the type double3 (XYZ)"""
+
+    def __init__(self, attr_path: str):
+        super().__init__(attr_path)
+
+        self.r = ScalarAttribute(f"{attr_path}R")
+        self.g = ScalarAttribute(f"{attr_path}G")
+        self.b = ScalarAttribute(f"{attr_path}B")
+
+    def get(self) -> tuple[float, float, float]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[float, float, float]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore
+
+
 class QuatAttribute(Attribute[tuple[float, float, float]]):
     """A Maya attribute of the compound Quaternion type (XYZW)"""
 

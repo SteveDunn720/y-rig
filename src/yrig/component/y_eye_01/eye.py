@@ -1,6 +1,7 @@
 from yrig.control import create_control
 from yrig.joint import create_joint
 from yrig.transform import create_transform
+from yrig.component.y_eye_01.eyelid import Eyelid
 
 
 class Eye:
@@ -45,7 +46,7 @@ class Eye:
     def create_controls(self):
         self.main_ctrl = create_control(
             name=self.guides["root_name"],
-            parent=self.nodes["group"],
+            parent=self.main_grp,
             transform=self.guides["center_piv"],
             size=self.control_size,
             control_shape="round_square",
@@ -55,8 +56,8 @@ class Eye:
     def create_joints(self):
         self.main_jnt = create_joint(
             name=self.guides["root_name"],
-            parent=self.nodes["group"],
-            transform=self.nodes["main_ctrl"].transform,
+            parent=self.main_grp,
+            transform=self.main_ctrl.transform,
         )
 
     def build(self):
@@ -64,5 +65,12 @@ class Eye:
         self.create_controls()
         self.create_joints()
 
-    def connect_eye(self):
-        pass
+        self.eyelid = Eyelid(
+            side=self.side,
+            guides=self.guides,
+            control_size=1.0,
+            main_ctrl=self.main_ctrl.transform,
+            parent=self.main_grp,
+        )
+
+        self.eyelid.build_blink()

@@ -17,6 +17,7 @@ from yrig.maya_api.attribute import (
     Vector4Attribute,
     IndexableVector3Attribute,
     IndexableVector2Attribute,
+    ColorAttribute,
 )
 from yrig.maya_api.utils import ensure_plugin_loaded
 
@@ -192,10 +193,10 @@ class Condition(Node):
     def _setup_attributes(self) -> None:
         self.first_term: ScalarAttribute = ScalarAttribute(f"{self.name}.firstTerm")
         self.second_term: ScalarAttribute = ScalarAttribute(f"{self.name}.secondTerm")
-        self.color_if_true: Vector3Attribute = Vector3Attribute(f"{self.name}.colorIfTrue")
-        self.color_if_false: Vector3Attribute = Vector3Attribute(f"{self.name}.colorIfFalse")
-        self.operation = EnumAttribute(f"{self.name}.operation")
-        self.out_color = Vector3Attribute(f"{self.name}.outColor")
+        self.color_if_true: ColorAttribute = ColorAttribute(f"{self.name}.colorIfTrue")
+        self.color_if_false: ColorAttribute = ColorAttribute(f"{self.name}.colorIfFalse")
+        self.operation: EnumAttribute = EnumAttribute(f"{self.name}.operation")
+        self.out_color: ColorAttribute = ColorAttribute(f"{self.name}.outColor")
 
 
 class CosNode(Node):

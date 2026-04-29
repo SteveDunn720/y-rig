@@ -20,7 +20,9 @@ from yrig.maya_api.node import (
 
 
 class Eyelid:
-    def __init__(self, side="L", guides={}, control_size=1, main_ctrl: str = "", parent: str = ""):
+    def __init__(
+        self, side="L", guides=None, control_size=1.0, main_ctrl: str = "", parent: str = ""
+    ):
         self.side = side
         self.guides = guides
         self.main_ctrl = main_ctrl
@@ -101,7 +103,7 @@ class Eyelid:
         condition.operation.set(2)
         condition.color_if_false.set((0, 0, 0))
 
-        pma_calc.output_1d.connect_to(condition.color_if_true.x)
+        pma_calc.output_1d.connect_to(condition.color_if_true.r)
         pma_calc.output_1d.connect_to(condition.first_term)
 
         # cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.colorIfTrueR")
@@ -145,7 +147,7 @@ class Eyelid:
             push_mult.input2.x.set(0.5 if ctrl == ctrl_list[0] else -0.5)
             push_mult.operation.set(1)  # assuming multiply
 
-            condition.out_color.x.connect_to(push_mult.input1.x)
+            condition.out_color.r.connect_to(push_mult.input1.x)
 
             # -------------------------
             # plusMinusAverage driver
@@ -156,11 +158,16 @@ class Eyelid:
             dec_matrix.output_translate.y.connect_to(pma_drive.input_1d[0])
             push_mult.output.x.connect_to(pma_drive.input_1d[1])
 
+            if ctrl == ctrl_list[0]:
+                cmds.connectAttr(f"{pma_drive.output_1d}", f"{rot_md.input2.x}")
+            else:
+                cmds.connectAttr(f"{pma_drive.output_1d}", f"{rot_md.input2.y}")
+
     def build_blink(self, z_offset: float = 1, x_offset: float = 1):
         ### get middle x pos for the blink
 
-        upper_pos: Any = get_position(transform=self.guides["eyelid_upper"])
-        lower_pos: Any = get_position(transform=self.guides["eyelid_upper"])
+        upper_pos: Any = get_position(transform=self.guides["eyelid_mid_upper"])
+        lower_pos: Any = get_position(transform=self.guides["eyelid_mid_lower"])
 
         blink_x: float = (upper_pos.x + lower_pos.x) / 2
         blink_z: float = (upper_pos.z + lower_pos.z) / 2 + z_offset
@@ -186,10 +193,10 @@ class Eyelid:
                 parent=self.main_ctrl,
                 transform=blink_matrix,
                 size=self.control_size,
-                control_shape=f"{side}_semi_circle",
+                control_shape="circle",
                 direction="z",
             )
-            self.main_blink_controls.append[blink_ctrl]  # type:ignore
+            self.main_blink_controls.append(blink_ctrl)
 
         for sub_blink in ["inner", "mid", "outer"]:
             driven_grps_list: list[str] = []
@@ -203,7 +210,7 @@ class Eyelid:
                 elif sub_blink == "mid":
                     mod = 0
                 else:
-                    mod = -1
+                    mod = 1
 
                 new_matrix: Any = self.convert_to_matrix(
                     pos=(blink_x + (mod * side_mod), upper_pos.y, blink_z)
@@ -277,7 +284,7 @@ class Eyelid:
                 Upper_driver=self.sub_blink_controls[f"{sub_blink}_upper_blink_ctrl"].transform,
                 Lower_driver=self.sub_blink_controls[f"{sub_blink}_lower_blink_ctrl"].transform,
                 Upper_driven=driven_grps_list[0],
-                Lower_driven=driven_grps_list[0],
+                Lower_driven=driven_grps_list[1],
                 parent=self.main_ctrl,
                 push=0.5,
             )

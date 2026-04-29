@@ -1,4 +1,5 @@
-from typing import Sequence, TypeVar
+from bisect import bisect_left
+from typing import Iterable, Iterator, Sequence, TypeVar
 
 import numpy as np
 
@@ -501,6 +502,43 @@ def get_tangent_on_spline(
     return tangent
 
 
+def _get_arc_length_table(samples: Iterable[Vector3]) -> list[float]:
+    arc_lengths: list[float] = [0.0]
+    samples = iter(samples)
+    prev = next(samples)
+    for sample in samples:
+        arc_lengths.append(arc_lengths[-1] + (sample - prev).length())
+        prev = sample
+    return arc_lengths
+
+
+def _invert_arc_length(
+    arc_lengths: Sequence[float],
+    sample_params: Sequence[float],
+    target_length: float,
+) -> float:
+    """
+    Map an arc-length value back to a curve parameter using a sampled lookup
+    table and linear interpolation.
+    """
+    index = bisect_left(arc_lengths, target_length)
+
+    if index <= 0:
+        return sample_params[0]
+    if index >= len(arc_lengths):
+        return sample_params[-1]
+
+    prev_index = index - 1
+    prev_length, length = arc_lengths[prev_index], arc_lengths[index]
+
+    sample_distance = length - prev_length
+    alpha = (target_length - prev_length) / sample_distance if sample_distance else 0.0
+    interpolated = sample_params[prev_index] + alpha * (
+        sample_params[index] - sample_params[prev_index]
+    )
+    return interpolated
+
+
 def resample(
     cv_positions: Sequence[Vector3],
     number_of_points: int,
@@ -511,8 +549,8 @@ def resample(
     padded: bool = True,
     arc_length: bool = True,
     sample_points: int = 256,
-    u_min: float | None = None,
-    u_max: float | None = None,
+    u_start: float | None = None,
+    u_end: float | None = None,
     normalize_parameter: bool = True,
 ) -> list[float]:
     """Compute evenly spaced parameter values along a B-spline curve.
@@ -526,44 +564,32 @@ def resample(
     parameter that corresponds to each desired fractional distance.
 
     Args:
-        cv_positions: Ordered CV positions as
-            :class:`~yrig.structs.transform.Vector3` instances.
-        number_of_points: How many evenly spaced sample parameters to
-            produce.
-        degree: The curve degree.  Defaults to ``3`` (cubic).
-        knots: An explicit knot vector.  When ``None`` a uniform clamped
-            vector is generated via :func:`generate_knots`.
-        weights: Per-CV rational weights for NURBS.  ``None`` for a pure
-            B-spline.
-        periodic: When ``True``, samples are distributed for a periodic
-            (closed) curve so the last sample wraps back towards the
-            first.  Defaults to ``False``.
-        padded: When ``True`` (and *periodic* is ``False``), the first and
+        cv_positions: Ordered CV positions as Vector3 instances.
+        number_of_points: How many evenly spaced sample parameters to produce.
+        degree: The curve degree.  Defaults to 3 (cubic).
+        knots: An explicit knot vector.  When None a uniform clamped vector is generated.
+        weights: Per-CV rational weights for NURBS. None for a pure B-spline.
+        periodic: When True, samples are distributed for a periodic (closed) curve.
+        padded: When True (and periodic is False), the first and
             last samples are inset by half a segment width from the curve
             endpoints, which avoids placing joints exactly at the tips.
-            Defaults to ``True``.
-        arc_length: When ``True`` (the default), the returned parameters
-            are evenly spaced by arc length rather than by raw parameter
-            value.
+            Defaults to True.
+        arc_length: When True, the returned parameters
+            are evenly spaced by arc length rather than by raw parameter value.
         sample_points: The number of dense samples used internally to
             approximate arc length.  Higher values yield more accurate
-            spacing.  Defaults to ``256``.
-        u_min: Optional start of the resampling range (in the same
+            spacing.  Defaults to 256 which is plenty.
+        u_start: Optional start of the resampling range (in the same
             coordinate system as *normalize_parameter* implies).  Defaults
             to the domain start.
-        u_max: Optional end of the resampling range.  Defaults to the
+        u_end: Optional end of the resampling range.  Defaults to the
             domain end.
-        normalize_parameter: When ``True`` (the default), the returned
+        normalize_parameter: When True (the default), the returned
             parameters and *u_min* / *u_max* are in the ``0``–``1`` range.
             When ``False``, raw knot-domain values are used.
 
     Returns:
-        A list of *number_of_points* float parameter values, ordered from
-        the start to the end of the curve.
-
-    Raises:
-        ValueError: If *u_min* is not less than *u_max*, or if
-            *sample_points* is less than ``2``.
+        A list of float parameter values, ordered from the start to the end of the curve.
     """
 
     if not knots:
@@ -571,27 +597,15 @@ def resample(
     else:
         new_knots = knots
 
-    domain_start: float
-    domain_end: float
-    if normalize_parameter:
-        domain_start = 0.0
-        domain_end = 1.0
-    else:
-        domain_start = new_knots[degree]
-        domain_end = new_knots[-degree - 1]
+    domain_start, domain_end = (
+        (0, 1) if normalize_parameter else (new_knots[degree], new_knots[-degree - 1])
+    )
 
-    if not u_min:
-        new_u_min = domain_start
-    else:
-        new_u_min = u_min
-    if not u_max:
-        new_u_max = domain_end
-    else:
-        new_u_max = u_max
-
-    if not new_u_min < new_u_max:
+    calculated_u_start = u_start if u_start is not None else domain_start
+    calculated_u_max = u_end if u_end is not None else domain_end
+    if not calculated_u_start < calculated_u_max:
         raise ValueError(
-            f"The minimum U value ({new_u_min}) must be less than the maximum U value ({new_u_max})"
+            f"The start U value ({calculated_u_start}) must be less than the max U value ({calculated_u_max})"
         )
 
     def get_normalized_u(index: int) -> float:
@@ -605,7 +619,9 @@ def resample(
         return base_u
 
     def get_target_u(index: int) -> float:
-        return new_u_min + (new_u_max - new_u_min) * get_normalized_u(index)
+        return calculated_u_start + (calculated_u_max - calculated_u_start) * get_normalized_u(
+            index
+        )
 
     if not arc_length:
         return [get_target_u(i) for i in range(number_of_points)]
@@ -615,10 +631,9 @@ def resample(
         raise ValueError("sample_points must be >= 2")
 
     sample_params: list[float] = [
-        new_u_min + (new_u_max - new_u_min) * (i / (sample_points - 1))
+        calculated_u_start + (calculated_u_max - calculated_u_start) * (i / (sample_points - 1))
         for i in range(sample_points)
     ]
-
     samples: list[Vector3] = [
         get_point_on_spline(
             cv_positions=cv_positions,
@@ -631,61 +646,14 @@ def resample(
         for param in sample_params
     ]
 
-    # cumulative arc lengths (arc_lengths[0] will be 0.0)
-    arc_lengths: list[float] = []
-    c_length: float = 0
-    prev_sample: Vector3 | None = None
-    for index, sample in enumerate(samples):
-        if not prev_sample:
-            prev_sample = sample
-        distance: float = (sample - prev_sample).length()
-        c_length += distance
-        arc_lengths.append(c_length)
-        prev_sample = sample
-
+    arc_lengths: list[float] = _get_arc_length_table(samples)
     total_length: float = arc_lengths[-1]
-
     point_parameters: list[float] = []
-    n_samples: int = len(arc_lengths)  # equal to sample_points
 
     for i in range(number_of_points):
         normalized_u = get_normalized_u(i)
-        mapped_t: float = get_target_u(i)
         target_length: float = normalized_u * total_length
-
-        # Binary search to find the first point equal or greater than the target length
-        low: int = 0
-        high: int = n_samples - 1
-        index: int = 0
-        while low < high:
-            mid = (low + high) // 2
-            if arc_lengths[mid] < target_length:
-                low = mid + 1
-            else:
-                high = mid
-        index = low  # smallest index where arc_lengths[index] >= target_length.
-
-        prev_index: int = max(0, index - 1)
-        next_index: int = index
-
-        # If the sample is exactly our target point return it, if it's the last, return the end point, otherwise interpolate between the closest samples
-        if arc_lengths[prev_index] == target_length:
-            mapped_t = sample_params[next_index]
-        elif i == number_of_points - 1:
-            mapped_t = get_target_u(number_of_points - 1)
-        else:
-            length_before: float = arc_lengths[prev_index]
-            sample_distance: float = arc_lengths[next_index] - arc_lengths[prev_index]
-            if sample_distance == 0.0:
-                sample_fraction: float = 0.0
-            else:
-                sample_fraction = (
-                    target_length - length_before
-                ) / sample_distance  # How far we are along the current segment
-            mapped_t = sample_params[prev_index] + sample_fraction * (
-                sample_params[next_index] - sample_params[prev_index]
-            )
-
+        mapped_t: float = _invert_arc_length(arc_lengths, sample_params, target_length)
         point_parameters.append(mapped_t)
 
     return point_parameters

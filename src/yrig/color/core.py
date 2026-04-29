@@ -54,7 +54,9 @@ def clamp_color(color: tuple[float, float, float]) -> tuple[float, float, float]
     return (clamp_value(color[0]), clamp_value(color[1]), clamp_value(color[2]))
 
 
-def blend_colors_by_weight(colors: Iterable[tuple[float, float, float]], weights: Iterable[float]):
+def blend_colors_by_weight(
+    colors: Iterable[tuple[float, float, float]], weights: Iterable[float]
+) -> tuple[float, float, float]:
     """Compute a weighted sum of colors.
 
     Each color is scaled by its corresponding weight and the results are

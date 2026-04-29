@@ -242,7 +242,7 @@ def create_curve(
     return curve_transform
 
 
-def write_curve_to_library(curve: str | None = None, name: str | None = None, force: bool = False):
+def write_curve_to_library(curve: str | None = None, name: str | None = None, force: bool = False) -> None:
     """
     Saves selected or defined curve to shape library.
 
@@ -296,7 +296,7 @@ def write_curve_to_library(curve: str | None = None, name: str | None = None, fo
     log.info(f"The control shape for {curve} was written to the shape library at {json_path}")
 
 
-def export_control_shapes_file(filepath: Path, force: bool = False):
+def export_control_shapes_file(filepath: Path, force: bool = False) -> None:
     controls = get_tagged_controls()
     controls_shape_dict_data: dict[str, dict] = {
         control: get_control_shape_data(control).to_dict() for control in controls
@@ -339,7 +339,7 @@ class NurbsCurveShapeState:
     color_rgb: tuple[float, float, float] = (0, 0, 0)
     color_alpha: float = 1
 
-    def apply_to_nurbs_curve_shape(self, shape_node: str):
+    def apply_to_nurbs_curve_shape(self, shape_node: str) -> None:
         default_state = NurbsCurveShapeState()
         if self.visibility != default_state.visibility:
             if isinstance(self.visibility, str):
@@ -407,7 +407,7 @@ class NurbsCurveShapeState:
         )
 
 
-def apply_control_shape_data(control: str, data: ControlShapeData):
+def apply_control_shape_data(control: str, data: ControlShapeData) -> None:
     old_control_shapes = get_shapes(control)
     # Just pick one shape that'll be the source for shape state
     primary_shape = old_control_shapes[0]
@@ -422,7 +422,7 @@ def apply_control_shape_data(control: str, data: ControlShapeData):
     cmds.delete(old_control_shapes)  # type: ignore
 
 
-def apply_control_shapes_file(filepath: Path):
+def apply_control_shapes_file(filepath: Path) -> None:
     if not filepath.exists():
         raise RuntimeError(f"There was no control shapes file found at {filepath}")
 

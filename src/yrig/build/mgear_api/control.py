@@ -22,7 +22,7 @@ CONTROL_XRAY_ATTR = f"{RIG_ROOT_NODE}.ctl_x_ray"
 
 
 # This is taken from the mGear addCtl function and cleaned up since otherwise the interface is gross.
-def add_ctl(
+def add_ctl(  # noqa: ANN201
     name: str,
     parent: str | None,
     matrix: MMatrix | None,

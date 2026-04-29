@@ -29,6 +29,11 @@ maya = [
 line-length = 100
 exclude = ["third_party", "maya-setup.py"]
 
+[tool.ruff.lint]
+select = ["ANN001", "ANN201", "ANN202"]
+
+[tool.ruff.lint.per-file-ignores]
+"shifter/*" = ["ANN001", "ANN201", "ANN202"]
 
 [tool.pyright]
 extraPaths = [

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 
 
@@ -13,7 +15,7 @@ class Vector3:
         z: The Z component of the vector.
     """
 
-    def __init__(self, x: float = 0, y: float = 0, z: float = 0):
+    def __init__(self, x: float = 0, y: float = 0, z: float = 0) -> None:
         """Initialize a Vector3.
 
         Args:
@@ -25,15 +27,15 @@ class Vector3:
         self.y = y
         self.z = z
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a human-readable string representation ``(x, y, z)``."""
         return f"({self.x},{self.y},{self.z})"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation suitable for debugging."""
         return f"({self.x},{self.y},{self.z})"
 
-    def __add__(self, other):
+    def __add__(self, other: Vector3 | float | int) -> Vector3:
         """Add another ``Vector3`` or a scalar to this vector (component-wise).
 
         Args:
@@ -44,14 +46,14 @@ class Vector3:
             A new ``Vector3`` with the summed components, or ``self``
             unchanged if *other* is an unsupported type.
         """
-        if type(other) is Vector3:
+        if isinstance(other, Vector3):
             return Vector3(self.x + other.x, self.y + other.y, self.z + other.z)
-        elif type(other) is float or int:
+        elif isinstance(other, float | int):
             return Vector3(self.x + other, self.y + other, self.z + other)
         else:
             return self
 
-    def __radd__(self, other):
+    def __radd__(self, other: float | int) -> Vector3:
         """Support ``scalar + Vector3`` by delegating to `__add__`.
 
         Args:
@@ -61,12 +63,12 @@ class Vector3:
             A new ``Vector3`` with the summed components, or ``self``
             unchanged if *other* is an unsupported type.
         """
-        if type(other) is float or int:
+        if isinstance(other, float | int):
             return Vector3(self.x + other, self.y + other, self.z + other)
         else:
             return self
 
-    def __sub__(self, other):
+    def __sub__(self, other: Vector3) -> Vector3:
         """Subtract another ``Vector3`` from this vector (component-wise).
 
         Args:
@@ -77,12 +79,12 @@ class Vector3:
             A new ``Vector3`` with the difference, or ``self`` unchanged
             if *other* is not a ``Vector3``.
         """
-        if type(other) is Vector3:
+        if isinstance(other, Vector3):
             return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
         else:
             return self
 
-    def __mul__(self, other):
+    def __mul__(self, other: Vector3 | float | int) -> Vector3:
         """Multiply by another ``Vector3`` (component-wise) or a scalar.
 
         Args:
@@ -93,14 +95,14 @@ class Vector3:
             A new ``Vector3`` with the product, or ``self`` unchanged if
             *other* is an unsupported type.
         """
-        if type(other) is Vector3:
+        if isinstance(other, Vector3):
             return Vector3(self.x * other.x, self.y * other.y, self.z * other.z)
-        elif type(other) is float or int:
+        elif isinstance(other, float | int):
             return Vector3(self.x * other, self.y * other, self.z * other)
         else:
             return self
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: float | int) -> Vector3:
         """Support ``scalar * Vector3`` by delegating to `__mul__`.
 
         Args:
@@ -110,12 +112,12 @@ class Vector3:
             A new ``Vector3`` with the scaled components, or ``self``
             unchanged if *other* is an unsupported type.
         """
-        if type(other) is float or int:
+        if isinstance(other, float | int):
             return Vector3(self.x * other, self.y * other, self.z * other)
         else:
             return self
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: Vector3 | float | int) -> Vector3:
         """Divide by another ``Vector3`` (component-wise) or a scalar.
 
         Args:
@@ -129,9 +131,9 @@ class Vector3:
         Raises:
             ZeroDivisionError: If any divisor component (or the scalar) is zero.
         """
-        if type(other) is Vector3:
+        if isinstance(other, Vector3):
             return Vector3(self.x / other.x, self.y / other.y, self.z / other.z)
-        elif type(other) is float or int:
+        elif isinstance(other, float | int):
             return Vector3(self.x / other, self.y / other, self.z / other)
         else:
             return self

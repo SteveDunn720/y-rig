@@ -14,7 +14,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
     This step gives the needed metadata and path information for later steps like loading the model, applying skin weights, etc.
     """
 
-    def setup(self):
+    def setup(self) -> None:
         """
         Setting the name property makes the custom step accessible
         in later steps.
@@ -24,7 +24,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         """
         self.name = "paths"
 
-    def run(self):
+    def run(self) -> None:
         """Run method.
 
             i.e:  self.mgear_run.global_ctl

@@ -21,7 +21,7 @@ MatrixTuple: TypeAlias = tuple[
 class Attribute:
     """Base class for all Maya attributes."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         self.attr_path = attr_path
 
     def __str__(self) -> str:
@@ -67,7 +67,7 @@ class Attribute:
 class ScalarAttribute(Attribute):
     """A Maya attribute of a scalar type."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
     def get(self) -> float:
@@ -92,7 +92,7 @@ class ScalarAttribute(Attribute):
 class IntegerAttribute(ScalarAttribute):
     """A Maya attribute of an integer type."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
     def get(self) -> int:
@@ -117,14 +117,14 @@ class IntegerAttribute(ScalarAttribute):
 class EnumAttribute(IntegerAttribute):
     """A Maya attribute of the enum type."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
 
 class BooleanAttribute(Attribute):
     """A Maya attribute of a bool type."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
     def get(self) -> bool:
@@ -149,7 +149,7 @@ class BooleanAttribute(Attribute):
 class MatrixAttribute(Attribute):
     """A Maya attribute of the matrix type."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
     def get(self) -> MatrixTuple:
@@ -182,14 +182,14 @@ class MatrixAttribute(Attribute):
 class NurbsCurveAttribute(Attribute):
     """A Maya attribute of the nurbsCurve type."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
 
 class Vector3Attribute(Attribute):
     """A Maya attribute of the type double3 (XYZ)"""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
         self.x = ScalarAttribute(f"{attr_path}X")
@@ -220,7 +220,7 @@ class Vector3Attribute(Attribute):
 class Vector4Attribute(Attribute):
     """A Maya attribute of the type double4 (XYZW)"""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
         self.x = ScalarAttribute(f"{attr_path}X")
@@ -232,7 +232,7 @@ class Vector4Attribute(Attribute):
 class QuatAttribute(Attribute):
     """A Maya attribute of the compound Quaternion type (XYZW)"""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
         self.x = ScalarAttribute(f"{attr_path}X")
@@ -282,7 +282,7 @@ class IndexableMatrixAttribute(IndexableAttribute[MatrixAttribute]):
 class BlendMatrixTargetAttribute(Attribute):
     """A Maya attribute of the same compound type as the targets in a blendMatrix node."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
         self.target_matrix = MatrixAttribute(f"{attr_path}.targetMatrix")
@@ -305,7 +305,7 @@ class IndexableBlendMatrixTargetAttribute(IndexableAttribute[BlendMatrixTargetAt
 class WtMatrixAttribute(Attribute):
     """A Maya attribute of the same compound type as the wtMatrix elements in a wtAddMatrix node."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
         self.matrix_in = MatrixAttribute(f"{attr_path}.matrixIn")
@@ -323,7 +323,7 @@ class IndexableWtMatrixAttribute(IndexableAttribute[WtMatrixAttribute]):
 class AimMatrixAxisAttribute(Attribute):
     """A Maya attribute of the same compound type as the aimMatrix axes."""
 
-    def __init__(self, attr_path: str, axis_name: str):
+    def __init__(self, attr_path: str, axis_name: str) -> None:
         super().__init__(attr_path)
 
         self.input_axis = Vector3Attribute(f"{attr_path}.{axis_name}InputAxis")
@@ -335,7 +335,7 @@ class AimMatrixAxisAttribute(Attribute):
 class MessageAttribute(Attribute):
     """A Maya message attribute."""
 
-    def __init__(self, attr_path: str):
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
     def connected_nodes(

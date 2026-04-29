@@ -29,7 +29,7 @@ class Component(component.Main):
     # =====================================================
     # OBJECTS
     # =====================================================
-    def addObjects(self):
+    def addObjects(self) -> None:
         """Add all the objects needed to create the component."""
 
         self._add_common_setup()
@@ -48,7 +48,7 @@ class Component(component.Main):
         self._add_bendy_controls()
         self._add_ik_visual_reference()
 
-    def _add_common_setup(self):
+    def _add_common_setup(self) -> None:
         self.WIP = self.options["mode"]
         self.up_axis = pm.upAxis(q=True, axis=True)
 
@@ -68,7 +68,7 @@ class Component(component.Main):
         self.mid_guide = self.GUIDE_MAP.get("mid", "mid")
         self.end_guide = self.GUIDE_MAP.get("end", "end")
 
-    def _add_root_control(self):
+    def _add_root_control(self) -> None:
         t = transform.getTransformFromPos(self.guide.apos[0])
 
         self.root_npo = primitive.addTransform(self.root, self.getName("root_npo"), t)
@@ -82,7 +82,7 @@ class Component(component.Main):
             tp=self.parentCtlTag,
         )
 
-    def _add_fk_controls(self):
+    def _add_fk_controls(self) -> None:
         # FK Controlers -----------------------------------
         # FK 0
         t = transform.getTransformLookingAt(
@@ -168,7 +168,7 @@ class Component(component.Main):
         for x in self.fk_ctl:
             attribute.setInvertMirror(x, ["tx", "ty", "tz"])
 
-    def _add_ik_upv(self):
+    def _add_ik_upv(self) -> None:
         # 1 bone chain for upv ref
         self.limbChainUpvRef = primitive.add2DChain(
             self.root,
@@ -249,7 +249,7 @@ class Component(component.Main):
             attribute.setInvertMirror(self.upv_ctl, ["tx"])
         attribute.setKeyableAttributes(self.upv_ctl, self.t_params)
 
-    def _add_ik_controls(self):
+    def _add_ik_controls(self) -> None:
         # IK Controlers -----------------------------------
 
         end_pos = self.guide.pos[self.end_guide]
@@ -318,7 +318,7 @@ class Component(component.Main):
 
         self.fk_ik_ctls = self.fk_ctl + [self.ik_ctl]
 
-    def _add_reference_objects(self):
+    def _add_reference_objects(self) -> None:
         # References --------------------------------------
         trnIK_ref = transform.getTransformLookingAt(
             self.guide.pos[self.end_guide],
@@ -330,7 +330,7 @@ class Component(component.Main):
         self.ik_ref = primitive.addTransform(self.ik_ctl_ref, self.getName("ik_ref"), trnIK_ref)
         self.fk_ref = primitive.addTransform(self.fk_ctl[2], self.getName("fk_ref"), trnIK_ref)
 
-    def _add_solver_chain(self):
+    def _add_solver_chain(self) -> None:
         # Chain --------------------------------------------
         # The outputs of the ikfk2bone solver
 
@@ -379,7 +379,7 @@ class Component(component.Main):
         t = transform.getTransform(self.fk_ctl[1])
         self.mid_ref = primitive.addTransform(self.root, self.getName("mid_ref"), t)
 
-    def _add_match_refs(self):
+    def _add_match_refs(self) -> None:
         # match IK FK references
         self.match_fk0_off = self.add_match_ref(self.fk_ctl[1], self.root, "matchFk0_npo", False)
 
@@ -397,7 +397,7 @@ class Component(component.Main):
 
         self.match_ikUpv = self.add_match_ref(self.upv_ctl, self.fk0_ctl, "upv_mth")
 
-    def _add_swing_twist(self):
+    def _add_swing_twist(self) -> None:
         self.upper_swing = pm.PyNode(
             create_swing_only_transform(
                 transform=str(self.bone0_tr),
@@ -437,7 +437,7 @@ class Component(component.Main):
             m=lower_twist_matrix,
         )
 
-    def _add_mid_control(self):
+    def _add_mid_control(self) -> None:
         # Mid control Locator
 
         tA = transform.getTransformLookingAt(
@@ -482,7 +482,7 @@ class Component(component.Main):
             attribute.setInvertMirror(self.mid_ctl, ["tx", "ty", "tz"])
         attribute.setKeyableAttributes(self.mid_ctl, self.t_params)
 
-    def _add_twist_chains(self):
+    def _add_twist_chains(self) -> None:
         # Roll twist chain ---------------------------------
         # Upper
         self.upperChainPos = []
@@ -524,7 +524,7 @@ class Component(component.Main):
             self.WIP,
         )
 
-    def _add_divisions(self):
+    def _add_divisions(self) -> None:
         # Divisions ----------------------------------------
         # We have attribute least one division attribute the start, the end
         # and one for the mid control. + 2 for mid angle control
@@ -633,7 +633,7 @@ class Component(component.Main):
                 twist_idx += increment
         self.divisions_end = current_parent
 
-    def _add_end_reference(self):
+    def _add_end_reference(self) -> None:
         # End reference ------------------------------------
         # To help the deformation on the wrist/ankle
 
@@ -661,7 +661,7 @@ class Component(component.Main):
             }
         )
 
-    def _add_bendy_controls(self):
+    def _add_bendy_controls(self) -> None:
         # Bendy controls
         posA = transform.getTranslation(self.fk0_ctl)
         posB = transform.getTranslation(self.fk1_ctl)
@@ -768,7 +768,7 @@ class Component(component.Main):
                 self.midBendy_npo.sz.set(-1)
         attribute.setKeyableAttributes(self.midBendy_ctl)
 
-    def _add_ik_visual_reference(self):
+    def _add_ik_visual_reference(self) -> None:
         # add visual reference
         self.line_ref = icon.connection_display_curve(
             self.getName("visalRef"), [self.upv_ctl, self.mid_ctl]
@@ -777,7 +777,7 @@ class Component(component.Main):
     # =====================================================
     # ATTRIBUTES
     # =====================================================
-    def addAttributes(self):
+    def addAttributes(self) -> None:
         """Create the anim and setupr rig attributes for the component"""
         self._add_common_attributes()
         self._add_reference_array_attributes()
@@ -789,7 +789,7 @@ class Component(component.Main):
             "volume_blendshape", "Volume Blendshape", "double", 0, 0, 10
         )
 
-    def _add_common_attributes(self):
+    def _add_common_attributes(self) -> None:
         # Anim -------------------------------------------
         self.blend_att = self.addAnimParam(
             "blend", "Fk/Ik Blend", "double", self.settings["blend"], 0, 1
@@ -827,7 +827,7 @@ class Component(component.Main):
         self.midCtl_att = self.addAnimParam("mid_ctl_vis", "Mid Ctl Vis", "bool", False)
         self.ikCnsCtl_att = self.addAnimParam("ik_cns_ctl_vis", "IK Cns Ctl Vis", "bool", False)
 
-    def _add_reference_array_attributes(self):
+    def _add_reference_array_attributes(self) -> None:
         # Ref
         if self.settings["ikrefarray"]:
             ref_names = self.settings["ikrefarray"].split(",")
@@ -851,7 +851,7 @@ class Component(component.Main):
             if len(ref_names) > 1:
                 self.pin_att = self.addAnimEnumParam("midref", "Mid Ref", 0, ref_names)
 
-    def _add_proxy_attributes(self):
+    def _add_proxy_attributes(self) -> None:
         if self.validProxyChannels:
             attribute.addProxyAttribute(
                 [self.blend_att, self.roundness_att],
@@ -868,7 +868,7 @@ class Component(component.Main):
     # =====================================================
     # OPERATORS
     # =====================================================
-    def addOperators(self):
+    def addOperators(self) -> None:
         """Create operators and set the relations for the component rig
 
         Apply operators, constraints, expressions to the hierarchy.
@@ -887,7 +887,7 @@ class Component(component.Main):
         self._setup_ik_fk_match()
         self._setup_joints()
 
-    def _setup_ik_upv(self):
+    def _setup_ik_upv(self) -> None:
         # 1 bone chain Upv ref ======================================
         self.ikHandleUpvRef = primitive.addIkHandle(
             self.root,
@@ -915,7 +915,7 @@ class Component(component.Main):
             self.ikH_parCns = pm.parentConstraint(self.limbChainUpvRef[0], self.upv_cns, mo=True)
             self.ikH_cns_driver = self.limbChainUpvRef[0]
 
-    def _setup_control_vis(self):
+    def _setup_control_vis(self) -> None:
         # Visibilities -------------------------------------
         # fk
         fkvis_node = node.createReverseNode(self.blend_att)
@@ -963,13 +963,13 @@ class Component(component.Main):
         for shp in self.midBendy_ctl.getShapes():
             pm.connectAttr(self.midBendyVis_att, shp.attr("visibility"))
 
-    def _setup_control_rotation_orders(self):
+    def _setup_control_rotation_orders(self) -> None:
         attribute.setRotOrder(self.fk0_ctl, "XZY")
         attribute.setRotOrder(self.fk1_ctl, "XYZ")
         attribute.setRotOrder(self.fk2_ctl, "YZX")
         attribute.setRotOrder(self.ik_ctl, "XYZ")
 
-    def _setup_ik_solver(self):
+    def _setup_ik_solver(self) -> None:
         # IK Solver -----------------------------------------
         out = [self.bone0, self.bone1, self.ctrn_loc, self.eff_loc]
         o_node = applyop.gear_ikfk2bone_op(
@@ -1039,7 +1039,7 @@ class Component(component.Main):
         # point constrain tip reference
         pm.pointConstraint(self.ik_ctl, self.tip_ref, mo=False)
 
-    def _setup_swing_twist(self):
+    def _setup_swing_twist(self) -> None:
         matrix_constraint(
             str(self.midBendy_ctl),
             str(self.upper_twist),
@@ -1081,7 +1081,7 @@ class Component(component.Main):
         lower_twist_mid.output_quat.connect_to(lower_twist_mid_euler.input_quat)
         lower_twist_mid_euler.output_rotate.x.connect_to(f"{self.lowerBendy_twist}.rotateX")
 
-    def _setup_bendy_controls(self):
+    def _setup_bendy_controls(self) -> None:
         matrix_constraint(
             str(self.upper_twist),
             str(self.upper_mid_bendy_npo),
@@ -1122,7 +1122,7 @@ class Component(component.Main):
             stretch=False,
         )
 
-    def _setup_roll_control(self):
+    def _setup_roll_control(self) -> None:
         # interpolate transform  mid point locator
         int_matrix = applyop.gear_intmatrix_op(
             self.limbChainUpvRef[0].attr("worldMatrix"),
@@ -1145,7 +1145,7 @@ class Component(component.Main):
         # parent constraint roll control npo to interpolate trans
         pm.parentConstraint(self.interpolate_lvl, self.roll_ctl_npo, mo=True)
 
-    def _setup_twist_chains(self):
+    def _setup_twist_chains(self) -> None:
         # spline IK for  twist jnts
         cns_list = [
             self.upper_swing,
@@ -1180,7 +1180,7 @@ class Component(component.Main):
             padded=False,
         )
 
-    def _setup_ik_fk_match(self):
+    def _setup_ik_fk_match(self) -> None:
         # TODO: check for a more clean and elegant solution instead of re-match
         # the world matrix again
         transform.matchWorldTransform(self.fk_ctl[0], self.match_fk0_off)
@@ -1192,7 +1192,7 @@ class Component(component.Main):
         pm.parentConstraint(self.bone0, self.match_fk0_off, mo=True)
         pm.parentConstraint(self.bone1, self.match_fk1_off, mo=True)
 
-    def _setup_divisions(self):
+    def _setup_divisions(self) -> None:
         # Divisions ----------------------------------------
         # attribute 0 or 1 the division will follow exactly the rotation of
         # the controler.. and we wont have this nice bendy + roll
@@ -1225,7 +1225,7 @@ class Component(component.Main):
             pm.connectAttr(dm_node + ".outputScale", div_cns + ".scale")
             pm.connectAttr(dm_node + ".outputShear", div_cns + ".shear")
 
-    def _setup_joints(self):
+    def _setup_joints(self) -> None:
         self._setup_divisions()
         # force translation for mid joint to mid ctl
         lastLimbDiv = None
@@ -1246,7 +1246,7 @@ class Component(component.Main):
     # CONNECTOR
     # =====================================================
 
-    def setRelation(self):
+    def setRelation(self) -> None:
         """Set the relation beetween object from guide to rig"""
         offset = int(self.extra_div / 2)
         self.relatives[self.root_guide] = self.div_cns[0]
@@ -1268,16 +1268,16 @@ class Component(component.Main):
         self.controlRelatives[self.end_guide] = self.fk2_ctl
         self.controlRelatives["eff"] = self.fk2_ctl
 
-    def addConnection(self):
+    def addConnection(self) -> None:
         """Add more connection definition to the set"""
         pass
 
-    def connect_standard(self):
+    def connect_standard(self) -> None:
         """standard connection definition for the component"""
         self.parent.addChild(self.root)
         self._connect_reference_array()
 
-    def _connect_reference_array(self):
+    def _connect_reference_array(self) -> None:
         # Set the Ik Reference
         self.connectRef(self.settings["ikrefarray"], self.ik_cns)
         self.connectRef(self.settings["upvrefarray"], self.upv_cns, True)
@@ -1292,7 +1292,7 @@ class Component(component.Main):
                 ["Auto"],
             )
 
-    def finalize(self):
+    def finalize(self) -> None:
         """Tag split joints for automatic weight splitting.
 
         Uses the jnt_pos indices recorded during addObjects to look up

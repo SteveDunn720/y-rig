@@ -30,7 +30,7 @@ from Qt.QtWidgets import (
 
 
 class Ui_Form(object):
-    def setupUi(self, Form):
+    def setupUi(self, Form) -> None:
         if not Form.objectName():
             Form.setObjectName("Form")
         Form.resize(226, 480)
@@ -176,7 +176,7 @@ class Ui_Form(object):
 
     # setupUi
 
-    def retranslateUi(self, Form):
+    def retranslateUi(self, Form) -> None:
         Form.setWindowTitle(QCoreApplication.translate("Form", "Form", None))
         self.groupBox.setTitle("")
         self.preserve_length_label.setText(

@@ -21,7 +21,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
     This step calls a face build step defined as an NXT graph.
     """
 
-    def setup(self):
+    def setup(self) -> None:
         """
         Setting the name property makes the custom step accessible
         in later steps.
@@ -31,7 +31,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         """
         self.name = "build_face"
 
-    def run(self):
+    def run(self) -> None:
         """Run method.
 
             i.e:  self.mgear_run.global_ctl

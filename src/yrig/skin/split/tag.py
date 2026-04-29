@@ -12,7 +12,7 @@ from yrig.skin.split.data import WeightSplitData
 
 
 class WeightSplitTag:
-    def __init__(self, node: str):
+    def __init__(self, node: str) -> None:
         self.source_influence = MessageAttribute(f"{node}.source_influence")
         self.degree = IntegerAttribute(f"{node}.degree")
         self.periodic = BooleanAttribute(f"{node}.periodic")

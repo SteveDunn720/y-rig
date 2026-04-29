@@ -20,7 +20,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
     and puts it in the rig hierarchy.
     """
 
-    def setup(self):
+    def setup(self) -> None:
         """
         Setting the name property makes the custom step accessible
         in later steps.
@@ -30,7 +30,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         """
         self.name = "cleanup"
 
-    def run(self):
+    def run(self) -> None:
         """Run method.
 
             i.e:  self.mgear_run.global_ctl

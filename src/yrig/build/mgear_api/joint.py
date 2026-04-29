@@ -15,13 +15,13 @@ JOINTS_SET_NAME: str = f"{RIG_ROOT_NODE}_deformers_grp"
 JOINT_VIS_ATTR: str = f"{RIG_ROOT_NODE}.jnt_vis"
 
 
-def add_to_joint_set(joint: str):
+def add_to_joint_set(joint: str) -> None:
     if cmds.objExists(JOINTS_SET_NAME) and cmds.nodeType(JOINTS_SET_NAME) == "objectSet":
         cmds.sets(joint, addElement=JOINTS_SET_NAME)
 
 
 # This is taken from the mGear addJoint function and cleaned up since otherwise the interface is gross.
-def add_joint(
+def add_joint(  # noqa: ANN201
     obj: str | MMatrix,
     name: str,
     parent: str | None,
@@ -29,9 +29,9 @@ def add_joint(
     segComp: bool = False,
     rot_off: tuple[float, float, float] | None = None,
     leaf_joint: bool = False,
-    data_contracts=None,
-    preBind_relative=None,
-    neutral_rot=True,
+    data_contracts=None,  # noqa: ANN001
+    preBind_relative=None,  # noqa: ANN001
+    neutral_rot=True,  # noqa: ANN001
 ):
     """Add joint as child of the active joint or under driver object.
 

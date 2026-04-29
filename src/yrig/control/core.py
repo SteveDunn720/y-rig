@@ -119,7 +119,7 @@ def create_control(
     dimensions: tuple[float, float, float] = (1, 1, 1),
     rotation_order: RotationOrder = RotationOrder.XYZ,
     limit_min_scale: bool = True,
-):
+) -> Control:
     transform_matrix: MMatrix | None
     if transform is not None:
         if isinstance(transform, str):

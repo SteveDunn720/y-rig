@@ -88,7 +88,7 @@ class Node:
         self.name: str = self._create_node(node_type, name=name or node_type)
         self._setup_attributes()
 
-    def _ensure_plugin(self, node_type: str):
+    def _ensure_plugin(self, node_type: str) -> None:
         plugin: str | None = NODE_PLUGINS.get(node_type)
         if plugin is not None:
             ensure_plugin_loaded(plugin)

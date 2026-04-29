@@ -8,7 +8,7 @@ from yrig.structs.transform import Vector3
 CV = TypeVar("CV")
 
 
-def generate_knots(count: int, degree: int = 3, periodic=False) -> list[float]:
+def generate_knots(count: int, degree: int = 3, periodic: bool = False) -> list[float]:
     """Generate a default knot vector for a B-spline with the given CV count and degree.
 
     For **open (clamped)** curves the first and last ``degree`` knot values
@@ -507,7 +507,7 @@ def resample(
     degree: int = 3,
     knots: Sequence[float] | None = None,
     weights: Sequence[float] | None = None,
-    periodic=False,
+    periodic: bool = False,
     padded: bool = True,
     arc_length: bool = True,
     sample_points: int = 256,
@@ -594,7 +594,7 @@ def resample(
             f"The minimum U value ({new_u_min}) must be less than the maximum U value ({new_u_max})"
         )
 
-    def get_normalized_u(index):
+    def get_normalized_u(index: int) -> float:
         if periodic:
             base_u = index / (number_of_points)
         else:

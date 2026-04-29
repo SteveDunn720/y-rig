@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class CustomShifterStep(cstp.customShifterMainStep):
     """Custom Step description"""
 
-    def setup(self):
+    def setup(self) -> None:
         """
         Setting the name property makes the custom step accessible
         in later steps.
@@ -22,7 +22,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         """
         self.name = "apply_control_shapes"
 
-    def run(self):
+    def run(self) -> None:
         """Run method.
 
             i.e:  self.mgear_run.global_ctl

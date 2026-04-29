@@ -11,7 +11,7 @@ from yrig.transform.structs import Axis
 from yrig.transform.utils import create_transform, match_transform
 
 
-def drive_rotation_with_quat(transform: str, quat_attribute: QuatAttribute):
+def drive_rotation_with_quat(transform: str, quat_attribute: QuatAttribute) -> None:
     """
     Drive the rotation of a transform using a QuatAttribute via a QuatToEuler node.
     """
@@ -21,7 +21,7 @@ def drive_rotation_with_quat(transform: str, quat_attribute: QuatAttribute):
     euler_angles.output_rotate.connect_to(f"{transform}.rotate")
 
 
-def _connect_twist_quat(source: QuatAttribute, destination: QuatAttribute, axis: Axis):
+def _connect_twist_quat(source: QuatAttribute, destination: QuatAttribute, axis: Axis) -> None:
     """
     Connect the W and the specified axis component from one quaternion to another.
     (Forming a twist Decomposition) https://www.chadvernon.com/blog/swing-twist/

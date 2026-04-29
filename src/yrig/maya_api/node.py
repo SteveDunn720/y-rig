@@ -183,6 +183,20 @@ class ClampRangeNode(Node):
         self.output = ScalarAttribute(f"{self.name}.output")
 
 
+class Condition(Node):
+    """Maya condition node with enhanced interface."""
+
+    def __init__(self, name: str = "condition") -> None:
+        super().__init__("cos", name)
+
+    def _setup_attributes(self) -> None:
+        self.first_term: ScalarAttribute = ScalarAttribute(f"{self.name}.firstTerm")
+        self.second_term: ScalarAttribute = ScalarAttribute(f"{self.name}.secondTerm")
+        self.color_if_true: Vector3Attribute = Vector3Attribute(f"{self.name}.colorIfTrue")
+        self.color_if_false: Vector3Attribute = Vector3Attribute(f"{self.name}.colorIfFalse")
+        self.operation = EnumAttribute(f"{self.name}.operation")
+
+
 class CosNode(Node):
     """Maya cos node with enhanced interface."""
 

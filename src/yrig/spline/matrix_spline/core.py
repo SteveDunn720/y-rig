@@ -42,15 +42,16 @@ class MatrixSpline:
             name (str | None, optional): Base name for created scene nodes. Defaults to "matrix_spline".
         """
         self.pinned_transforms: list[str] = []
+        self.joints: list[str] = []
         self.curve: str | None = None
         self.periodic: bool = periodic
         self.degree: int = degree
         self.cv_transforms: list[str] = list(cv_transforms)
-        number_of_cvs: int = len(cv_transforms) + (periodic * degree)
+        extended_cvs_num: int = len(cv_transforms) + (periodic * degree)
         self.knots: list[float] = (
             list(knots)
             if knots is not None
-            else generate_knots(count=number_of_cvs, degree=degree, periodic=periodic)
+            else generate_knots(count=extended_cvs_num, degree=degree, periodic=periodic)
         )
         self.name: str = name if name is not None else "matrix_spline"
 
@@ -105,10 +106,12 @@ class MatrixSpline:
             cv_matrices.append(str(cv_matrix.output))
             cv_position_attrs.append((str(row4.output.x), str(row4.output.y), str(row4.output.z)))
 
-        # If the curve is periodic there are we need to re-add CVs that move together.
+        # If the curve is periodic then we need to re-add CVs that move together.
         if periodic:
             for i in range(degree):
+                self.cv_transforms.append(self.cv_transforms[i])
                 cv_matrices.append(cv_matrices[i])
+                cv_position_attrs.append(cv_position_attrs[i])
 
         self.cv_matrices: list[str] = cv_matrices
         self.cv_position_attrs: list[tuple[str, str, str]] = cv_position_attrs

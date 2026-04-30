@@ -398,7 +398,7 @@ class Eyelid:
 
                 driver_grps_list.append(driver_driver)
 
-                cmds.setAttr(f"{driver_offset}.rotateY", aim / 8)  # type:ignore
+                cmds.setAttr(f"{driver_offset}.rotateY", aim / -2)  # type:ignore
 
                 self.main_eyelid_controls[f"{sub_blink}_{side}_eyelid_ctrl"] = create_control(
                     name=f"{sub_blink}_{side}_eyelid_{self.side}",
@@ -408,6 +408,16 @@ class Eyelid:
                     control_shape="sphere",
                     direction="z",
                 )
+
+                ##### Adding x translate control funtionality to the controls
+
+                x_md = MultiplyDivideNode(name=f"{sub_blink}_{side}_{self.side}_L")
+
+                x_md.input1.x.connect_from(
+                    f"{self.sub_blink_controls[f'{sub_blink}_{side}_blink_ctrl'].transform}.translateX"
+                )
+                x_md.output.x.connect_to(f"{driver_driven}.rotateZ")
+                x_md.input2.x.set(-30)
 
             self.soft_colide(
                 Upper_driver=self.sub_blink_controls[f"{sub_blink}_upper_blink_ctrl"].transform,

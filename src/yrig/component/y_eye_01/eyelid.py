@@ -4,13 +4,14 @@ from typing import Any, Literal
 
 import maya.cmds as cmds
 from yrig.control import create_control
+from yrig.joint import create_joint
 
-# from yrig.joint import create_joint
 from yrig.transform import create_transform
 from maya.api.OpenMaya import MMatrix, MTransformationMatrix, MVector, MEulerRotation, MSpace
 from yrig.transform.utils import get_position
 import math
 from yrig.transform.matrix import matrix_constraint
+
 
 from yrig.maya_api.node import (
     PlusMinusAverageNode,
@@ -21,6 +22,8 @@ from yrig.maya_api.node import (
     AddDLNode,
 )
 
+from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
+
 
 class Eyelid:
     def __init__(
@@ -30,12 +33,14 @@ class Eyelid:
         control_size: float = 1.0,
         main_ctrl: str = "",
         parent: str = "",
-    ):
+        joint_parent: str = "",
+    ) -> None:
         self.side = side
         self.guides = guides
         self.main_ctrl = main_ctrl
         self.control_size = control_size
         self.parent = parent
+        self.joint_parent = joint_parent
 
     # -------------------
     # Helper Functions
@@ -67,6 +72,117 @@ class Eyelid:
         m.setScale(scale, MSpace.kWorld)
 
         return m.asMatrix()
+
+    def curve_to_matrix_spline(
+        self,
+        parent: str,
+        curve: str,
+        descriptor: str,
+        driver_list: list,
+        rebuild: bool = False,
+        cv_count: int = 10,
+        ignore_handles: bool = False,
+    ) -> None:
+        """
+        Returns worldspace positions of CVs on a curve.
+
+        Args:
+            curve (str): Name of the curve transform or shape.
+            rebuild (bool): If True, duplicate and rebuild curve.
+            cv_count (int): Number of CVs if rebuilding.
+            ignore_handles (bool): If True, skip 2nd and 2nd-to-last CV.
+
+        Returns:
+            list of tuples: [(x, y, z), ...]
+        """
+
+        temp_curve = None
+        working_curve = curve
+
+        # Ensure we are working with the shape node
+        shapes = cmds.listRelatives(curve, shapes=True, fullPath=True) or []
+        if shapes:
+            working_curve = shapes[0]
+
+        # Optional rebuild
+        if rebuild:
+            temp_curve = cmds.duplicate(curve, name=curve + "_tempRebuild")[0]
+
+            cmds.rebuildCurve(
+                temp_curve,
+                ch=False,  # type:ignore
+                rpo=True,  # type:ignore
+                rt=0,  # type:ignore
+                end=1,  # type:ignore
+                kr=0,  # type:ignore
+                kcp=False,  # type:ignore
+                kep=True,  # type:ignore
+                kt=False,  # type:ignore
+                s=cv_count - 1,  # type:ignore
+                d=3,  # type:ignore
+            )
+
+            # Get shape of rebuilt curve
+            shapes = cmds.listRelatives(temp_curve, shapes=True, fullPath=True) or []
+            if shapes:
+                working_curve = shapes[0]
+            else:
+                working_curve = temp_curve
+
+        # Get CV count
+        spans = cmds.getAttr(working_curve + ".spans")
+        degree = cmds.getAttr(working_curve + ".degree")
+        cv_total = spans + degree
+
+        indices = list(range(cv_total))
+
+        # Ignore handles if requested
+        if ignore_handles and cv_total > 3:
+            indices = [i for i in indices if i not in (1, cv_total - 2)]
+
+        self.sub_eyelid_controls = []
+        self.sub_eyelid_joints = []
+        sub_eyelid_offsets = []
+        for i in indices:  # descriptor
+            cv = f"{working_curve}.cv[{i}]"
+
+            # Get CV position
+            pos = get_position(cv)
+
+            # Create temp transform
+            temp = cmds.group(empty=True, name=f"{curve}_tempCv_{i}#")
+            cmds.xform(temp, worldSpace=True, translation=(pos.x, pos.y, pos.z))
+
+            sub_ctrl = create_control(
+                name=f"{descriptor}_{i}_{self.side}",
+                parent=self.parent,
+                transform=temp,
+                size=self.control_size / 10,
+                control_shape="circle",
+                direction="z",
+            )
+            sub_jnt = create_joint(
+                name=f"{descriptor}_{i}_{self.side}",
+                parent=self.joint_parent,
+                transform=sub_ctrl.transform,
+            )
+
+            self.sub_eyelid_controls.append(sub_ctrl)
+            self.sub_eyelid_joints.append(sub_jnt)
+            sub_eyelid_offsets.append(sub_ctrl.offset)
+
+            cmds.delete(temp)
+
+        # Cleanup
+        if temp_curve and cmds.objExists(temp_curve):
+            cmds.delete(temp_curve)
+
+        matrix_spline_from_transforms(
+            name=f"{self.side}_{descriptor}",
+            pinned_transforms=sub_eyelid_offsets,
+            cv_transforms=driver_list,
+            parent=self.parent,
+        )
 
     def get_flat_y_aim_rotation(self, source: str, target: str) -> float:
         """
@@ -334,7 +450,7 @@ class Eyelid:
 
             cmds.connectAttr(
                 f"{blink_ctrl.transform}.translateY",
-                f"{self.sub_blink_controls[f'mid_{side}_blink_ctrl'].transform}.translateY",
+                f"{self.sub_blink_controls[f'mid_{side}_blink_ctrl'].offset}.translateY",
             )
 
             for i, sub in enumerate(["inner", "outer"]):
@@ -347,15 +463,15 @@ class Eyelid:
                 cmds.connectAttr(f"{input_mult.output.x}", f"{addDL_node.input_2}")
                 cmds.connectAttr(
                     f"{addDL_node.output}",
-                    f"{self.sub_blink_controls[f'{sub}_{side}_blink_ctrl'].transform}.translateY",
+                    f"{self.sub_blink_controls[f'{sub}_{side}_blink_ctrl'].offset}.translateY",
                 )
 
         #######
         # Corner Controls
         #######
-
+        corner_controls = []
         for sub in ["inner", "outer"]:
-            self.main_eyelid_controls[f"{sub}_{side}_eyelid_ctrl"] = create_control(
+            self.main_eyelid_controls[f"{sub}_corner_eyelid_ctrl"] = create_control(
                 name=f"{sub}_corner_eyelid_{self.side}",
                 parent=self.main_ctrl,
                 transform=self.guides[f"eyelid_{sub}_corner"],
@@ -364,4 +480,39 @@ class Eyelid:
                 direction="z",
             )
 
-        ##### Should i add so blending between the top and botton lids? Translate? Rotate? IDK
+            ##### Should i add so blending between the top and botton lids? Translate? Rotate? IDK
+
+        self.upper_driver_controls = [
+            self.main_eyelid_controls[f"inner_corner_eyelid_ctrl"],
+            self.main_eyelid_controls[f"inner_upper_eyelid_ctrl"],
+            self.main_eyelid_controls[f"mid_upper_eyelid_ctrl"],
+            self.main_eyelid_controls[f"outer_upper_eyelid_ctrl"],
+            self.main_eyelid_controls[f"outer_corner_eyelid_ctrl"],
+        ]
+        self.lower_driver_controls = [
+            self.main_eyelid_controls[f"inner_corner_eyelid_ctrl"],
+            self.main_eyelid_controls[f"inner_lower_eyelid_ctrl"],
+            self.main_eyelid_controls[f"mid_lower_eyelid_ctrl"],
+            self.main_eyelid_controls[f"outer_lower_eyelid_ctrl"],
+            self.main_eyelid_controls[f"outer_corner_eyelid_ctrl"],
+        ]
+
+        #######
+        # Matix Spline Eyelids
+        #######
+
+        self.curve_to_matrix_spline(
+            parent=self.parent,
+            curve=self.guides["eyelid_upper_curve"],
+            descriptor="upper_eyelid",
+            driver_list=self.upper_driver_controls,
+            ignore_handles=True,
+        )
+
+        self.curve_to_matrix_spline(
+            parent=self.parent,
+            curve=self.guides["eyelid_lower_curve"],
+            descriptor="lower_eyelid",
+            driver_list=self.lower_driver_controls,
+            ignore_handles=True,
+        )

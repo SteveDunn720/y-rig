@@ -34,6 +34,8 @@ class Eye:
             "eyelid_outer_upper": f"eyelid_outerupper_{self.side}",
             "eyelid_outer_lower": f"eyelid_outerlower_{self.side}",
             "eyelid_outer_corner": f"eyelid_outercorner_{self.side}",
+            "eyelid_upper_curve": f"eyelid_upper_curve_{self.side}",
+            "eyelid_lower_curve": f"eyelid_lower_curve_{self.side}",
         }
 
     # -------------------
@@ -71,6 +73,7 @@ class Eye:
             control_size=self.control_size,
             main_ctrl=self.main_ctrl.transform,
             parent=self.main_grp,
+            joint_parent=self.main_jnt,
         )
 
         self.eyelid.build_blink()

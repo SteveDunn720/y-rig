@@ -90,11 +90,10 @@ def matrix_spline_from_transforms(
         matrix_spline: The matrix spline.
     """
     spline_group: str = create_transform(name=name, parent=parent)
-    extended_cvs_num = len(cv_transforms) + (periodic * degree)
     spline_knots = (
         knots
         if knots is not None
-        else generate_knots(extended_cvs_num, degree=degree, periodic=periodic)
+        else generate_knots(len(cv_transforms), degree=degree, periodic=periodic)
     )
 
     cv_pins: list[str] = []

@@ -79,9 +79,7 @@ def get_mesh_spline_weights(
     else:
         extended_cv_positions = MPointArray(cv_positions)
         extended_cv_transforms = list(cv_transforms)
-    knots: list[float] = generate_knots(
-        len(extended_cv_positions), degree=degree, periodic=periodic
-    )
+    knots: list[float] = generate_knots(len(cv_positions), degree=degree, periodic=periodic)
     maya_knots: list[float] = knots[1:-1]
 
     fn_data: MFnNurbsCurveData = om2.MFnNurbsCurveData()

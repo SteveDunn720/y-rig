@@ -1,4 +1,5 @@
 from bisect import bisect_left
+from itertools import chain
 from typing import Iterable, Iterator, Sequence, TypeVar
 
 import numpy as np
@@ -18,7 +19,7 @@ def generate_knots(count: int, degree: int = 3, periodic: bool = False) -> list[
     ``count + degree``.
 
     Args:
-        count: The number of control vertices.
+        count: total number of UNIQUE points (periodic duplicate points shouldn't be counted).
         degree: The curve degree.  Defaults to ``3`` (cubic).
         periodic: If ``True`` the returned knot vector will be suitable for
             a periodic (closed) curve.  Defaults to ``False``.
@@ -28,7 +29,7 @@ def generate_knots(count: int, degree: int = 3, periodic: bool = False) -> list[
     """
 
     if periodic:
-        knots = [i for i in range(count + degree + 1)]
+        knots = [(i - degree) for i in range(count + 2 * degree + 1)]
     else:
         clamp_start = [0] * degree
         clamp_end = [count - degree] * degree
@@ -610,7 +611,10 @@ def resample(
 
     def get_normalized_u(index: int) -> float:
         if periodic:
-            base_u = index / (number_of_points)
+            if padded:
+                base_u = (index + 0.5) / (number_of_points)
+            else:
+                base_u = index / (number_of_points)
         else:
             if padded:
                 base_u = (index + 0.5) / number_of_points

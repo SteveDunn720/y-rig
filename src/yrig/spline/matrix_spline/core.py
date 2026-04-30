@@ -16,14 +16,6 @@ from yrig.maya_api import node
 from yrig.spline.math import create_periodic_cv_list, generate_knots, get_point_on_spline
 from yrig.structs.transform import Vector3
 
-T = TypeVar("T")
-
-
-def _create_periodic_cv_list(cvs: Sequence[T], degree: int) -> list[T]:
-    shift = degree // 2
-    prefix = cvs[-shift:] if shift > 0 else ()
-    return list(chain(prefix, cvs, cvs[: degree - shift]))
-
 
 class MatrixSpline:
     def __init__(

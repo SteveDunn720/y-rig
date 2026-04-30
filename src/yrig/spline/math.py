@@ -8,6 +8,7 @@ from yrig.structs.transform import Vector3
 
 # CV can be anything: a Vector3, a transform name, etc.
 CV = TypeVar("CV")
+T = TypeVar("T")
 
 
 def generate_knots(count: int, degree: int = 3, periodic: bool = False) -> list[float]:

@@ -132,7 +132,7 @@ class Node:
         return self.name
 
 
-class Absolute(Node):
+class AbsoluteNode(Node):
     """Maya absolute node with enhanced interface."""
 
     def __init__(self, name: str = "absolute") -> None:
@@ -140,6 +140,18 @@ class Absolute(Node):
 
     def _setup_attributes(self) -> None:
         self.input = ScalarAttribute(f"{self.name}.input")
+        self.output = ScalarAttribute(f"{self.name}.output")
+
+
+class AddDLNode(Node):
+    """Maya addDL node with enhanced interface."""
+
+    def __init__(self, name: str = "addDL") -> None:
+        super().__init__("addDL", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_1 = ScalarAttribute(f"{self.name}.input1")
+        self.input_2 = ScalarAttribute(f"{self.name}.input2")
         self.output = ScalarAttribute(f"{self.name}.output")
 
 
@@ -195,7 +207,7 @@ class ClampRangeNode(Node):
         self.output = ScalarAttribute(f"{self.name}.output")
 
 
-class Condition(Node):
+class ConditionNode(Node):
     """Maya condition node with enhanced interface."""
 
     def __init__(self, name: str = "condition") -> None:
@@ -494,7 +506,7 @@ class PickMatrixNode(Node):
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
 
 
-class PlusMinusAverage(Node):
+class PlusMinusAverageNode(Node):
     """Maya plusMinusAverage node with enhanced interface."""
 
     def __init__(self, name: str = "plusMinusAverage") -> None:
@@ -510,7 +522,7 @@ class PlusMinusAverage(Node):
         self.operation = EnumAttribute(f"{self.name}.operation")
 
 
-class RemapValue(Node):
+class RemapValueNode(Node):
     """Maya remapValue node with enhanced interface."""
 
     def __init__(self, name: str = "remapValue") -> None:

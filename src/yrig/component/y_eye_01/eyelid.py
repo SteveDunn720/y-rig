@@ -13,13 +13,12 @@ import math
 from yrig.transform.matrix import matrix_constraint
 
 from yrig.maya_api.node import (
-    PlusMinusAverage,
-    Condition,
+    PlusMinusAverageNode,
+    ConditionNode,
     MultMatrixNode,
     DecomposeMatrixNode,
     MultiplyDivideNode,
-    Absolute,
-    RemapValue,
+    AddDLNode,
 )
 
 
@@ -105,10 +104,10 @@ class Eyelid:
 
         # shared logic to check how close our two drivers are
 
-        pma_calc = PlusMinusAverage(name=f"{Upper_driver}_{Lower_driver}_PMA")
+        pma_calc = PlusMinusAverageNode(name=f"{Upper_driver}_{Lower_driver}_PMA")
         pma_calc.operation.set(2)
 
-        condition = Condition(name=f"{Upper_driver}_{Lower_driver}_COND")
+        condition = ConditionNode(name=f"{Upper_driver}_{Lower_driver}_COND")
         condition.operation.set(2)
         condition.color_if_false.set((0, 0, 0))
 
@@ -159,9 +158,9 @@ class Eyelid:
             condition.out_color.r.connect_to(push_mult.input1.x)
 
             # -------------------------
-            # plusMinusAverage driver
+            # PlusMinusAverageNode driver
             # -------------------------
-            pma_drive = PlusMinusAverage(name=f"{ctrl}_PMA")
+            pma_drive = PlusMinusAverageNode(name=f"{ctrl}_PMA")
             pma_drive.operation.set(2)
 
             dec_matrix.output_translate.y.connect_to(pma_drive.input_1d[0])
@@ -190,42 +189,27 @@ class Eyelid:
         self.sub_blink_controls: dict[str, Control] = {}
         self.main_eyelid_controls: dict[str, Control] = {}
 
-        sub_transform_grp = create_transform(
-            name="sub_blink_offset_matrix_drivers",
-            parent=self.main_ctrl,
-            transform=self.guides["center_piv"],
-        )
-
-        print(sub_transform_grp)
-
-        # pper_matrix: Any = self.convert_to_matrix(pos=(blink_x, upper_pos.y, blink_z))
-        # lower_matrix: Any = self.convert_to_matrix(pos=(blink_x, lower_pos.y, blink_z))
-
-        """for side in ["upper", "lower"]:
-            mod = "high" if side == "upper" else "low"
-            blink_matrix: Any = self.convert_to_matrix(pos=(blink_x, blink_y, blink_z))
-            blink_ctrl = create_control(
-                name=f"{side}_blink_{self.side}",
-                parent=self.main_ctrl,
-                transform=blink_matrix,
-                size=self.control_size,
-                control_shape=f"{mod}_semi_circle",
-                direction="z",
-            )
-            self.main_blink_controls.append(blink_ctrl)"""
-
         #######
         # Sub Blink Set up // Main Eyelid Set up
         #######
+        twist_grps = []
+        for side in ["upper", "lower"]:
+            sub_transform_grp = create_transform(
+                name=f"{self.side}_{side}_sub_blink_offset_matrix_drivers",
+                parent=self.main_ctrl,
+                transform=self.guides["center_piv"],
+            )
+            twist_grps.append(sub_transform_grp)
 
         for sub_blink in ["inner", "mid", "outer"]:
             driven_grps_list: list[str] = []
+            driver_grps_list: list[str] = []
 
             p1 = get_position(transform=self.guides[f"eyelid_{sub_blink}_upper"])
             p2 = get_position(transform=self.guides[f"eyelid_{sub_blink}_lower"])
 
             y_offset = (MVector(p2.x, p2.y, p2.z) - MVector(p1.x, p1.y, p1.z)).length() / 10
-            for side in ["upper", "lower"]:
+            for i, side in enumerate[str](["upper", "lower"]):
                 # setting up mods
 
                 up_mod: Literal[1, -1] = 1 if side == "upper" else -1
@@ -253,7 +237,7 @@ class Eyelid:
                     name=f"{sub_blink}_{side}_blink_{self.side}",
                     parent=self.main_ctrl,
                     transform=new_matrix,
-                    size=self.control_size / 5,
+                    size=self.control_size / 10,
                     control_shape="sphere",
                     direction="z",
                 )
@@ -278,7 +262,7 @@ class Eyelid:
 
                 driver_offset: str = create_transform(
                     name=f"{sub_blink}_{side}_blink_offset",
-                    parent=self.main_ctrl,
+                    parent=twist_grps[i],
                     transform=self.guides["center_piv"],
                 )
 
@@ -296,9 +280,9 @@ class Eyelid:
                     transform=self.guides["center_piv"],
                 )
 
-                print(driver_driver)
+                driver_grps_list.append(driver_driver)
 
-                cmds.setAttr(f"{driver_offset}.rotateY", aim)  # type:ignore
+                cmds.setAttr(f"{driver_offset}.rotateY", aim / 8)  # type:ignore
 
                 self.main_eyelid_controls[f"{sub_blink}_{side}_eyelid_ctrl"] = create_control(
                     name=f"{sub_blink}_{side}_eyelid_{self.side}",
@@ -308,17 +292,6 @@ class Eyelid:
                     control_shape="sphere",
                     direction="z",
                 )
-
-                """driven_transform = create_transform(
-                    name=f"{sub_blink}_{side}_blink_offset",
-                    parent=self.main_ctrl,
-                    transform=self.guides[f"eyelid_{sub_blink}_{side}"],
-                )
-
-                # temp visualization will remove later
-                sphere = cmds.polySphere(name="mySphere")[0]  # type:ignore
-                cmds.delete(cmds.parentConstraint(driven_transform, sphere))  # type:ignore
-                cmds.parent(sphere, driven_transform)  # type:ignore"""
 
             self.soft_colide(
                 Upper_driver=self.sub_blink_controls[f"{sub_blink}_upper_blink_ctrl"].transform,
@@ -330,18 +303,18 @@ class Eyelid:
             )
 
             matrix_constraint(
-                driven_grps_list[0],
+                driver_grps_list[0],
                 self.main_eyelid_controls[f"{sub_blink}_upper_eyelid_ctrl"].offset,
             )
             matrix_constraint(
-                driven_grps_list[1],
+                driver_grps_list[1],
                 self.main_eyelid_controls[f"{sub_blink}_lower_eyelid_ctrl"].offset,
             )
 
         ##########
         # Main Control Behavior
         ##########
-        for side in ["upper", "lower"]:
+        for i, side in enumerate[str](["upper", "lower"]):
             mod = "high" if side == "upper" else "low"
             blink_matrix: Any = self.convert_to_matrix(pos=(blink_x, blink_y, blink_z))
             blink_ctrl = create_control(
@@ -352,24 +325,43 @@ class Eyelid:
                 control_shape=f"{mod}_semi_circle",
                 direction="z",
             )
-            self.main_blink_controls.append(blink_ctrl)
+            twist_MD = MultiplyDivideNode(name=f"{self.side}_{side}_twist_DM")
+            cmds.connectAttr(f"{blink_ctrl.transform}.translateX", f"{twist_MD.input1.x}")
+            cmds.setAttr(f"{twist_MD.input2.x}", 15)  # type:ignore
 
-            output_mult = MultiplyDivideNode(name=f"{self.side}_{side}_output_MD")
-            input_mult = MultiplyDivideNode(name=f"{self.side}_{side}_input_MD")
+            self.main_blink_controls.append(blink_ctrl)
+            cmds.connectAttr(f"{twist_MD.output.x}", f"{twist_grps[i]}.rotateY")
 
             cmds.connectAttr(
                 f"{blink_ctrl.transform}.translateY",
-                f"{self.main_eyelid_controls[f'mid_{side}_eyelid_ctrl'].transform}.translateY",
+                f"{self.sub_blink_controls[f'mid_{side}_blink_ctrl'].transform}.translateY",
             )
 
-            cmds.connectAttr(f"{blink_ctrl.transform}.translateY", f"{input_mult.input1.x}")
-            cmds.connectAttr(f"{blink_ctrl.transform}.translateY", f"{input_mult.input1.z}")
+            for i, sub in enumerate(["inner", "outer"]):
+                mod = 1 if sub == "outer" else -1
+                input_mult = MultiplyDivideNode(name=f"{self.side}_{side}_{sub}_input_MD")
+                addDL_node: AddDLNode = AddDLNode(name=f"{self.side}_{side}_{sub}_ADL")
+                input_mult.input1.x.connect_from(f"{blink_ctrl.transform}.rotateZ")
+                cmds.setAttr(f"{input_mult.input2.x}", 0.03 * mod)  # type:ignore
+                cmds.connectAttr(f"{blink_ctrl.transform}.translateY", f"{addDL_node.input_1}")
+                cmds.connectAttr(f"{input_mult.output.x}", f"{addDL_node.input_2}")
+                cmds.connectAttr(
+                    f"{addDL_node.output}",
+                    f"{self.sub_blink_controls[f'{sub}_{side}_blink_ctrl'].transform}.translateY",
+                )
 
-            cmds.setAttr(f"{input_mult.input2.x}", 0.02)  # type:ignore
-            cmds.setAttr(f"{input_mult.input2.z}", -0.02)  # type:ignore
+        #######
+        # Corner Controls
+        #######
 
-            for sub in ["inner", "outer"]:
-                remap_node = RemapValue(name=f"{self.side}_{side}_{sub}_remap")
-                cmds.setAttr(f"{remap_node.input_max}", 3)  # type:ignore
-                cmds.setAttr(f"{remap_node.input_min}", -3)  # type:ignore
-                cmds.setAttr(f"{remap_node.output_max}", 2)  # type:ignore
+        for sub in ["inner", "outer"]:
+            self.main_eyelid_controls[f"{sub}_{side}_eyelid_ctrl"] = create_control(
+                name=f"{sub}_corner_eyelid_{self.side}",
+                parent=self.main_ctrl,
+                transform=self.guides[f"eyelid_{sub}_corner"],
+                size=self.control_size / 4,
+                control_shape="sphere",
+                direction="z",
+            )
+
+        ##### Should i add so blending between the top and botton lids? Translate? Rotate? IDK

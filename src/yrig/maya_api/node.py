@@ -10,6 +10,7 @@ from yrig.maya_api.attribute import (
     IndexableWtMatrixAttribute,
     IntegerAttribute,
     MatrixAttribute,
+    MessageAttribute,
     NurbsCurveAttribute,
     QuatAttribute,
     ScalarAttribute,
@@ -86,6 +87,9 @@ class Node:
         """
         self.node_type: str = node_type
         self.name: str = self._create_node(node_type, name=name or node_type)
+
+        self.message = MessageAttribute(f"{self.name}.message")
+
         self._setup_attributes()
 
     def _ensure_plugin(self, node_type: str) -> None:
@@ -330,11 +334,12 @@ class MotionPathNode(Node):
     def _setup_attributes(self) -> None:
 
         self.geometry_path = NurbsCurveAttribute(f"{self.name}.geometryPath")
+        self.rotate_order = EnumAttribute(f"{self.name}.rotateOrder")
 
         self.u_value = ScalarAttribute(f"{self.name}.uValue")
         self.fraction_mode = BooleanAttribute(f"{self.name}.fractionMode")
 
-        self.follow = BooleanAttribute(f"{self.name}.follow ")
+        self.follow = BooleanAttribute(f"{self.name}.follow")
         self.world_up_type = EnumAttribute(f"{self.name}.worldUpType")
         self.world_up_vector = Vector3Attribute(f"{self.name}.worldUpVector")
         self.world_up_matrix = MatrixAttribute(f"{self.name}.worldUpMatrix")
@@ -351,6 +356,10 @@ class MotionPathNode(Node):
         self.bank_limit = ScalarAttribute(f"{self.name}.bankLimit")
         self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
         self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
+
+        self.all_coordinates = Vector3Attribute(f"{self.name}.allCoordinates")
+        self.orient_matrix = MatrixAttribute(f"{self.name}.orientMatrix")
+        self.rotate = Vector3Attribute(f"{self.name}.rotate")
 
 
 class MultiplyNode(Node):

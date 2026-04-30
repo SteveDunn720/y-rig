@@ -321,6 +321,38 @@ class LerpNode(Node):
         self.output = ScalarAttribute(f"{self.name}.output")
 
 
+class MotionPathNode(Node):
+    """Maya motionPath node with enhanced interface."""
+
+    def __init__(self, name: str = "motionPath") -> None:
+        super().__init__("motionPath", name)
+
+    def _setup_attributes(self) -> None:
+
+        self.geometry_path = NurbsCurveAttribute(f"{self.name}.geometryPath")
+
+        self.u_value = ScalarAttribute(f"{self.name}.uValue")
+        self.fraction_mode = BooleanAttribute(f"{self.name}.fractionMode")
+
+        self.follow = BooleanAttribute(f"{self.name}.follow ")
+        self.world_up_type = EnumAttribute(f"{self.name}.worldUpType")
+        self.world_up_vector = Vector3Attribute(f"{self.name}.worldUpVector")
+        self.world_up_matrix = MatrixAttribute(f"{self.name}.worldUpMatrix")
+        self.inverse_up = BooleanAttribute(f"{self.name}.inverseUp")
+        self.inverse_front = BooleanAttribute(f"{self.name}.inverseFront")
+        self.front_axis = EnumAttribute(f"{self.name}.frontAxis")
+        self.up_axis = EnumAttribute(f"{self.name}.upAxis")
+
+        self.front_twist = ScalarAttribute(f"{self.name}.frontTwist")
+        self.up_twist = ScalarAttribute(f"{self.name}.upTwist")
+        self.side_twist = ScalarAttribute(f"{self.name}.sideTwist")
+
+        self.bank = BooleanAttribute(f"{self.name}.bank")
+        self.bank_limit = ScalarAttribute(f"{self.name}.bankLimit")
+        self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
+        self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
+
+
 class MultiplyNode(Node):
     """Maya multiply node with enhanced interface."""
 

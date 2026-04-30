@@ -13,7 +13,7 @@ from maya.api.OpenMaya import (
 )
 
 from yrig.maya_api import node
-from yrig.spline.math import generate_knots, get_point_on_spline
+from yrig.spline.math import create_periodic_cv_list, generate_knots, get_point_on_spline
 from yrig.structs.transform import Vector3
 
 T = TypeVar("T")
@@ -116,8 +116,8 @@ class MatrixSpline:
 
         # If the curve is periodic then we need to re-add CVs that move together.
         if periodic:
-            self.cv_transforms = _create_periodic_cv_list(self.cv_transforms, degree)
-            cv_matrices = _create_periodic_cv_list(cv_matrices, degree)
+            self.cv_transforms = create_periodic_cv_list(self.cv_transforms, degree)
+            cv_matrices = create_periodic_cv_list(cv_matrices, degree)
 
         self.cv_matrices: list[str] = cv_matrices
         self.cv_position_attrs: list[tuple[str, str, str]] = cv_position_attrs

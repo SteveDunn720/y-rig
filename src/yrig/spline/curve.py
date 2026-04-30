@@ -4,7 +4,8 @@ from typing import Sequence
 from maya import cmds
 
 from yrig.spline import generate_knots
-from yrig.transform import create_transform, matrix_constraint
+from yrig.spline.math import create_periodic_cv_list
+from yrig.transform import create_transform, get_shape, get_shapes, matrix_constraint
 
 
 def bound_curve_from_transforms(
@@ -53,7 +54,7 @@ def bound_curve_from_transforms(
         else generate_knots(len(transforms), degree=degree, periodic=periodic)
     )
     maya_knots: Sequence[float] = full_knots[1:-1]
-    extended_cvs = chain(transforms, transforms[:degree]) if periodic else transforms
+    extended_cvs = create_periodic_cv_list(transforms, degree) if periodic else transforms
     curve_transform: str = cmds.curve(
         name=curve_transform_name,
         point=[  # type: ignore
@@ -63,6 +64,8 @@ def bound_curve_from_transforms(
         knot=list(maya_knots),
         degree=degree,
     )
+    curve_shape = get_shapes(curve_transform)[0]
+    cmds.rename(curve_shape, f"{curve_transform_name}Shape")
 
     if curve_group is not None:
         cmds.parent(curve_transform, curve_group, relative=True)

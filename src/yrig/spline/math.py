@@ -53,6 +53,12 @@ def is_periodic_knot_vector(knots: Sequence[float], degree: int = 3) -> bool:
     return True
 
 
+def create_periodic_cv_list(cvs: Sequence[T], degree: int) -> list[T]:
+    shift = degree // 2
+    prefix = cvs[-shift:] if shift > 0 else ()
+    return list(chain(prefix, cvs, cvs[: degree - shift]))
+
+
 def deboor_setup(
     cvs: Sequence[CV],
     t: float,

@@ -2,24 +2,7 @@ import maya.api.OpenMaya as om2
 import maya.cmds as cmds
 from maya.api import OpenMayaAnim as oma
 
-
-def get_shape(object: str) -> str | None:
-    shape: str
-    if cmds.nodeType(object) == "transform":
-        shape_list: list[str] = cmds.listRelatives(
-            object, shapes=True, noIntermediate=True, children=True
-        )
-        if shape_list:
-            shape = shape_list[0]
-            return shape
-        else:
-            return None
-
-    if cmds.objectType(object, isAType="shape"):
-        shape = object
-        return shape
-    else:
-        return None
+from yrig.transform.utils import get_shape
 
 
 def get_skin_clusters(mesh: str) -> list[str] | None:

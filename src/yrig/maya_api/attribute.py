@@ -139,7 +139,8 @@ class ScalarAttribute(NumericAttribute[float]):
         )
         cmds.addAttr(node_name, **kwargs)
         attribute = cls(f"{node_name}.{name}")
-        attribute.set_channel_box(channel_box)
+        if not keyable:
+            attribute.set_channel_box(channel_box)
         return attribute
 
 

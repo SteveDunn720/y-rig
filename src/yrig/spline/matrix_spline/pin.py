@@ -349,6 +349,8 @@ def pin_transforms_to_matrix_spline(
     align_tangent: bool = True,
     interpolate_rotation: bool = True,
     interpolate_scale: bool = True,
+    u_start: float | None = None,
+    u_end: float | None = None,
 ) -> MatrixSpline:
     """
     Takes a set of transforms pins them to a MatrixSpline (note that the pins are all calculated in local space!).
@@ -373,6 +375,8 @@ def pin_transforms_to_matrix_spline(
         align_tangent: When True the pinned segments will align their primary axis along the spline.
         interpolate_rotation: When True the rotation of the pinned transform will be interpolated with the CVs rotations.
         interpolate_scale: When True the scale of the pinned transform will be a spline interpolation of the CVs scales.
+        u_start: Optional start parameter for the section to which transforms will be pinned.
+        u_end: Optional end parameter for the section to which transforms will be pinned.
     Returns:
         matrix_spline: The matrix spline.
     """
@@ -396,6 +400,8 @@ def pin_transforms_to_matrix_spline(
             padded=padded,
             arc_length=arc_length,
             normalize_parameter=False,
+            u_start=u_start,
+            u_end=u_end,
         )
 
     for transform, parameter in zip(pinned_transforms, segment_parameters):

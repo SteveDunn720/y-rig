@@ -13,11 +13,27 @@ from yrig.transform.matrix import matrix_constraint
 
 @dataclass
 class JointConfig:
+    """
+    Configuration for optional joint creation and skinning behavior
+    when generating a matrix spline.
+
+    Attributes:
+        create: If True, joints will be created at each pinned transform segment.
+        parent: Optional parent transform for all created joints. If None, joints
+            are created at world level or under the spline depending on the
+            joint creation implementation.
+        weight_split_tag: If True, generated joints will be tagged for weight splitting.
+        weight_split_degree: Controls the influence falloff degree used when tagging joints for weight splitting.
+        weight_split_influence: Optional override for the primary influence joint used when tagging
+            weight split data. If None, the first created joint is used as the default influence root.
+    """
+
     create: bool = True
     parent: str | None = None
     weight_split_tag: bool = True
     weight_split_degree: int = 2
     weight_split_influence: str | None = None
+    weight_split_periodic: bool = False
 
 
 def matrix_spline_from_transforms(
@@ -37,6 +53,8 @@ def matrix_spline_from_transforms(
     align_tangent: bool = True,
     interpolate_rotation: bool = True,
     interpolate_scale: bool = True,
+    u_start: float | None = None,
+    u_end: float | None = None,
     joint_config: JointConfig | None = None,
 ) -> MatrixSpline:
     """
@@ -64,6 +82,8 @@ def matrix_spline_from_transforms(
         align_tangent: When True the pinned segments will align their primary axis along the spline.
         interpolate_rotation: When True the rotation of the pinned transform will be interpolated with the CVs rotations.
         interpolate_scale: When True the scale of the pinned transform will be a spline interpolation of the CVs scales.
+        u_start: Optional start parameter for the section to which transforms will be pinned.
+        u_end: Optional end parameter for the section to which transforms will be pinned.
         joint_config: A JointConfig object to define how or if joints should be created. Defaults to no joint creation.
 
     Returns:
@@ -123,6 +143,8 @@ def matrix_spline_from_transforms(
         align_tangent=align_tangent,
         interpolate_rotation=interpolate_rotation,
         interpolate_scale=interpolate_scale,
+        u_start=u_start,
+        u_end=u_end,
     )
     if joint_config is not None:
         joints: list[str] = []
@@ -132,8 +154,14 @@ def matrix_spline_from_transforms(
                     name=segment_name, transform=pin, parent=joint_config.parent, connect=True
                 )
                 joints.append(joint)
+                matrix_spline.joints.append(joint)
         if joint_config.weight_split_tag and joints:
             influence = joint_config.weight_split_influence or joints[0]
-            tag_for_weight_split(influence, joints, joint_config.weight_split_degree)
+            tag_for_weight_split(
+                influence,
+                split_influences=joints,
+                degree=joint_config.weight_split_degree,
+                periodic=joint_config.weight_split_periodic,
+            )
 
     return matrix_spline

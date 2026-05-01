@@ -1,4 +1,5 @@
-from typing import Sequence
+from itertools import chain
+from typing import Sequence, TypeVar
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
@@ -12,7 +13,7 @@ from maya.api.OpenMaya import (
 )
 
 from yrig.maya_api import node
-from yrig.spline.math import generate_knots, get_point_on_spline
+from yrig.spline.math import create_periodic_cv_list, generate_knots, get_point_on_spline
 from yrig.structs.transform import Vector3
 
 
@@ -42,15 +43,15 @@ class MatrixSpline:
             name (str | None, optional): Base name for created scene nodes. Defaults to "matrix_spline".
         """
         self.pinned_transforms: list[str] = []
+        self.joints: list[str] = []
         self.curve: str | None = None
         self.periodic: bool = periodic
         self.degree: int = degree
         self.cv_transforms: list[str] = list(cv_transforms)
-        number_of_cvs: int = len(cv_transforms) + (periodic * degree)
         self.knots: list[float] = (
             list(knots)
             if knots is not None
-            else generate_knots(count=number_of_cvs, degree=degree, periodic=periodic)
+            else generate_knots(count=len(cv_transforms), degree=degree, periodic=periodic)
         )
         self.name: str = name if name is not None else "matrix_spline"
 
@@ -105,10 +106,10 @@ class MatrixSpline:
             cv_matrices.append(str(cv_matrix.output))
             cv_position_attrs.append((str(row4.output.x), str(row4.output.y), str(row4.output.z)))
 
-        # If the curve is periodic there are we need to re-add CVs that move together.
+        # If the curve is periodic then we need to re-add CVs that move together.
         if periodic:
-            for i in range(degree):
-                cv_matrices.append(cv_matrices[i])
+            self.cv_transforms = create_periodic_cv_list(self.cv_transforms, degree)
+            cv_matrices = create_periodic_cv_list(cv_matrices, degree)
 
         self.cv_matrices: list[str] = cv_matrices
         self.cv_position_attrs: list[tuple[str, str, str]] = cv_position_attrs
@@ -284,15 +285,11 @@ def bound_curve_from_matrix_spline(
     """
     curve_transform_name = curve_name if curve_name is not None else f"{matrix_spline.name}_curve"
     maya_knots: Sequence[float] = matrix_spline.knots[1:-1]
-    extended_cvs: Sequence[str] = (
-        (matrix_spline.cv_transforms + matrix_spline.cv_transforms[: matrix_spline.degree])
-        if matrix_spline.periodic
-        else matrix_spline.cv_transforms
-    )
     curve_transform: str = cmds.curve(
         name=curve_transform_name,
         point=[  # type: ignore
-            cmds.xform(cv, query=True, worldSpace=True, translation=True) for cv in extended_cvs
+            cmds.xform(cv, query=True, worldSpace=True, translation=True)
+            for cv in matrix_spline.cv_transforms
         ],
         periodic=matrix_spline.periodic,
         knot=maya_knots,

@@ -10,6 +10,7 @@ from yrig.maya_api.attribute import (
     IndexableWtMatrixAttribute,
     IntegerAttribute,
     MatrixAttribute,
+    MessageAttribute,
     NurbsCurveAttribute,
     QuatAttribute,
     ScalarAttribute,
@@ -89,6 +90,9 @@ class Node:
         """
         self.node_type: str = node_type
         self.name: str = self._create_node(node_type, name=name or node_type)
+
+        self.message = MessageAttribute(f"{self.name}.message")
+
         self._setup_attributes()
 
     def _ensure_plugin(self, node_type: str) -> None:
@@ -205,6 +209,23 @@ class ClampRangeNode(Node):
         self.minimum = ScalarAttribute(f"{self.name}.minimum")
         self.maximum = ScalarAttribute(f"{self.name}.maximum")
         self.output = ScalarAttribute(f"{self.name}.output")
+
+
+class ComposeMatrixNode(Node):
+    """Maya composeMatrix node with enhanced interface."""
+
+    def __init__(self, name: str = "composeMatrix") -> None:
+        super().__init__("composeMatrix", name)
+
+    def _setup_attributes(self) -> None:
+
+        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
+        self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
+        self.input_rotate = Vector3Attribute(f"{self.name}.inputRotate")
+        self.input_scale = Vector3Attribute(f"{self.name}.inputScale")
+        self.input_shear = Vector3Attribute(f"{self.name}.inputShear")
+        self.input_translate = Vector3Attribute(f"{self.name}.inputTranslate")
+        self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
 
 
 class ConditionNode(Node):
@@ -360,6 +381,43 @@ class LerpNode(Node):
         self.input2 = ScalarAttribute(f"{self.name}.input2")
         self.weight = ScalarAttribute(f"{self.name}.weight")
         self.output = ScalarAttribute(f"{self.name}.output")
+
+
+class MotionPathNode(Node):
+    """Maya motionPath node with enhanced interface."""
+
+    def __init__(self, name: str = "motionPath") -> None:
+        super().__init__("motionPath", name)
+
+    def _setup_attributes(self) -> None:
+
+        self.geometry_path = NurbsCurveAttribute(f"{self.name}.geometryPath")
+        self.rotate_order = EnumAttribute(f"{self.name}.rotateOrder")
+
+        self.u_value = ScalarAttribute(f"{self.name}.uValue")
+        self.fraction_mode = BooleanAttribute(f"{self.name}.fractionMode")
+
+        self.follow = BooleanAttribute(f"{self.name}.follow")
+        self.world_up_type = EnumAttribute(f"{self.name}.worldUpType")
+        self.world_up_vector = Vector3Attribute(f"{self.name}.worldUpVector")
+        self.world_up_matrix = MatrixAttribute(f"{self.name}.worldUpMatrix")
+        self.inverse_up = BooleanAttribute(f"{self.name}.inverseUp")
+        self.inverse_front = BooleanAttribute(f"{self.name}.inverseFront")
+        self.front_axis = EnumAttribute(f"{self.name}.frontAxis")
+        self.up_axis = EnumAttribute(f"{self.name}.upAxis")
+
+        self.front_twist = ScalarAttribute(f"{self.name}.frontTwist")
+        self.up_twist = ScalarAttribute(f"{self.name}.upTwist")
+        self.side_twist = ScalarAttribute(f"{self.name}.sideTwist")
+
+        self.bank = BooleanAttribute(f"{self.name}.bank")
+        self.bank_limit = ScalarAttribute(f"{self.name}.bankLimit")
+        self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
+        self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
+
+        self.all_coordinates = Vector3Attribute(f"{self.name}.allCoordinates")
+        self.orient_matrix = MatrixAttribute(f"{self.name}.orientMatrix")
+        self.rotate = Vector3Attribute(f"{self.name}.rotate")
 
 
 class MultiplyNode(Node):

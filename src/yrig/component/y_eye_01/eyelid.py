@@ -1,3 +1,4 @@
+import mailbox
 from numpy import iterable
 from yrig.control.core import Control
 from typing import Any, Literal
@@ -11,7 +12,7 @@ from maya.api.OpenMaya import MMatrix, MTransformationMatrix, MVector, MEulerRot
 from yrig.transform.utils import get_position
 import math
 from yrig.transform.matrix import matrix_constraint
-
+from yrig.skin.split.tag import tag_for_weight_split
 
 from yrig.maya_api.node import (
     PlusMinusAverageNode,
@@ -177,11 +178,17 @@ class Eyelid:
         if temp_curve and cmds.objExists(temp_curve):
             cmds.delete(temp_curve)
 
+        tag_for_weight_split(
+            influence=self.sub_eyelid_joints[0],  # <-- your SOURCE joint (must already exist)
+            split_influences=self.sub_eyelid_joints,  # <-- the ones you just created
+        )
+
         matrix_spline_from_transforms(
             name=f"{self.side}_{descriptor}",
             pinned_transforms=sub_eyelid_offsets,
             cv_transforms=driver_list,
             parent=self.parent,
+            interpolate_scale=False,
         )
 
     def get_flat_y_aim_rotation(self, source: str, target: str) -> float:
@@ -294,8 +301,13 @@ class Eyelid:
     ) -> None:
         ### get middle x pos for the blink
 
+        pos_list = []
+
         upper_pos: Any = get_position(transform=self.guides["eyelid_mid_upper"])
         lower_pos: Any = get_position(transform=self.guides["eyelid_mid_lower"])
+
+        pos_list.append(upper_pos)
+        pos_list.append(lower_pos)
 
         blink_x: float = (upper_pos.x + lower_pos.x) / 2
         blink_y: float = (upper_pos.y + lower_pos.y) / 2
@@ -309,7 +321,7 @@ class Eyelid:
         # Sub Blink Set up // Main Eyelid Set up
         #######
         twist_grps = []
-        for side in ["upper", "lower"]:
+        for i, side in enumerate(["upper", "lower"]):
             sub_transform_grp = create_transform(
                 name=f"{self.side}_{side}_sub_blink_offset_matrix_drivers",
                 parent=self.main_ctrl,
@@ -358,11 +370,15 @@ class Eyelid:
                     direction="z",
                 )
 
-                self.sub_blink_offset = create_transform(
+                self.sub_blink_controls[f"{sub_blink}_{side}_blink_ctrl"].SDKGRP = create_transform(  # type:ignore
                     name=f"{sub_blink}_{side}_blink_SDK",
                     parent=self.sub_blink_controls[f"{sub_blink}_{side}_blink_ctrl"].offset,
                     transform=new_matrix,
                 )
+
+                self.sub_blink_offset = self.sub_blink_controls[
+                    f"{sub_blink}_{side}_blink_ctrl"
+                ].SDKGRP  # type:ignore
 
                 cmds.parent(
                     self.sub_blink_controls[f"{sub_blink}_{side}_blink_ctrl"].transform,
@@ -429,12 +445,16 @@ class Eyelid:
             )
 
             matrix_constraint(
-                driver_grps_list[0],
-                self.main_eyelid_controls[f"{sub_blink}_upper_eyelid_ctrl"].offset,
+                source_transform=driver_grps_list[0],
+                constrain_transform=self.main_eyelid_controls[
+                    f"{sub_blink}_upper_eyelid_ctrl"
+                ].offset,
+                keep_offset=True,
             )
             matrix_constraint(
                 driver_grps_list[1],
                 self.main_eyelid_controls[f"{sub_blink}_lower_eyelid_ctrl"].offset,
+                keep_offset=True,
             )
 
         ##########
@@ -460,7 +480,7 @@ class Eyelid:
 
             cmds.connectAttr(
                 f"{blink_ctrl.transform}.translateY",
-                f"{self.sub_blink_controls[f'mid_{side}_blink_ctrl'].offset}.translateY",
+                f"{self.sub_blink_controls[f'mid_{side}_blink_ctrl'].SDKGRP}.translateY",  # type:ignore
             )
 
             for i, sub in enumerate(["inner", "outer"]):
@@ -473,7 +493,7 @@ class Eyelid:
                 cmds.connectAttr(f"{input_mult.output.x}", f"{addDL_node.input_2}")
                 cmds.connectAttr(
                     f"{addDL_node.output}",
-                    f"{self.sub_blink_controls[f'{sub}_{side}_blink_ctrl'].offset}.translateY",
+                    f"{self.sub_blink_controls[f'{sub}_{side}_blink_ctrl'].SDKGRP}.translateY",  # type:ignore
                 )
 
         #######

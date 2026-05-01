@@ -3,6 +3,7 @@ from typing import Sequence
 
 from maya import cmds
 
+from yrig.maya_api.node import MotionPathNode
 from yrig.spline import generate_knots
 from yrig.spline.math import create_periodic_cv_list
 from yrig.transform import create_transform, get_shape, get_shapes, matrix_constraint
@@ -94,3 +95,19 @@ def bound_curve_from_transforms(
             f"{curve_transform}.controlPoints[{index}]",
         )
     return curve_transform
+
+
+def pin_to_curve_with_motion_path(
+    curve: str, pinned_transform: str, orient: bool = True
+) -> MotionPathNode:
+    curve_shape = get_shape(curve)
+    if curve_shape is None:
+        raise RuntimeError(f"{curve} had no curve shape")
+    motion_path = MotionPathNode(f"{pinned_transform}_motion_path")
+    motion_path.geometry_path.connect_from(f"{curve_shape}.local")
+    motion_path.follow.set(orient)
+    if orient:
+        motion_path.rotate_order.connect_from(f"{pinned_transform}.rotateOrder")
+    motion_path.all_coordinates.connect_to(f"{pinned_transform}.translate")
+    motion_path.rotate.connect_to(f"{pinned_transform}.rotate")
+    return motion_path

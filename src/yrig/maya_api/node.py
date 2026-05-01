@@ -185,6 +185,23 @@ class ClampRangeNode(Node):
         self.output = ScalarAttribute(f"{self.name}.output")
 
 
+class ComposeMatrixNode(Node):
+    """Maya composeMatrix node with enhanced interface."""
+
+    def __init__(self, name: str = "composeMatrix") -> None:
+        super().__init__("composeMatrix", name)
+
+    def _setup_attributes(self) -> None:
+
+        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
+        self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
+        self.input_rotate = Vector3Attribute(f"{self.name}.inputRotate")
+        self.input_scale = Vector3Attribute(f"{self.name}.inputScale")
+        self.input_shear = Vector3Attribute(f"{self.name}.inputShear")
+        self.input_translate = Vector3Attribute(f"{self.name}.inputTranslate")
+        self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+
 class CosNode(Node):
     """Maya cos node with enhanced interface."""
 

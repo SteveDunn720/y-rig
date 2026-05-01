@@ -1,10 +1,24 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Generic, Iterable, Iterator, Sequence, TypeAlias, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    Iterable,
+    Iterator,
+    Self,
+    Sequence,
+    TypeAlias,
+    TypeVar,
+)
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import MMatrix
+from mgear.animbits.cache_manager.mayautils import long
+
+if TYPE_CHECKING:
+    from yrig.maya_api.node import Node
 
 AttributeType = TypeVar("AttributeType", bound="Attribute")
 
@@ -18,6 +32,10 @@ MatrixTuple: TypeAlias = tuple[
 # fmt: on
 
 T = TypeVar("T")
+
+
+def _compact_kwargs(dict: dict[str, Any | None]) -> dict[str, Any]:
+    return {key: value for key, value in dict.items() if value is not None}
 
 
 class Attribute(Generic[T]):
@@ -65,6 +83,18 @@ class Attribute(Generic[T]):
         """Check if this attribute exists."""
         return cmds.objExists(self.attr_path)
 
+    def set_locked(self, locked: bool) -> None:
+        """Lock or unlock this attribute."""
+        cmds.setAttr(self.attr_path, lock=locked)
+
+    def set_keyable(self, keyable: bool) -> None:
+        """Set this attribute as keyable or not."""
+        cmds.setAttr(self.attr_path, keyable=keyable)
+
+    def set_channel_box(self, enabled: bool) -> None:
+        """Control whether this attribute is displayed in the channel box."""
+        cmds.setAttr(self.attr_path, channelBox=enabled)
+
 
 class ScalarAttribute(Attribute[float]):
     """A Maya attribute of a scalar type."""
@@ -72,8 +102,42 @@ class ScalarAttribute(Attribute[float]):
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
+    @classmethod
+    def create(
+        cls,
+        node: Node | str,
+        name: str,
+        nice_name: str | None = None,
+        short_name: str | None = None,
+        default: float | None = None,
+        keyable: bool = True,
+        channel_box: bool = True,
+        min_value: float | None = None,
+        max_value: float | None = None,
+        soft_min_value: float | None = None,
+        soft_max_value: float | None = None,
+    ) -> Self:
+        node_name = str(node)
+        kwargs = _compact_kwargs(
+            {
+                "longName": name,
+                "niceName": nice_name,
+                "shortName": short_name,
+                "defaultValue": default,
+                "keyable": keyable,
+                "minValue": min_value,
+                "maxValue": max_value,
+                "softMinValue": soft_min_value,
+                "softMaxValue": soft_max_value,
+            }
+        )
+        cmds.addAttr(node_name, **kwargs)
+        attribute = cls(f"{node_name}.{name}")
+        attribute.set_channel_box(channel_box)
+        return attribute
 
-class IntegerAttribute(ScalarAttribute):
+
+class IntegerAttribute(ScalarAttribute[int]):
     """A Maya attribute of an integer type."""
 
     def __init__(self, attr_path: str) -> None:
@@ -85,17 +149,7 @@ class IntegerAttribute(ScalarAttribute):
 
     def set(self, value: float | int) -> None:
         """Set the value of this attribute."""
-        cmds.setAttr(self.attr_path, cast(Any, int(value)))
-
-    @property
-    def value(self) -> int:
-        """Get the value of this attribute."""
-        return self.get()
-
-    @value.setter
-    def value(self, val: float | int) -> None:
-        """Set the value of this attribute."""
-        self.set(val)
+        cmds.setAttr(self.attr_path, int(value))  # type: ignore
 
 
 class EnumAttribute(IntegerAttribute):
@@ -117,7 +171,7 @@ class BooleanAttribute(Attribute[bool]):
 
     def set(self, value: bool) -> None:
         """Set the value of this attribute."""
-        cmds.setAttr(self.attr_path, cast(Any, 1 if value else 0))
+        cmds.setAttr(self.attr_path, 1 if value else 0)  # type: ignore
 
 
 class MatrixAttribute(Attribute[MatrixTuple]):
@@ -141,16 +195,6 @@ class MatrixAttribute(Attribute[MatrixTuple]):
                 f"{value} is not a valid matrix input, it should be a Sequence of 16 floats or a MMatrix"
             )
         cmds.setAttr(self.attr_path, tuple(value), type="matrix")  # type: ignore
-
-    @property
-    def value(self) -> MatrixTuple:
-        """Get the value of this attribute."""
-        return self.get()
-
-    @value.setter
-    def value(self, val: MatrixTuple | Sequence[float] | MMatrix) -> None:
-        """Set the value of this attribute."""
-        self.set(val)
 
 
 class NurbsCurveAttribute(Attribute):

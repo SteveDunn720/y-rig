@@ -96,7 +96,13 @@ class Attribute(Generic[T]):
         cmds.setAttr(self.attr_path, channelBox=enabled)
 
 
-class ScalarAttribute(Attribute[float]):
+class NumericAttribute(Attribute[T]):
+    """Base class for numeric attributes only."""
+
+    pass
+
+
+class ScalarAttribute(NumericAttribute[float]):
     """A Maya attribute of a scalar type."""
 
     def __init__(self, attr_path: str) -> None:
@@ -137,7 +143,7 @@ class ScalarAttribute(Attribute[float]):
         return attribute
 
 
-class IntegerAttribute(ScalarAttribute[int]):
+class IntegerAttribute(NumericAttribute[int]):
     """A Maya attribute of an integer type."""
 
     def __init__(self, attr_path: str) -> None:

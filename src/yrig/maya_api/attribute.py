@@ -118,10 +118,10 @@ class ScalarAttribute(NumericAttribute[float]):
         default: float | None = None,
         keyable: bool = True,
         channel_box: bool = True,
-        min_value: float | None = None,
-        max_value: float | None = None,
-        soft_min_value: float | None = None,
-        soft_max_value: float | None = None,
+        min: float | None = None,
+        max: float | None = None,
+        soft_min: float | None = None,
+        soft_max: float | None = None,
     ) -> Self:
         node_name = str(node)
         kwargs = _compact_kwargs(
@@ -131,10 +131,10 @@ class ScalarAttribute(NumericAttribute[float]):
                 "shortName": short_name,
                 "defaultValue": default,
                 "keyable": keyable,
-                "minValue": min_value,
-                "maxValue": max_value,
-                "softMinValue": soft_min_value,
-                "softMaxValue": soft_max_value,
+                "minValue": min,
+                "maxValue": max,
+                "softMinValue": soft_min,
+                "softMaxValue": soft_max,
             }
         )
         cmds.addAttr(node_name, **kwargs)

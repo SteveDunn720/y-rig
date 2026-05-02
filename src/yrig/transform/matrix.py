@@ -282,19 +282,30 @@ def drive_transform_with_matrix(
             cmds.setAttr(f"{transform}.segmentScaleCompensate", 0)  # type: ignore
         if rotate:
             if use_joint_orient:
-                # Turns out we don't need to specifically isolate the rotation,
-                # Maya inverts correctly and decomposes a proper rotation with the raw matrix!
+                # We need to handle Joint Orient for Pose Driver, IK and other Maya features.
+                # https://help.autodesk.com/cloudhelp/ENU/MayaCRE-Tech-Docs/Nodes/joint.html
+                # joint matrix = scale * rotateAxis * rotate * jointOrient * parentScaleInverse * translate
+                # So we need to compensate for jointOrient by multiplying our final rotation by the inverse of the jointOrient
+
+                # Turns out we don't need to specifically isolate the rotation before doing the matrix multiplication
                 # rotation_matrix = PickMatrixNode(f"{constraint_name}_rotation")
                 # rotation_matrix.input_matrix.connect_from(matrix_attr)
+
                 joint_orient_matrix: MMatrix = _get_joint_orient_euler(transform).asMatrix()
-                joint_orient_matrix_inverse: MMatrix = joint_orient_matrix.inverse()
-                rotation_mult = MultMatrixNode(f"{constraint_name}_oriented_rotation")
-                rotation_mult.matrix_in[0].connect_from(matrix_attr)
-                rotation_mult.matrix_in[1].set(joint_orient_matrix_inverse)
-                orient_matrix_decompose = DecomposeMatrixNode(f"{constraint_name}_orient_decompose")
-                orient_matrix_decompose.input_matrix.connect_from(rotation_mult.matrix_sum)
-                orient_matrix_decompose.input_rotate_order.connect_from(f"{transform}.rotateOrder")
-                rotate_attr = orient_matrix_decompose.output_rotate
+                # Only add the compensation if needed.
+                if not is_identity_matrix(matrix=joint_orient_matrix):
+                    joint_orient_matrix_inverse: MMatrix = joint_orient_matrix.inverse()
+                    rotation_mult = MultMatrixNode(f"{constraint_name}_oriented_rotation")
+                    rotation_mult.matrix_in[0].connect_from(matrix_attr)
+                    rotation_mult.matrix_in[1].set(joint_orient_matrix_inverse)
+                    orient_matrix_decompose = DecomposeMatrixNode(
+                        f"{constraint_name}_orient_decompose"
+                    )
+                    orient_matrix_decompose.input_matrix.connect_from(rotation_mult.matrix_sum)
+                    orient_matrix_decompose.input_rotate_order.connect_from(
+                        f"{transform}.rotateOrder"
+                    )
+                    rotate_attr = orient_matrix_decompose.output_rotate
             else:
                 cmds.setAttr(f"{transform}.jointOrient", lock=False)
                 cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0, type="float3")  # type: ignore

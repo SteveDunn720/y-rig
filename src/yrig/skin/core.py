@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import maya.api.OpenMaya as om2
 import maya.cmds as cmds
 from maya.api import OpenMayaAnim as oma
@@ -80,7 +82,10 @@ def get_mesh_influences(shape: str, skin_cluster: str | None = None) -> list[str
 
 
 def skin_mesh(
-    bind_joints: list[str], geometry: str, name: str | None = None, dual_quaternion: bool = False
+    bind_joints: Iterable[str],
+    geometry: str,
+    name: str | None = None,
+    dual_quaternion: bool = False,
 ) -> str:
     """
     Creates a skinCluster on the given geometry using the specified bind joints.
@@ -105,9 +110,10 @@ def skin_mesh(
         raise RuntimeError(
             f"{geometry} is not a shape node! This function expects a transform with a shape or a shape."
         )
-
+    if not bind_joints:
+        raise ValueError("The provided bind_joints list was empty")
     skin_cluster: str = cmds.skinCluster(  # type: ignore
-        bind_joints,  # type: ignore
+        *bind_joints,
         shape,
         skinMethod=1 if dual_quaternion else 0,
         name=name,

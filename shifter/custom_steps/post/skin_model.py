@@ -54,7 +54,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         """
         paths_step: PathsStep = self.custom_step("paths")
 
-        mgear_rig: Rig = self.mgear_run
+        mgear_rig: Rig = self.rig
         dev_build = True if mgear_rig.options["mode"] == 1 else False
 
         data_path: Path = paths_step.rig_data_path

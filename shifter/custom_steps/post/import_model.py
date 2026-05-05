@@ -48,7 +48,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
             None: None
         """
         paths_step: PathsStep = self.custom_step("paths")
-        mgear_rig: Rig = self.mgear_run
+        mgear_rig: Rig = self.rig
 
         assets_path: Path = paths_step.rig_assets_path
         model_path: Path = assets_path / "model.mb"

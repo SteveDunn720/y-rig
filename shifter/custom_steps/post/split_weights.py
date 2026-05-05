@@ -46,7 +46,5 @@ class CustomShifterStep(cstp.customShifterMainStep):
         Returns:
             None: None
         """
-        mgear_rig: Rig = self.mgear_run  # noqa
-
         geo_in_set: list[str] = cmds.sets("rig_geo_grp", query=True)  # type: ignore
         auto_split_weights(geo_in_set)

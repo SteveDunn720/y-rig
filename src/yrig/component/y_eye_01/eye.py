@@ -5,6 +5,8 @@ from yrig.control import create_control
 from yrig.joint import create_joint
 from yrig.transform import create_transform
 from yrig.component.y_eye_01.eyelid import Eyelid
+from yrig.component.y_eye_01.socket import Socket
+from yrig.transform.matrix import matrix_constraint
 
 
 class Eye:
@@ -36,6 +38,16 @@ class Eye:
             "eyelid_outer_corner": f"eyelid_outercorner_{self.side}",
             "eyelid_upper_curve": f"eyelid_upper_curve_{self.side}",
             "eyelid_lower_curve": f"eyelid_lower_curve_{self.side}",
+            "socket_inner_corner": f"socket_innercorner_{self.side}",
+            "socket_inner_upper": f"socket_innerupper_{self.side}",
+            "socket_inner_lower": f"socket_innerlower_{self.side}",
+            "socket_mid_upper": f"socket_upper_{self.side}",
+            "socket_mid_lower": f"socket_lower_{self.side}",
+            "socket_outer_upper": f"socket_outerupper_{self.side}",
+            "socket_outer_lower": f"socket_outerlower_{self.side}",
+            "socket_outer_corner": f"socket_outercorner_{self.side}",
+            "socket_upper_curve": f"socket_upper_curve_{self.side}",
+            "socket_lower_curve": f"socket_lower_curve_{self.side}",
         }
 
     # -------------------
@@ -77,3 +89,23 @@ class Eye:
         )
 
         self.eyelid.build_blink()
+
+        self.socket = Socket(
+            side=self.side,
+            guides=self.guides,
+            control_size=self.control_size,
+            main_ctrl=self.main_ctrl.transform,
+            parent=self.main_grp,
+            joint_parent=self.main_jnt,
+        )
+
+        self.socket.build_socket()
+
+        for side in ["outer", "inner"]:
+            matrix_constraint(
+                source_transform=self.eyelid.main_eyelid_controls[
+                    f"{side}_corner_eyelid_ctrl"
+                ].transform,
+                constrain_transform=self.socket.major_controls[f"socket_{side}_corner_ctrl"].offset,
+                keep_offset=True,
+            )

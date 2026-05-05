@@ -188,7 +188,6 @@ class Eyelid:
             pinned_transforms=sub_eyelid_offsets,
             cv_transforms=driver_list,
             parent=self.parent,
-            interpolate_scale=False,
         )
 
     def get_flat_y_aim_rotation(self, source: str, target: str) -> float:
@@ -414,7 +413,7 @@ class Eyelid:
 
                 driver_grps_list.append(driver_driver)
 
-                cmds.setAttr(f"{driver_offset}.rotateY", aim / -2)  # type:ignore
+                # cmds.setAttr(f"{driver_offset}.rotateY", aim / -2)  #  type# : ignore
 
                 self.main_eyelid_controls[f"{sub_blink}_{side}_eyelid_ctrl"] = create_control(
                     name=f"{sub_blink}_{side}_eyelid_{self.side}",

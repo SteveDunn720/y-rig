@@ -5,9 +5,7 @@ RIGHT_SIDE_NAME = "R"
 MIDDLE_SIDE_NAME = "M"
 SIDE_NAMES: tuple[str, ...] = (LEFT_SIDE_NAME, RIGHT_SIDE_NAME, MIDDLE_SIDE_NAME)
 
-GET_SIDE_REGEX = re.compile(rf"(?<=_)(?:{'|'.join(SIDE_NAMES)})(?=_|$)")
-LEFT_SIDE_REGEX = re.compile(rf"(?<=_){LEFT_SIDE_NAME}(?=_|$)")
-RIGHT_SIDE_REGEX = re.compile(rf"(?<=_){RIGHT_SIDE_NAME}(?=_|$)")
+GET_SIDE_REGEX = re.compile(rf"(?:(?<=_)|^)(?:{'|'.join(SIDE_NAMES)})(?=_|$)")
 
 
 def get_side(name: str) -> str | None:
@@ -24,9 +22,18 @@ def get_side(name: str) -> str | None:
     return match.group(0) if match else None
 
 
+def _flip_match_side(match: re.Match[str]) -> str:
+    side = match.group(0)
+    if side == LEFT_SIDE_NAME:
+        return RIGHT_SIDE_NAME
+    if side == RIGHT_SIDE_NAME:
+        return LEFT_SIDE_NAME
+    return side
+
+
 def flip_side(name: str) -> str:
     """
-    Replaces side token in the name from 'L' to 'R' or vice versa,
+    Replaces side tokens in the name from 'L' to 'R' or vice versa,
     only when it's a distinct token (e.g., 'Front_Leg_L' becomes 'Front_Leg_R').
 
     Args:
@@ -34,9 +41,7 @@ def flip_side(name: str) -> str:
     Returns:
         The renamed string.
     """
-    flip_name = re.sub(LEFT_SIDE_REGEX, RIGHT_SIDE_NAME, name)
-    flip_name = re.sub(RIGHT_SIDE_REGEX, LEFT_SIDE_NAME, name)
-    return flip_name
+    return re.sub(GET_SIDE_REGEX, _flip_match_side, name)
 
 
 def get_short_name(transform: str) -> str:

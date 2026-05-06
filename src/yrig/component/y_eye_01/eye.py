@@ -6,6 +6,7 @@ from yrig.joint import create_joint
 from yrig.transform import create_transform
 from yrig.component.y_eye_01.eyelid import Eyelid
 from yrig.component.y_eye_01.socket import Socket
+from yrig.component.y_eye_01.eyeball import Eyeball
 from yrig.transform.matrix import matrix_constraint
 
 
@@ -48,6 +49,9 @@ class Eye:
             "socket_outer_corner": f"socket_outercorner_{self.side}",
             "socket_upper_curve": f"socket_upper_curve_{self.side}",
             "socket_lower_curve": f"socket_lower_curve_{self.side}",
+            "eye_diam": f"eye_circ_{self.side}",
+            "iris_diam": f"iris_circ_{self.side}",
+            "pupil_diam": f"pupil_circ_{self.side}",
         }
 
     # -------------------
@@ -79,6 +83,8 @@ class Eye:
         self.create_controls()
         self.create_joints()
 
+        """
+
         self.eyelid = Eyelid(
             side=self.side,
             guides=self.guides,
@@ -108,4 +114,15 @@ class Eye:
                 ].transform,
                 constrain_transform=self.socket.major_controls[f"socket_{side}_corner_ctrl"].offset,
                 keep_offset=True,
-            )
+            )"""
+
+        self.eyeball = Eyeball(
+            side=self.side,
+            guides=self.guides,
+            control_size=self.control_size,
+            main_ctrl=self.main_ctrl.transform,
+            parent=self.main_grp,
+            joint_parent=self.main_jnt,
+        )
+
+        self.eyeball.build_eyeball()

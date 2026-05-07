@@ -9,6 +9,9 @@ class RotateOrder(IntEnum):
     YXZ = 4
     ZYX = 5
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class Axis(IntEnum):
     X = 0
@@ -17,6 +20,24 @@ class Axis(IntEnum):
     NEG_X = 3
     NEG_Y = 4
     NEG_Z = 5
+
+    @classmethod
+    def from_str(cls, value: str) -> "Axis":
+        match value.lower():
+            case "x":
+                return cls.X
+            case "y":
+                return cls.Y
+            case "z":
+                return cls.Z
+            case "-x":
+                return cls.NEG_X
+            case "-y":
+                return cls.NEG_Y
+            case "-z":
+                return cls.NEG_Z
+            case _:
+                raise ValueError(f"{value} is not a valid Axis. It should be x,y,z or -x,-y,-z.")
 
 
 class UnsignedAxis(IntEnum):

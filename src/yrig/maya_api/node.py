@@ -4,6 +4,7 @@ from yrig.maya_api.attribute import (
     AimMatrixAxisAttribute,
     AxisAttribute,
     BooleanAttribute,
+    GeometryAttribute,
     IndexableBlendMatrixTargetAttribute,
     IndexableMatrixAttribute,
     IndexableScalarAttribute,
@@ -585,6 +586,9 @@ class UvPinNode(Node):
         super().__init__("uvPin", name)
 
     def _setup_attributes(self) -> None:
+        self.original_geometry = GeometryAttribute(f"{self.name}.originalGeometry")
+        self.deformed_geometry = GeometryAttribute(f"{self.name}.deformedGeometry")
+
         self.normal_axis = AxisAttribute(f"{self.name}.normalAxis")
         self.tangent_axis = AxisAttribute(f"{self.name}.tangentAxis")
         self.uv_set_name = StringAttribute(f"{self.name}.uvSetName")

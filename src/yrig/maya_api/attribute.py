@@ -227,7 +227,14 @@ class MatrixAttribute(Attribute[MatrixTuple]):
         cmds.setAttr(self.attr_path, tuple(value), type="matrix")  # type: ignore
 
 
-class NurbsCurveAttribute(Attribute):
+class GeometryAttribute(Attribute):
+    """A Maya attribute of the geometry type."""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+
+class NurbsCurveAttribute(GeometryAttribute):
     """A Maya attribute of the nurbsCurve type."""
 
     def __init__(self, attr_path: str) -> None:

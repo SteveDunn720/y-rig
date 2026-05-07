@@ -9,4 +9,5 @@ from . import maya_api as maya_api
 from . import skin as skin
 from . import spline as spline
 from . import structs as structs
+from . import surface as surface
 from . import transform as transform

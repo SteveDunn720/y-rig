@@ -130,6 +130,7 @@ class ProgressLogHandler(logging.Handler):
         build_steps: Sequence[BuildStep],
         post_steps: Sequence[BuildStep],
         number_of_components: int,
+        no_components: bool = False,
         progress_callback: Callable[[float, str | None], None] | None = None,
     ) -> None:
         super().__init__()
@@ -158,7 +159,8 @@ class ProgressLogHandler(logging.Handler):
         # Main Build Steps
         self.build_step = ProgressStep("Main Build", 10)
         self.build_step_map: dict[str, ProgressStep] = {}
-        self.root_step.add_child_step(self.build_step)
+        if not no_components:
+            self.root_step.add_child_step(self.build_step)
         for step in self.build_steps:
             step_progress = ProgressStep(step.name, weight=step.weight)
             self.build_step.add_child_step(step_progress)

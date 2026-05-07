@@ -59,7 +59,12 @@ def _build_from_shifter_file(  # noqa: ANN202
 
     rig = Rig()
     progress_handler = ProgressLogHandler(
-        pre_custom_steps, BUILD_STEPS, post_custom_steps, num_components, progress_callback
+        pre_steps=pre_custom_steps,
+        build_steps=BUILD_STEPS,
+        post_steps=post_custom_steps,
+        number_of_components=num_components,
+        no_components=no_components,
+        progress_callback=progress_callback,
     )
     with (
         _capture_mgear_output(mgear_api_logger),

@@ -241,6 +241,13 @@ class NurbsCurveAttribute(GeometryAttribute):
         super().__init__(attr_path)
 
 
+class NurbsSurfaceAttribute(GeometryAttribute):
+    """A Maya attribute of the nurbsSurface type."""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+
 class Vector3Attribute(Attribute[tuple[float, float, float]]):
     """A Maya attribute of the type double3 (XYZ)"""
 
@@ -451,6 +458,15 @@ class IndexableUvAttribute(IndexableAttribute[UvAttribute]):
     def __getitem__(self, index: int) -> UvAttribute:
         """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
         return UvAttribute(attr_path=f"{self.attr_path}[{index}]")
+
+
+class ClosestPointOnSurfaceResultAttribute(Attribute):
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+        self.position = Vector3Attribute(f"{attr_path}.position")
+        self.parameter_u = ScalarAttribute(f"{attr_path}.parameterU")
+        self.parameter_v = ScalarAttribute(f"{attr_path}.parameterV")
 
 
 class MessageAttribute(Attribute):

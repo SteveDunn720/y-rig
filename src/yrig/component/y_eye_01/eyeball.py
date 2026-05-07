@@ -187,7 +187,59 @@ class Eyeball:
             enumName="-------------",
             keyable=True,
         )
+
         eye_radius: float = self.get_nurbs_surface_radius(self.guides[f"eye_diam"])
+
+        self.eye_ctrl = create_control(
+            name=f"eye_{self.side}",
+            parent=self.main_ctrl,
+            transform=self.guides["center_piv"],
+            control_shape="circle",
+            direction="z",
+            size=eye_radius / 2,
+        )
+        self.eye_jnt = create_joint(
+            transform=self.eye_ctrl.transform, name=f"eye_{self.side}", parent=self.joint_parent
+        )
+
+        self.look_ctrl = create_control(
+            name=f"look_{self.side}",
+            parent=self.main_ctrl,
+            transform=self.guides["aim"],
+            control_shape="circle",
+            direction="z",
+            size=eye_radius / 2,
+        )
+
+        self.look_root = create_joint(
+            transform=self.eye_ctrl.transform,
+            name=f"look_root_{self.side}",
+            parent=self.parent,
+            connect=False,
+        )
+
+        self.look_end = create_joint(
+            transform=self.look_ctrl.transform,
+            name=f"look_end_{self.side}",
+            parent=self.look_root,
+            connect=False,
+        )
+
+        self.ik_handle, self.effector = cmds.ikHandle(
+            name="arm_sc_ikh",
+            startJoint=self.look_root,
+            endEffector=self.look_end,
+            solver="ikSCsolver",
+        )
+
+        matrix_constraint(self.look_ctrl.transform, self.ik_handle)
+        cmds.pointConstraint(self.eye_ctrl.transform, self.look_root, maintainOffset=True)
+        cmds.orientConstraint(self.look_root, self.eye_ctrl.offset, maintainOffset=True)
+
+        for attr in ["translateX", "translateY", "translateZ"]:
+            cmds.setAttr(
+                f"{self.eye_ctrl.transform}.{attr}", lock=True, keyable=False, channelBox=False
+            )
 
         pupil_degree: float = round(
             self.compare_radius_and_angle(self.guides[f"eye_diam"], self.guides[f"pupil_diam"])
@@ -243,7 +295,7 @@ class Eyeball:
 
         dilation_offset = create_transform(
             name=f"dilation_{self.side}_Offset",
-            parent=self.main_ctrl,
+            parent=self.eye_ctrl.transform,
             transform=self.guides["center_piv"],
         )
 
@@ -324,10 +376,7 @@ class Eyeball:
         self.dilation_joints = []
 
         for i, loop in enumerate(loops_list):
-            if i == 0:
-                parent = self.joint_parent
-            else:
-                parent = self.dilation_joints[0]
+            parent = self.eye_jnt
 
             jnt = create_joint(
                 name=f"eye_dilation_{i:02d}_{self.side}",
@@ -390,4 +439,20 @@ class Eyeball:
             split_influences=self.dilation_joints,
         )
 
-        ##### LOOK control and Eyeball_offset Control
+        # proxy attrs
+
+        for attr in [
+            "dilation_controls",
+            "iris_dilation",
+            "pupil_dilation",
+            "iris_offsetX",
+            "iris_offsetY",
+            "iris_scaleX",
+            "iris_scaleY",
+            "pupil_offsetX",
+            "pupil_offsetY",
+            "pupil_scaleX",
+            "pupil_scaleY",
+        ]:
+            for ctrl in [self.eye_ctrl.transform, self.look_ctrl.transform]:
+                cmds.addAttr(ctrl, longName=attr, proxy=f"{self.main_ctrl}.{attr}")

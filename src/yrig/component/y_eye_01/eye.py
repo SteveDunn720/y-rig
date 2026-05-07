@@ -83,8 +83,6 @@ class Eye:
         self.create_controls()
         self.create_joints()
 
-        """
-
         self.eyelid = Eyelid(
             side=self.side,
             guides=self.guides,
@@ -114,7 +112,7 @@ class Eye:
                 ].transform,
                 constrain_transform=self.socket.major_controls[f"socket_{side}_corner_ctrl"].offset,
                 keep_offset=True,
-            )"""
+            )
 
         self.eyeball = Eyeball(
             side=self.side,

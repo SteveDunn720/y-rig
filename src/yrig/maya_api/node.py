@@ -322,6 +322,18 @@ class DivideNode(Node):
         self.output = ScalarAttribute(f"{self.name}.output")
 
 
+class EulerToQuatNode(Node):
+    """Maya eulerToQuat node with enhanced interface."""
+
+    def __init__(self, name: str = "eulerToQuat") -> None:
+        super().__init__("eulerToQuat", name)
+
+    def _setup_attributes(self) -> None:
+        self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
+        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate = Vector3Attribute(f"{self.name}.inputRotate")
+
+
 class FourByFourMatrixNode(Node):
     """Maya fourByFourMatrix node with enhanced interface."""
 

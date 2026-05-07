@@ -223,31 +223,5 @@ def clean_parent(transform: str, parent: str, joint_orient: bool = True) -> None
         joint_orient: If True, bake rotation into jointOrient for joints.
     """
     object_world_matrix: MMatrix = get_world_matrix(transform)
-    node_type = cmds.nodeType(transform)
     cmds.parent(transform, parent, relative=True)
-
-    if node_type == "joint" and joint_orient:
-        cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0)  # type: ignore
-        set_world_matrix(transform, object_world_matrix)
-        # Get current rotation info
-        rotate_order = cmds.getAttr(f"{transform}.rotateOrder")
-        rotation = cmds.getAttr(f"{transform}.rotate")[0]
-        # Convert rotation XYZ rotate order for replacing the joint orient
-        euler: MEulerRotation = MEulerRotation(
-            MAngle(rotation[0], MAngle.kDegrees).asRadians(),
-            MAngle(rotation[1], MAngle.kDegrees).asRadians(),
-            MAngle(rotation[2], MAngle.kDegrees).asRadians(),
-            rotate_order,
-        )
-        euler.reorderIt(MEulerRotation.kXYZ)
-        # Apply to jointOrient (convert back to degrees)
-        cmds.setAttr(
-            f"{transform}.jointOrient",
-            MAngle(euler.x).asDegrees(),
-            MAngle(euler.y).asDegrees(),
-            MAngle(euler.z).asDegrees(),
-        )
-        # Zero the rotate channel
-        cmds.setAttr(f"{transform}.rotate", 0, 0, 0)  # type: ignore
-    else:
-        set_world_matrix(transform, object_world_matrix)
+    set_world_matrix(transform, object_world_matrix, use_joint_orient=joint_orient)

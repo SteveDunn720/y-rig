@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import mgear.shifter.custom_step as cstp
 
+from yrig.build import BuildScope
+from yrig.build.context import get_build_scope
 from yrig.build.nxt_api import execute_nxt_graph
 
 if TYPE_CHECKING:
@@ -47,8 +49,12 @@ class CustomShifterStep(cstp.customShifterMainStep):
         Returns:
             None: None
         """
+        # Skip this step if we're building only the body
+        build_scope = get_build_scope()
+        if build_scope is BuildScope.BODY:
+            return
+
         paths_step: PathsStep = self.custom_step("paths")
-        mgear_rig: Rig = self.mgear_run  # noqa
         data_path: Path = paths_step.rig_data_path
         face_path: Path = data_path / "face"
         face_graph_path: Path = face_path / "build.nxt"

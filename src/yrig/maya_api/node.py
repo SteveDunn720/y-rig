@@ -2,18 +2,28 @@ import maya.cmds as cmds
 
 from yrig.maya_api.attribute import (
     AimMatrixAxisAttribute,
+    AxisAttribute,
     BooleanAttribute,
-    EnumAttribute,
+    GeometryAttribute,
     IndexableBlendMatrixTargetAttribute,
     IndexableMatrixAttribute,
     IndexableScalarAttribute,
+    IndexableUvAttribute,
+    IndexableVector3Attribute,
     IndexableWtMatrixAttribute,
     IntegerAttribute,
     MatrixAttribute,
     MessageAttribute,
+    MotionPathWorldUpTypeAttribute,
+    MultiplyDivideOperationAttribute,
     NurbsCurveAttribute,
     QuatAttribute,
+    RotateOrderAttribute,
     ScalarAttribute,
+    StringAttribute,
+    UnsignedAxisAttribute,
+    UvPinNormalOverrideAttribute,
+    UvPinRelativeSpaceModeAttribute,
     Vector3Attribute,
     Vector4Attribute,
     IndexableVector3Attribute,
@@ -180,7 +190,7 @@ class AxisFromMatrixNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input = MatrixAttribute(f"{self.name}.input")
-        self.axis = EnumAttribute(f"{self.name}.axis")
+        self.axis = AxisAttribute(f"{self.name}.axis")
         self.output = Vector3Attribute(f"{self.name}.output")
 
 
@@ -232,7 +242,7 @@ class ComposeMatrixNode(Node):
 
     def _setup_attributes(self) -> None:
 
-        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate_order = RotateOrderAttribute(f"{self.name}.inputRotateOrder")
         self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
         self.input_rotate = Vector3Attribute(f"{self.name}.inputRotate")
         self.input_scale = Vector3Attribute(f"{self.name}.inputScale")
@@ -301,7 +311,7 @@ class DecomposeMatrixNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
-        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate_order = RotateOrderAttribute(f"{self.name}.inputRotateOrder")
         self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
         self.output_rotate = Vector3Attribute(f"{self.name}.outputRotate")
         self.output_scale = Vector3Attribute(f"{self.name}.outputScale")
@@ -417,19 +427,19 @@ class MotionPathNode(Node):
     def _setup_attributes(self) -> None:
 
         self.geometry_path = NurbsCurveAttribute(f"{self.name}.geometryPath")
-        self.rotate_order = EnumAttribute(f"{self.name}.rotateOrder")
+        self.rotate_order = RotateOrderAttribute(f"{self.name}.rotateOrder")
 
         self.u_value = ScalarAttribute(f"{self.name}.uValue")
         self.fraction_mode = BooleanAttribute(f"{self.name}.fractionMode")
 
         self.follow = BooleanAttribute(f"{self.name}.follow")
-        self.world_up_type = EnumAttribute(f"{self.name}.worldUpType")
+        self.world_up_type = MotionPathWorldUpTypeAttribute(f"{self.name}.worldUpType")
         self.world_up_vector = Vector3Attribute(f"{self.name}.worldUpVector")
         self.world_up_matrix = MatrixAttribute(f"{self.name}.worldUpMatrix")
         self.inverse_up = BooleanAttribute(f"{self.name}.inverseUp")
         self.inverse_front = BooleanAttribute(f"{self.name}.inverseFront")
-        self.front_axis = EnumAttribute(f"{self.name}.frontAxis")
-        self.up_axis = EnumAttribute(f"{self.name}.upAxis")
+        self.front_axis = UnsignedAxisAttribute(f"{self.name}.frontAxis")
+        self.up_axis = UnsignedAxisAttribute(f"{self.name}.upAxis")
 
         self.front_twist = ScalarAttribute(f"{self.name}.frontTwist")
         self.up_twist = ScalarAttribute(f"{self.name}.upTwist")
@@ -465,7 +475,7 @@ class MultiplyDivideNode(Node):
     def _setup_attributes(self) -> None:
         self.input1 = Vector3Attribute(f"{self.name}.input1")
         self.input2 = Vector3Attribute(f"{self.name}.input2")
-        self.operation = EnumAttribute(f"{self.name}.operation")
+        self.operation = MultiplyDivideOperationAttribute(f"{self.name}.operation")
         self.output = Vector3Attribute(f"{self.name}.output")
 
 
@@ -570,7 +580,7 @@ class QuatToEulerNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
-        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate_order = RotateOrderAttribute(f"{self.name}.inputRotateOrder")
         self.output_rotate = Vector3Attribute(f"{self.name}.outputRotate")
 
 
@@ -664,6 +674,29 @@ class SumNode(Node):
     def _setup_attributes(self) -> None:
         self.input: IndexableScalarAttribute = IndexableScalarAttribute(f"{self.name}.input")
         self.output: ScalarAttribute = ScalarAttribute(f"{self.name}.output")
+
+
+class UvPinNode(Node):
+    """Maya uvPin node with enhanced interface."""
+
+    def __init__(self, name: str = "uvPin") -> None:
+        super().__init__("uvPin", name)
+
+    def _setup_attributes(self) -> None:
+        self.original_geometry = GeometryAttribute(f"{self.name}.originalGeometry")
+        self.deformed_geometry = GeometryAttribute(f"{self.name}.deformedGeometry")
+
+        self.normal_axis = AxisAttribute(f"{self.name}.normalAxis")
+        self.tangent_axis = AxisAttribute(f"{self.name}.tangentAxis")
+        self.uv_set_name = StringAttribute(f"{self.name}.uvSetName")
+        self.normalized_isoparms = BooleanAttribute(f"{self.name}.normalizedIsoParms")
+        self.normal_override = UvPinNormalOverrideAttribute(f"{self.name}.normalOverride")
+        self.relative_space_mode = UvPinRelativeSpaceModeAttribute(f"{self.name}.relativeSpaceMode")
+        self.relative_space_matrix = MatrixAttribute(f"{self.name}.relativeSpaceMatrix")
+        self.coordinate = IndexableUvAttribute(f"{self.name}.coordinate")
+
+        self.output_matrix = IndexableMatrixAttribute(f"{self.name}.outputMatrix")
+        self.output_translate = IndexableVector3Attribute(f"{self.name}.outputMatrix")
 
 
 class WtAddMatrixNode(Node):

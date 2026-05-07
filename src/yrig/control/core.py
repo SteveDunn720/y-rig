@@ -10,10 +10,11 @@ from maya.api.OpenMaya import MMatrix
 
 from yrig.build.mgear_api.control import add_ctl
 from yrig.control.serialize import ControlShape, create_curve
+from yrig.maya_api.enum import RotateOrder
 from yrig.name import MIDDLE_SIDE_NAME, get_side
 from yrig.transform import create_transform
 from yrig.transform.matrix import get_world_matrix
-from yrig.transform.structs import Direction, RotationOrder
+from yrig.transform.structs import Direction
 from yrig.transform.utils import bake_shape, partial_path_name
 
 CONTROL_SUFFIX = "_ctl"
@@ -117,7 +118,7 @@ def create_control(
     direction: Direction = "y",
     size: float = 1,
     dimensions: tuple[float, float, float] = (1, 1, 1),
-    rotation_order: RotationOrder = RotationOrder.XYZ,
+    rotation_order: RotateOrder = RotateOrder.XYZ,
     limit_min_scale: bool = True,
 ) -> Control:
     transform_matrix: MMatrix | None

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
@@ -31,6 +33,7 @@ BUILD_STEPS: list[BuildStep] = [
 def _build_from_shifter_file(  # noqa: ANN202
     file_path: Path,
     dev_build: bool,
+    no_components: bool = False,
     progress_callback: Callable[[float, str | None], None] | None = None,
 ):
     from mgear.core import curve
@@ -75,7 +78,17 @@ def _build_from_shifter_file(  # noqa: ANN202
         # Get merged options early so custom steps use blueprint values
         merged_options = rig.guide.getMergedOptions()
         rig.from_dict_custom_step(merged_options, pre=True)
-        rig.build()
+
+        # Just build a barebones rig with root if we're doing a custom step only build
+        if no_components:
+            rig.options = rig.guide.getMergedOptions()
+            rig.guides = rig.guide.components
+            rig.customStepDic["mgearRun"] = rig
+            rig.initialHierarchy()
+            rig.addToGroup("jnt_org", "deformers")
+            rig.finalize()
+        else:
+            rig.build()
 
         # Check if build was cancelled
         if rig.stopBuild:
@@ -134,7 +147,13 @@ def build_from_path(
     with temp_asset_root(rig_root_path, dev_build), temp_build_scope(resolved_scope, dev_build):
         mgear_api_logger.info("Starting mGear Shifter build from file: %s", guide_path)
         try:
-            build_result = _build_from_shifter_file(guide_path, dev_build, progress_callback)
+            no_components = resolved_scope == BuildScope.FACE
+            build_result = _build_from_shifter_file(
+                guide_path,
+                dev_build,
+                no_components=no_components,
+                progress_callback=progress_callback,
+            )
         except Exception as e:
             mgear_api_logger.error("mGear build failed: %s", e)
             raise RuntimeError(f"mGear Shifter build failed for '{guide_path.name}': {e}") from e

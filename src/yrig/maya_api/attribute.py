@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from enum import IntEnum
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Generic,
     Iterable,
     Iterator,
@@ -11,16 +13,29 @@ from typing import (
     Sequence,
     TypeAlias,
     TypeVar,
+    overload,
 )
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import MMatrix
 from mgear.animbits.cache_manager.mayautils import long
 
+from yrig.maya_api.enum import (
+    Axis,
+    MotionPathWorldUpType,
+    MultiplyDivideOperation,
+    RotateOrder,
+    UnsignedAxis,
+    UvPinNormalOverride,
+    UvPinRelativeSpaceMode,
+)
+
 if TYPE_CHECKING:
     from yrig.maya_api.node import Node
 
 AttributeType = TypeVar("AttributeType", bound="Attribute")
+
+EnumType = TypeVar("EnumType", bound=IntEnum)
 
 # fmt: off
 MatrixTuple: TypeAlias = tuple[
@@ -96,14 +111,29 @@ class Attribute(Generic[T]):
         cmds.setAttr(self.attr_path, channelBox=enabled)
 
 
+class StringAttribute(Attribute[str]):
+    """Maya string attribute."""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+    def get(self) -> str:
+        """Get the value of this attribute."""
+        return cmds.getAttr(self.attr_path)
+
+    def set(self, value: str) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, value, type="string")
+
+
 class NumericAttribute(Attribute[T]):
-    """Base class for numeric attributes only."""
+    """Base class for numeric Maya attributes (int/float-like values)."""
 
     pass
 
 
 class ScalarAttribute(NumericAttribute[float]):
-    """A Maya attribute of a scalar type."""
+    """Single float (double) Maya attribute."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
@@ -145,7 +175,7 @@ class ScalarAttribute(NumericAttribute[float]):
 
 
 class IntegerAttribute(NumericAttribute[int]):
-    """A Maya attribute of an integer type."""
+    """Single integer Maya attribute."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
@@ -157,13 +187,6 @@ class IntegerAttribute(NumericAttribute[int]):
     def set(self, value: float | int) -> None:
         """Set the value of this attribute."""
         cmds.setAttr(self.attr_path, int(value))  # type: ignore
-
-
-class EnumAttribute(IntegerAttribute):
-    """A Maya attribute of the enum type."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
 
 
 class BooleanAttribute(Attribute[bool]):
@@ -204,7 +227,14 @@ class MatrixAttribute(Attribute[MatrixTuple]):
         cmds.setAttr(self.attr_path, tuple(value), type="matrix")  # type: ignore
 
 
-class NurbsCurveAttribute(Attribute):
+class GeometryAttribute(Attribute):
+    """A Maya attribute of the geometry type."""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+
+class NurbsCurveAttribute(GeometryAttribute):
     """A Maya attribute of the nurbsCurve type."""
 
     def __init__(self, attr_path: str) -> None:
@@ -297,8 +327,48 @@ class QuatAttribute(Attribute[tuple[float, float, float]]):
         self.w = ScalarAttribute(f"{attr_path}W")
 
 
+class EnumAttribute(Attribute[EnumType], Generic[EnumType]):
+    """A Maya attribute of the enum type."""
+
+    enum_type: type[EnumType]
+
+    def get(self) -> EnumType:
+        return self.enum_type(cmds.getAttr(self.attr_path))
+
+    def set(self, value: EnumType | int) -> None:
+        cmds.setAttr(self.attr_path, int(value))  # type: ignore
+
+
+class RotateOrderAttribute(EnumAttribute[RotateOrder]):
+    enum_type = RotateOrder
+
+
+class AxisAttribute(EnumAttribute[Axis]):
+    enum_type = Axis
+
+
+class UnsignedAxisAttribute(EnumAttribute[UnsignedAxis]):
+    enum_type = UnsignedAxis
+
+
+class MotionPathWorldUpTypeAttribute(EnumAttribute[MotionPathWorldUpType]):
+    enum_type = MotionPathWorldUpType
+
+
+class MultiplyDivideOperationAttribute(EnumAttribute[MultiplyDivideOperation]):
+    enum_type = MultiplyDivideOperation
+
+
+class UvPinNormalOverrideAttribute(EnumAttribute[UvPinNormalOverride]):
+    enum_type = UvPinNormalOverride
+
+
+class UvPinRelativeSpaceModeAttribute(EnumAttribute[UvPinRelativeSpaceMode]):
+    enum_type = UvPinRelativeSpaceMode
+
+
 class IndexableAttribute(Attribute, Generic[AttributeType], Iterable[AttributeType]):
-    """A Maya attribute that supports indexing with bracket notation."""
+    """Base class for array-style Maya attributes supporting indexed access."""
 
     @abstractmethod
     def __getitem__(self, index: int) -> AttributeType:
@@ -337,6 +407,10 @@ class IndexableVector2Attribute(IndexableAttribute[Vector2Attribute]):
 
 class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):
     """A Maya attribute that supports indexing Vector3 attributes with bracket notation."""
+
+
+class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):
+    """A Maya attribute that supports indexing vector3 elements with bracket notation."""
 
     def __getitem__(self, index: int) -> Vector3Attribute:
         """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
@@ -402,6 +476,34 @@ class AimMatrixAxisAttribute(Attribute):
         self.mode = EnumAttribute(f"{attr_path}.{axis_name}Mode")
         self.target_vector = Vector3Attribute(f"{attr_path}.{axis_name}TargetVector")
         self.target_matrix = MatrixAttribute(f"{attr_path}.{axis_name}TargetMatrix")
+
+
+class UvAttribute(Attribute[tuple[float, float]]):
+    """A Maya attribute of the type UV"""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+        self.x = ScalarAttribute(f"{attr_path}U")
+        self.y = ScalarAttribute(f"{attr_path}V")
+
+    def get(self) -> tuple[float, float]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[float, float]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore
+
+
+class IndexableUvAttribute(IndexableAttribute[UvAttribute]):
+    """A Maya attribute that supports indexing UV elements with bracket notation."""
+
+    def __getitem__(self, index: int) -> UvAttribute:
+        """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
+        return UvAttribute(attr_path=f"{self.attr_path}[{index}]")
 
 
 class MessageAttribute(Attribute):

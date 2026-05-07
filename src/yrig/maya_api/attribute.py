@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from enum import IntEnum
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Generic,
     Iterable,
     Iterator,
@@ -11,16 +13,29 @@ from typing import (
     Sequence,
     TypeAlias,
     TypeVar,
+    overload,
 )
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import MMatrix
 from mgear.animbits.cache_manager.mayautils import long
 
+from yrig.maya_api.enum import (
+    Axis,
+    MotionPathWorldUpType,
+    MultiplyDivideOperation,
+    RotateOrder,
+    UnsignedAxis,
+    UvPinNormalOverride,
+    UvPinRelativeSpaceMode,
+)
+
 if TYPE_CHECKING:
     from yrig.maya_api.node import Node
 
 AttributeType = TypeVar("AttributeType", bound="Attribute")
+
+EnumType = TypeVar("EnumType", bound=IntEnum)
 
 # fmt: off
 MatrixTuple: TypeAlias = tuple[
@@ -97,7 +112,7 @@ class Attribute(Generic[T]):
 
 
 class StringAttribute(Attribute[str]):
-    """A Maya attribute of a string type."""
+    """Maya string attribute."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
@@ -112,13 +127,13 @@ class StringAttribute(Attribute[str]):
 
 
 class NumericAttribute(Attribute[T]):
-    """Base class for numeric attributes only."""
+    """Base class for numeric Maya attributes (int/float-like values)."""
 
     pass
 
 
 class ScalarAttribute(NumericAttribute[float]):
-    """A Maya attribute of a scalar type."""
+    """Single float (double) Maya attribute."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
@@ -160,7 +175,7 @@ class ScalarAttribute(NumericAttribute[float]):
 
 
 class IntegerAttribute(NumericAttribute[int]):
-    """A Maya attribute of an integer type."""
+    """Single integer Maya attribute."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
@@ -172,13 +187,6 @@ class IntegerAttribute(NumericAttribute[int]):
     def set(self, value: float | int) -> None:
         """Set the value of this attribute."""
         cmds.setAttr(self.attr_path, int(value))  # type: ignore
-
-
-class EnumAttribute(IntegerAttribute):
-    """A Maya attribute of the enum type."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
 
 
 class BooleanAttribute(Attribute[bool]):
@@ -271,8 +279,48 @@ class QuatAttribute(Attribute[tuple[float, float, float]]):
         self.w = ScalarAttribute(f"{attr_path}W")
 
 
+class EnumAttribute(Attribute[EnumType], Generic[EnumType]):
+    """A Maya attribute of the enum type."""
+
+    enum_type: type[EnumType]
+
+    def get(self) -> EnumType:
+        return self.enum_type(cmds.getAttr(self.attr_path))
+
+    def set(self, value: EnumType | int) -> None:
+        cmds.setAttr(self.attr_path, int(value))  # type: ignore
+
+
+class RotateOrderAttribute(EnumAttribute[RotateOrder]):
+    enum_type = RotateOrder
+
+
+class AxisAttribute(EnumAttribute[Axis]):
+    enum_type = Axis
+
+
+class UnsignedAxisAttribute(EnumAttribute[UnsignedAxis]):
+    enum_type = UnsignedAxis
+
+
+class MotionPathWorldUpTypeAttribute(EnumAttribute[MotionPathWorldUpType]):
+    enum_type = MotionPathWorldUpType
+
+
+class MultiplyDivideOperationAttribute(EnumAttribute[MultiplyDivideOperation]):
+    enum_type = MultiplyDivideOperation
+
+
+class UvPinNormalOverrideAttribute(EnumAttribute[UvPinNormalOverride]):
+    enum_type = UvPinNormalOverride
+
+
+class UvPinRelativeSpaceModeAttribute(EnumAttribute[UvPinRelativeSpaceMode]):
+    enum_type = UvPinRelativeSpaceMode
+
+
 class IndexableAttribute(Attribute, Generic[AttributeType], Iterable[AttributeType]):
-    """A Maya attribute that supports indexing with bracket notation."""
+    """Base class for array-style Maya attributes supporting indexed access."""
 
     @abstractmethod
     def __getitem__(self, index: int) -> AttributeType:

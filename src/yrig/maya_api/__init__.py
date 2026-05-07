@@ -11,6 +11,7 @@ Submodules:
 """
 
 from . import attribute as attribute
+from . import enum as enum
 from . import node as node
 from . import utils as utils
 from . import version as version

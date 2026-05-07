@@ -198,6 +198,19 @@ class BlendMatrixNode(Node):
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
 
 
+class BlendColorsNode(Node):
+    """Maya blendColors node with enhanced interface."""
+
+    def __init__(self, name: str = "blendColors") -> None:
+        super().__init__("blendColors", name)
+
+    def _setup_attributes(self) -> None:
+        self.color1: ColorAttribute = ColorAttribute(f"{self.name}.color1")
+        self.color2: ColorAttribute = ColorAttribute(f"{self.name}.color2")
+        self.output: ColorAttribute = ColorAttribute(f"{self.name}.output")
+        self.blender = ScalarAttribute(f"{self.name}.blender")
+
+
 class ClampRangeNode(Node):
     """Maya clampRange node with enhanced interface."""
 

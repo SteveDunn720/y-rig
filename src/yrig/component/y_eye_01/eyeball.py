@@ -1,3 +1,4 @@
+from os import name
 from yrig import control
 import enum
 import mailbox
@@ -9,7 +10,7 @@ import maya.cmds as cmds
 from yrig.control import create_control
 from yrig.joint import create_joint
 
-from yrig.transform import create_transform
+from yrig.transform import create_transform, match_location
 from maya.api.OpenMaya import MMatrix, MTransformationMatrix, MVector, MEulerRotation, MSpace
 from yrig.transform.utils import get_position
 import math
@@ -23,6 +24,8 @@ from yrig.maya_api.node import (
     DecomposeMatrixNode,
     MultiplyDivideNode,
     AddDLNode,
+    EulerToQuatNode,
+    BlendColorsNode,
 )
 
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
@@ -120,18 +123,18 @@ class Eyeball:
 
         eye_center_pos = get_position(self.guides["center_piv"])
 
-        crv = cmds.circle(  # type:ignore
-            name=f"center_preview_{name_suffix}_crv",
+        crv: str = cmds.circle(  # type:ignore
+            name=f"preview_{name_suffix}_crv",
             radius=eye_radius,
-            center=eye_center_pos,  # type:ignore
             normal=[0, 0, 1],  # type:ignore
             sections=16,
             degree=3,
         )[0]
 
-        cmds.parent(crv, parent)  # type:ignore
+        cmds.parent(crv, parent)
+        match_location(transform=crv, target_transform=self.guides["center_piv"])
 
-        return crv  # type:ignore
+        return crv
 
     def build_eyeball(self) -> None:
         eye_radius: float = self.get_nurbs_surface_radius(self.guides[f"eye_diam"])
@@ -149,7 +152,7 @@ class Eyeball:
 
         eye_center_pos = get_position(self.guides[f"center_piv"])
 
-        percents = [0, iris_percent, iris_degree]
+        percents = [0, iris_percent, pupil_percent, 1]
 
         cmds.addAttr(
             self.main_ctrl,
@@ -157,6 +160,7 @@ class Eyeball:
             attributeType="double",
             minValue=0 - (pupil_percent * 10),
             maxValue=10 - (pupil_percent * 10),
+            keyable=True,
         )
         cmds.addAttr(
             self.main_ctrl,
@@ -164,6 +168,17 @@ class Eyeball:
             attributeType="double",
             minValue=0 - (iris_percent * 10),
             maxValue=10 - (iris_percent * 10),
+            keyable=True,
+        )
+
+        cmds.addAttr(
+            self.main_ctrl,
+            longName="end_dilation",
+            attributeType="double",
+            minValue=0,
+            maxValue=10,
+            defaultValue=0,
+            keyable=False,
         )
         dilation_offset = create_transform(
             name=f"dilation_{self.side}_Offset",
@@ -171,32 +186,52 @@ class Eyeball:
             transform=self.guides["center_piv"],
         )
 
-        self.preview_circles = []
-        for i, type in enumerate(iterable=["center", "iris", "pupil"]):
+        self.preview_circles = {}
+
+        for i, circle_type in enumerate(["center", "iris", "pupil", "end"]):
             circle = self.create_eye_preview_circle(
-                name_suffix=f"{type}_{self.side}", parent=f"{dilation_offset}"
+                name_suffix=f"{circle_type}_{self.side}", parent=f"{dilation_offset}"
             )
-            self.preview_circles.append(circle)
-            if type == "center":
+            self.preview_circles[f"{circle_type}"] = circle
+            if circle_type == "center":
                 pass
             else:
-                dilation_mult = MultiplyDivideNode(name=f"{type}_dilation_mult_{self.side}_MD")
-                dilation_offset = AddDLNode(name=f"{type}_dilation_mult_{self.side}_MD")
-                cmds.setAttr(f"{dilation_mult.input2.x}", 18)  # type:ignore
-                cmds.setAttr(f"{dilation_offset.input_1}", percents[i] * 10)  # type:ignore
-                cmds.connectAttr(f"{self.main_ctrl}.{type}_dilation", f"{dilation_offset.input_2}")
-                cmds.connectAttr(f"{dilation_offset.output}", f"{dilation_mult.input1.x}")
+                dilation_mult = MultiplyDivideNode(
+                    name=f"{circle_type}_dilation_mult_{self.side}_MD"
+                )
+                dilation_offset_node = AddDLNode(
+                    name=f"{circle_type}_dilation_mult_{self.side}_ADL"
+                )
+                cmds.setAttr(f"{dilation_mult.input2.x}", 18)  # type:ignore  # Convert normalized dilation amount into spherical rotation angle
+                cmds.setAttr(f"{dilation_offset_node.input_1}", percents[i] * 10)  # type:ignore
+                cmds.connectAttr(
+                    f"{self.main_ctrl}.{circle_type}_dilation", f"{dilation_offset_node.input_2}"
+                )
+                cmds.connectAttr(f"{dilation_offset_node.output}", f"{dilation_mult.input1.x}")
+                ETQ_node = EulerToQuatNode(
+                    name=f"{circle_type}_dilation_mult_{self.side}_ETQ",
+                )
+                ETQ_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
+                radius_adjust = MultiplyDivideNode(
+                    name=f"{circle_type}_radius_adjust_{self.side}_MD"
+                )
+                radius_adjust.input1.x.connect_from(ETQ_node.output_quat.x)
+                radius_adjust.output.x.connect_to(f"{circle}.translateZ")
+                for axis in ["X", "Y", "Z"]:
+                    ETQ_node.output_quat.w.connect_to(f"{circle}.scale{axis}")
+                radius_adjust.input2.x.set(eye_radius)
 
         # joints
-        loops_list = self.sphere_edge_loop_offsets(radius=eye_radius, num_loops=10)
+        loop_num = 10
+        loops_list = self.sphere_edge_loop_offsets(radius=eye_radius, num_loops=loop_num)
 
-        dilation_joints = []
+        self.dilation_joints = []
 
         for i, loop in enumerate(loops_list):
             if i == 0:
                 parent = self.joint_parent
             else:
-                parent = dilation_joints[0]
+                parent = self.dilation_joints[0]
 
             jnt = create_joint(
                 name=f"eye_dilation_{i:02d}_{self.side}",
@@ -204,36 +239,33 @@ class Eyeball:
                 transform=self.guides[f"center_piv"],
                 connect=False,
             )
-            dilation_joints.append(jnt)
+            self.dilation_joints.append(jnt)
             cmds.setAttr(f"{jnt}.translateZ", loops_list[i])
 
             x = i / 10.0
             if x < iris_percent:
-                blend = ["center", "iris"]
+                blend = ["iris", "center"]
                 blend_num = x / iris_percent
 
             elif x < pupil_percent:
-                blend = ["iris", "pupil"]
+                blend = ["pupil", "iris"]
                 blend_num = (x - iris_percent) / (pupil_percent - iris_percent)
 
             else:
-                blend = ["pupil", "center"]
+                blend = ["end", "pupil"]
                 blend_num = (x - pupil_percent) / (1.0 - pupil_percent)
 
-            print(f"{blend} {blend_num}")
+            if i not in [0]:
+                for vect in ["translate", "scale"]:
+                    blendnode = BlendColorsNode(
+                        name=f"blend_dilation_{i:02d}_{vect}_{self.side}_BC"
+                    )
+                    blendnode.color1.connect_from(f"{self.preview_circles[blend[0]]}.{vect}")
+                    blendnode.color2.connect_from(f"{self.preview_circles[blend[1]]}.{vect}")
+                    blendnode.blender.set(blend_num)
+                    blendnode.output.connect_to(f"{jnt}.{vect}")
 
-            """if i / 10 < iris_percent:
-                blend: list[str] = ["center", "iris"]
-                blend_num: float = (i / 10) / iris_percent
-            elif i / 10 == iris_percent:
-                blend: list[str] = ["iris", "iris"]
-                blend_num: float = 1.0
-            elif iris_percent < i / 10 < pupil_percent:
-                blend: list[str] = ["iris", "pupil"]
-                blend_num: float = ( i / 10 - pupil_percent) / (iris_percent - pupil_percent)
-            elif i / 10 > pupil_percent:
-                blend: list[str] = ["pupil", "center"]
-                blend_num: float = (i / 10) / pupil_percent
-            else:
-                blend: list[str] = ["center", "center"]
-                blend_num: float = 1.0"""
+        tag_for_weight_split(
+            influence=self.dilation_joints[0],  # <-- your SOURCE joint (must already exist)
+            split_influences=self.dilation_joints,  # <-- the ones you just created
+        )

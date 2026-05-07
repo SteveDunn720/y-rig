@@ -29,6 +29,7 @@ from yrig.maya_api.attribute import (
     IndexableVector3Attribute,
     IndexableVector2Attribute,
     ColorAttribute,
+    EnumAttribute,
 )
 from yrig.maya_api.utils import ensure_plugin_loaded
 

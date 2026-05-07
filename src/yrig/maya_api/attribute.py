@@ -96,6 +96,21 @@ class Attribute(Generic[T]):
         cmds.setAttr(self.attr_path, channelBox=enabled)
 
 
+class StringAttribute(Attribute[str]):
+    """A Maya attribute of a string type."""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+    def get(self) -> str:
+        """Get the value of this attribute."""
+        return cmds.getAttr(self.attr_path)
+
+    def set(self, value: str) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, value, type="string")
+
+
 class NumericAttribute(Attribute[T]):
     """Base class for numeric attributes only."""
 
@@ -286,6 +301,14 @@ class IndexableScalarAttribute(IndexableAttribute[ScalarAttribute]):
         return ScalarAttribute(attr_path=f"{self.attr_path}[{index}]")
 
 
+class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):
+    """A Maya attribute that supports indexing vector3 elements with bracket notation."""
+
+    def __getitem__(self, index: int) -> Vector3Attribute:
+        """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
+        return Vector3Attribute(attr_path=f"{self.attr_path}[{index}]")
+
+
 class IndexableMatrixAttribute(IndexableAttribute[MatrixAttribute]):
     """A Maya attribute that supports indexing matrix attributes with bracket notation."""
 
@@ -345,6 +368,34 @@ class AimMatrixAxisAttribute(Attribute):
         self.mode = EnumAttribute(f"{attr_path}.{axis_name}Mode")
         self.target_vector = Vector3Attribute(f"{attr_path}.{axis_name}TargetVector")
         self.target_matrix = MatrixAttribute(f"{attr_path}.{axis_name}TargetMatrix")
+
+
+class UvAttribute(Attribute[tuple[float, float]]):
+    """A Maya attribute of the type UV"""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+        self.x = ScalarAttribute(f"{attr_path}U")
+        self.y = ScalarAttribute(f"{attr_path}V")
+
+    def get(self) -> tuple[float, float]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[float, float]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore
+
+
+class IndexableUvAttribute(IndexableAttribute[UvAttribute]):
+    """A Maya attribute that supports indexing UV elements with bracket notation."""
+
+    def __getitem__(self, index: int) -> UvAttribute:
+        """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
+        return UvAttribute(attr_path=f"{self.attr_path}[{index}]")
 
 
 class MessageAttribute(Attribute):

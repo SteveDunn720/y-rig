@@ -7,6 +7,8 @@ from yrig.maya_api.attribute import (
     IndexableBlendMatrixTargetAttribute,
     IndexableMatrixAttribute,
     IndexableScalarAttribute,
+    IndexableUvAttribute,
+    IndexableVector3Attribute,
     IndexableWtMatrixAttribute,
     IntegerAttribute,
     MatrixAttribute,
@@ -14,6 +16,7 @@ from yrig.maya_api.attribute import (
     NurbsCurveAttribute,
     QuatAttribute,
     ScalarAttribute,
+    StringAttribute,
     Vector3Attribute,
     Vector4Attribute,
 )
@@ -567,6 +570,26 @@ class SumNode(Node):
     def _setup_attributes(self) -> None:
         self.input: IndexableScalarAttribute = IndexableScalarAttribute(f"{self.name}.input")
         self.output: ScalarAttribute = ScalarAttribute(f"{self.name}.output")
+
+
+class UvPinNode(Node):
+    """Maya uvPin node with enhanced interface."""
+
+    def __init__(self, name: str = "uvPin") -> None:
+        super().__init__("uvPin", name)
+
+    def _setup_attributes(self) -> None:
+        self.normal_axis = EnumAttribute(f"{self.name}.normalAxis")
+        self.tangent_axis = EnumAttribute(f"{self.name}.tangentAxis")
+        self.uv_set_name = StringAttribute(f"{self.name}.uvSetName")
+        self.normalized_isoparms = BooleanAttribute(f"{self.name}.normalizedIsoParms")
+        self.normal_override = EnumAttribute(f"{self.name}.normalOverride")
+        self.relative_space_mode = EnumAttribute(f"{self.name}.relativeSpaceMode")
+        self.relative_space_matrix = MatrixAttribute(f"{self.name}.relativeSpaceMatrix")
+        self.coordinate = IndexableUvAttribute(f"{self.name}.coordinate")
+
+        self.output_matrix = IndexableMatrixAttribute(f"{self.name}.outputMatrix")
+        self.output_translate = IndexableVector3Attribute(f"{self.name}.outputMatrix")
 
 
 class WtAddMatrixNode(Node):

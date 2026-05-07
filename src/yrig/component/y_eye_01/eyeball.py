@@ -1,3 +1,4 @@
+from logging import critical
 from os import name
 from yrig import control
 import enum
@@ -136,7 +137,56 @@ class Eyeball:
 
         return crv
 
+    def dilation_nodes(
+        self,
+        circle_type: str,
+        obj: str,
+        eye_radius: float,
+        dilation_attr: str,
+        new_attr: bool,
+        new_attr_tgt: None | str,
+        offset_x_attr: str,
+        offset_y_attr: str,
+        scale_x_attr: str,
+        scale_y_attr: str,
+    ) -> None:
+
+        if new_attr:
+            cmds.addAttr(new_attr_tgt, longName=f"{circle_type}_{obj}_dilation", keyable=True)  # type:ignore
+            dilation_attr = f"{new_attr_tgt}.{circle_type}_{obj}_dilation"
+
+        dilation_mult = MultiplyDivideNode(name=f"{circle_type}_dilation_mult_{self.side}_MD")
+        cmds.setAttr(f"{dilation_mult.input2.x}", 18)  # type:ignore  # Convert normalized dilation amount into spherical rotation angle
+        dilation_mult.input1.x.connect_from(source_attr=dilation_attr)
+        ETQ_node = EulerToQuatNode(
+            name=f"{circle_type}_dilation_mult_{self.side}_ETQ",
+        )
+        ETQ_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
+        radius_adjust = MultiplyDivideNode(name=f"{circle_type}_radius_adjust_{self.side}_MD")
+        radius_adjust.input1.x.connect_from(ETQ_node.output_quat.x)
+        radius_adjust.output.x.connect_to(f"{obj}.translateZ")
+        ETQ_node.output_quat.w.connect_to(f"{obj}.scaleZ")
+        radius_adjust.input2.x.set(eye_radius)
+
+        ## offsets
+
+        radius_adjust.input1.y.connect_from(ETQ_node.output_quat.w)
+        radius_adjust.input1.z.connect_from(ETQ_node.output_quat.w)
+        radius_adjust.input2.z.connect_from(scale_x_attr)
+        radius_adjust.input2.y.connect_from(scale_y_attr)
+        radius_adjust.output.y.connect_to(f"{obj}.scaleY")
+        radius_adjust.output.z.connect_to(f"{obj}.scaleX")
+        cmds.connectAttr(offset_y_attr, f"{obj}.translateY")
+        cmds.connectAttr(offset_x_attr, f"{obj}.translateX")
+
     def build_eyeball(self) -> None:
+        cmds.addAttr(
+            self.main_ctrl,
+            longName=f"dilation_controls",
+            attributeType="enum",
+            enumName="-------------",
+            keyable=True,
+        )
         eye_radius: float = self.get_nurbs_surface_radius(self.guides[f"eye_diam"])
 
         pupil_degree: float = round(
@@ -177,9 +227,20 @@ class Eyeball:
             attributeType="double",
             minValue=0,
             maxValue=10,
+            defaultValue=10,
+            keyable=False,
+        )
+
+        cmds.addAttr(
+            self.main_ctrl,
+            longName="center_dilation",
+            attributeType="double",
+            minValue=0,
+            maxValue=10,
             defaultValue=0,
             keyable=False,
         )
+
         dilation_offset = create_transform(
             name=f"dilation_{self.side}_Offset",
             parent=self.main_ctrl,
@@ -193,33 +254,68 @@ class Eyeball:
                 name_suffix=f"{circle_type}_{self.side}", parent=f"{dilation_offset}"
             )
             self.preview_circles[f"{circle_type}"] = circle
+
+            cmds.addAttr(circle, longName="dilation_amount", attributeType="double", keyable=True)
+
+            key = True if circle_type in ["iris", "pupil"] else False
+
+            cmds.addAttr(
+                self.main_ctrl,
+                longName=f"{circle_type}_scaleX",
+                attributeType="double",
+                defaultValue=1,
+                keyable=key,
+            )
+
+            cmds.addAttr(
+                self.main_ctrl,
+                longName=f"{circle_type}_scaleY",
+                attributeType="double",
+                defaultValue=1,
+                keyable=key,
+            )
+
+            cmds.addAttr(
+                self.main_ctrl,
+                longName=f"{circle_type}_offsetY",
+                attributeType="double",
+                defaultValue=0,
+                keyable=key,
+            )
+
+            cmds.addAttr(
+                self.main_ctrl,
+                longName=f"{circle_type}_offsetX",
+                attributeType="double",
+                defaultValue=0,
+                keyable=key,
+            )
+
             if circle_type == "center":
                 pass
             else:
-                dilation_mult = MultiplyDivideNode(
-                    name=f"{circle_type}_dilation_mult_{self.side}_MD"
-                )
+                # percents[i]
                 dilation_offset_node = AddDLNode(
                     name=f"{circle_type}_dilation_mult_{self.side}_ADL"
                 )
-                cmds.setAttr(f"{dilation_mult.input2.x}", 18)  # type:ignore  # Convert normalized dilation amount into spherical rotation angle
-                cmds.setAttr(f"{dilation_offset_node.input_1}", percents[i] * 10)  # type:ignore
                 cmds.connectAttr(
                     f"{self.main_ctrl}.{circle_type}_dilation", f"{dilation_offset_node.input_2}"
                 )
-                cmds.connectAttr(f"{dilation_offset_node.output}", f"{dilation_mult.input1.x}")
-                ETQ_node = EulerToQuatNode(
-                    name=f"{circle_type}_dilation_mult_{self.side}_ETQ",
+                cmds.connectAttr(f"{dilation_offset_node.output}", f"{circle}.dilation_amount")
+                cmds.setAttr(f"{dilation_offset_node.input_1}", percents[i] * 10)  # type:ignore
+
+                self.dilation_nodes(
+                    circle_type=circle_type,
+                    obj=circle,
+                    eye_radius=eye_radius,
+                    dilation_attr=f"{dilation_offset_node.output}",
+                    new_attr=False,
+                    new_attr_tgt=None,
+                    scale_x_attr=f"{self.main_ctrl}.{circle_type}_scaleX",
+                    scale_y_attr=f"{self.main_ctrl}.{circle_type}_scaleY",
+                    offset_x_attr=f"{self.main_ctrl}.{circle_type}_offsetX",
+                    offset_y_attr=f"{self.main_ctrl}.{circle_type}_offsetY",
                 )
-                ETQ_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
-                radius_adjust = MultiplyDivideNode(
-                    name=f"{circle_type}_radius_adjust_{self.side}_MD"
-                )
-                radius_adjust.input1.x.connect_from(ETQ_node.output_quat.x)
-                radius_adjust.output.x.connect_to(f"{circle}.translateZ")
-                for axis in ["X", "Y", "Z"]:
-                    ETQ_node.output_quat.w.connect_to(f"{circle}.scale{axis}")
-                radius_adjust.input2.x.set(eye_radius)
 
         # joints
         loop_num = 10
@@ -252,20 +348,46 @@ class Eyeball:
                 blend_num = (x - iris_percent) / (pupil_percent - iris_percent)
 
             else:
-                blend = ["end", "pupil"]
+                blend = ["pupil", "pupil"]
                 blend_num = (x - pupil_percent) / (1.0 - pupil_percent)
 
-            if i not in [0]:
-                for vect in ["translate", "scale"]:
-                    blendnode = BlendColorsNode(
-                        name=f"blend_dilation_{i:02d}_{vect}_{self.side}_BC"
-                    )
-                    blendnode.color1.connect_from(f"{self.preview_circles[blend[0]]}.{vect}")
-                    blendnode.color2.connect_from(f"{self.preview_circles[blend[1]]}.{vect}")
-                    blendnode.blender.set(blend_num)
-                    blendnode.output.connect_to(f"{jnt}.{vect}")
+            blendnode = BlendColorsNode(name=f"blend_dilation_{i:02d}_{self.side}_BC")
+            blendnode2 = BlendColorsNode(name=f"blend_offset_{i:02d}_{self.side}_BC")
+            blendnode.color1.r.connect_from(
+                source_attr=f"{self.preview_circles[blend[0]]}.dilation_amount"
+            )
+            blendnode.color2.r.connect_from(
+                source_attr=f"{self.preview_circles[blend[1]]}.dilation_amount"
+            )
+            blendnode.blender.set(blend_num)
 
+            blendnode.color1.g.connect_from(source_attr=f"{self.main_ctrl}.{blend[0]}_scaleY")
+            blendnode.color1.b.connect_from(source_attr=f"{self.main_ctrl}.{blend[0]}_scaleX")
+            blendnode.color2.g.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_scaleY")
+            blendnode.color2.b.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_scaleX")
+
+            blendnode2.blender.set(blend_num)
+
+            blendnode2.color1.g.connect_from(source_attr=f"{self.main_ctrl}.{blend[0]}_offsetY")
+            blendnode2.color1.b.connect_from(source_attr=f"{self.main_ctrl}.{blend[0]}_offsetX")
+            blendnode2.color2.g.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_offsetY")
+            blendnode2.color2.b.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_offsetX")
+
+            self.dilation_nodes(
+                circle_type=f"{i:02d}",
+                obj=jnt,
+                eye_radius=eye_radius,
+                dilation_attr=f"{blendnode.output.r}",
+                new_attr=False,
+                new_attr_tgt=None,
+                scale_x_attr=f"{blendnode.output.b}",
+                scale_y_attr=f"{blendnode.output.g}",
+                offset_x_attr=f"{blendnode2.output.b}",
+                offset_y_attr=f"{blendnode2.output.g}",
+            )
         tag_for_weight_split(
-            influence=self.dilation_joints[0],  # <-- your SOURCE joint (must already exist)
-            split_influences=self.dilation_joints,  # <-- the ones you just created
+            influence=self.dilation_joints[0],
+            split_influences=self.dilation_joints,
         )
+
+        ##### LOOK control and Eyeball_offset Control

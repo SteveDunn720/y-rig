@@ -57,13 +57,11 @@ def uv_pin(
     uv_pin.coordinate[0].set(uv)
 
     localize_matrix = MultMatrixNode(f"{object_to_pin}_uvPin_localize")
-
     localize_matrix.matrix_in[0].connect_from(uv_pin.output_matrix[0])
     localize_matrix.matrix_in[1].connect_from(f"{object_to_pin}.parentInverseMatrix[0]")
-    drive_transform_with_matrix(localize_matrix.matrix_sum, object_to_pin)
+    drive_transform_with_matrix(localize_matrix.matrix_sum, object_to_pin, scale=False, shear=False)
     return uv_pin
 
 
 def surface_slide_constraint(surface: str, transform: str) -> None:
-
     pass

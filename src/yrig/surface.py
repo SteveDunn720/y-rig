@@ -12,7 +12,7 @@ def uv_pin(
     uv: tuple[float, float],
     normalize: bool = False,
     normal_axis: Axis | Direction = Axis.Z,
-    tangent_axis: Axis | Direction = Axis.Y,
+    tangent_axis: Axis | Direction = Axis.X,
 ) -> UvPinNode:
     """
     Create a uvPin node that pins an object to a given surface at specified UV coordinates.

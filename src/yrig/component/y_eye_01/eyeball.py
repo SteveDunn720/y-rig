@@ -42,6 +42,8 @@ class Eyeball:
         main_ctrl: str = "",
         parent: str = "",
         joint_parent: str = "",
+        componet_grp: str = "",
+        control_grp: str = "",
     ) -> None:
         self.side = side
         self.guides = guides
@@ -49,6 +51,8 @@ class Eyeball:
         self.control_size = control_size
         self.parent = parent
         self.joint_parent = joint_parent
+        self.componet_grp = componet_grp
+        self.control_grp = control_grp
 
     # -------------------
     # Helper Functions
@@ -204,7 +208,7 @@ class Eyeball:
 
         self.look_ctrl = create_control(
             name=f"look_{self.side}",
-            parent=self.main_ctrl,
+            parent=self.control_grp,
             transform=self.guides["aim"],
             control_shape="circle",
             direction="z",
@@ -214,7 +218,7 @@ class Eyeball:
         self.look_root = create_joint(
             transform=self.eye_ctrl.transform,
             name=f"look_root_{self.side}",
-            parent=self.parent,
+            parent=self.componet_grp,
             connect=False,
         )
 
@@ -226,14 +230,16 @@ class Eyeball:
         )
 
         self.ik_handle, self.effector = cmds.ikHandle(
-            name="arm_sc_ikh",
+            name=f"aim_sc_{self.side}_ikh",
             startJoint=self.look_root,
             endEffector=self.look_end,
             solver="ikSCsolver",
         )
 
+        cmds.parent(self.ik_handle, self.componet_grp)
+
         matrix_constraint(self.look_ctrl.transform, self.ik_handle)
-        cmds.pointConstraint(self.eye_ctrl.transform, self.look_root, maintainOffset=True)
+        cmds.pointConstraint(self.main_ctrl, self.look_root, maintainOffset=True)
         cmds.orientConstraint(self.look_root, self.eye_ctrl.offset, maintainOffset=True)
 
         for attr in ["translateX", "translateY", "translateZ"]:
@@ -298,6 +304,8 @@ class Eyeball:
             parent=self.eye_ctrl.transform,
             transform=self.guides["center_piv"],
         )
+
+        cmds.hide(dilation_offset)
 
         self.preview_circles = {}
 

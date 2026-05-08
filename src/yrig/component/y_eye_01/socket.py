@@ -37,6 +37,8 @@ class Socket:
         main_ctrl: str = "",
         parent: str = "",
         joint_parent: str = "",
+        componet_grp: str = "",
+        control_grp: str = "",
     ) -> None:
         self.side = side
         self.guides = guides
@@ -44,6 +46,8 @@ class Socket:
         self.control_size = control_size
         self.parent = parent
         self.joint_parent = joint_parent
+        self.componet_grp = componet_grp
+        self.control_grp = control_grp
 
     # -------------------
     # Helper Functions
@@ -85,7 +89,7 @@ class Socket:
         rebuild: bool = False,
         cv_count: int = 10,
         ignore_handles: bool = False,
-    ) -> None:
+    ) -> str:
         """
         Returns worldspace positions of CVs on a curve.
 
@@ -106,6 +110,8 @@ class Socket:
         shapes = cmds.listRelatives(curve, shapes=True, fullPath=True) or []
         if shapes:
             working_curve = shapes[0]
+
+        top_grp = create_transform(name=f"{descriptor}_spline_{self.side}_grp", parent=parent)
 
         # Optional rebuild
         if rebuild:
@@ -158,7 +164,7 @@ class Socket:
 
             sub_ctrl = create_control(
                 name=f"{descriptor}_{i}_{self.side}",
-                parent=self.parent,
+                parent=top_grp,
                 transform=temp,
                 size=self.control_size / 10,
                 control_shape="circle",
@@ -189,8 +195,11 @@ class Socket:
             name=f"{self.side}_{descriptor}",
             pinned_transforms=sub_eyelid_offsets,
             cv_transforms=driver_list,
-            parent=self.parent,
+            parent=self.componet_grp,
+            degree=2,
         )
+
+        return top_grp
 
     def build_socket(self) -> None:
         self.major_controls = {}
@@ -252,18 +261,21 @@ class Socket:
         # Matix Spline Eyelids
         #######
 
-        self.curve_to_matrix_spline(
-            parent=self.parent,
+        self.upper_spline = self.curve_to_matrix_spline(
+            parent=self.control_grp,
             curve=self.guides["socket_upper_curve"],
             descriptor="upper_socket",
             driver_list=self.upper_driver_controls,
             ignore_handles=True,
         )
 
-        self.curve_to_matrix_spline(
-            parent=self.parent,
+        self.lower_spline = self.curve_to_matrix_spline(
+            parent=self.control_grp,
             curve=self.guides["socket_lower_curve"],
             descriptor="lower_socket",
             driver_list=self.lower_driver_controls,
             ignore_handles=True,
         )
+
+        cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{self.upper_spline}.visibility")
+        cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{self.lower_spline}.visibility")

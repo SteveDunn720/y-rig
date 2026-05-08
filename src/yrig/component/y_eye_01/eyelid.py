@@ -1,3 +1,4 @@
+from mgear.utilbits.xplorer import _maya_icon_cache
 import mailbox
 from numpy import iterable
 from yrig.control.core import Control
@@ -35,6 +36,8 @@ class Eyelid:
         main_ctrl: str = "",
         parent: str = "",
         joint_parent: str = "",
+        componet_grp: str = "",
+        control_grp: str = "",
     ) -> None:
         self.side = side
         self.guides = guides
@@ -42,6 +45,8 @@ class Eyelid:
         self.control_size = control_size
         self.parent = parent
         self.joint_parent = joint_parent
+        self.componet_grp = componet_grp
+        self.control_grp = control_grp
 
     # -------------------
     # Helper Functions
@@ -83,7 +88,7 @@ class Eyelid:
         rebuild: bool = False,
         cv_count: int = 10,
         ignore_handles: bool = False,
-    ) -> None:
+    ) -> str:
         """
         Returns worldspace positions of CVs on a curve.
 
@@ -99,6 +104,8 @@ class Eyelid:
 
         temp_curve = None
         working_curve = curve
+
+        top_grp = create_transform(name=f"{descriptor}_spline_{self.side}_grp", parent=parent)
 
         # Ensure we are working with the shape node
         shapes = cmds.listRelatives(curve, shapes=True, fullPath=True) or []
@@ -156,7 +163,7 @@ class Eyelid:
 
             sub_ctrl = create_control(
                 name=f"{descriptor}_{i}_{self.side}",
-                parent=self.parent,
+                parent=top_grp,
                 transform=temp,
                 size=self.control_size / 10,
                 control_shape="circle",
@@ -187,8 +194,11 @@ class Eyelid:
             name=f"{self.side}_{descriptor}",
             pinned_transforms=sub_eyelid_offsets,
             cv_transforms=driver_list,
-            parent=self.parent,
+            parent=self.componet_grp,
+            degree=2,
         )
+
+        return top_grp
 
     def get_flat_y_aim_rotation(self, source: str, target: str) -> float:
         """
@@ -314,7 +324,18 @@ class Eyelid:
 
         self.main_blink_controls = []
         self.sub_blink_controls: dict[str, Control] = {}
+        self.sub_blink_offsets = []
         self.main_eyelid_controls: dict[str, Control] = {}
+
+        #######
+        # Set up look follow
+        #######
+
+        self.look_offset = create_transform(
+            name=f"{self.side}_look_offset",
+            parent=self.main_ctrl,
+            transform=self.guides["center_piv"],
+        )
 
         #######
         # Sub Blink Set up // Main Eyelid Set up
@@ -323,7 +344,7 @@ class Eyelid:
         for i, side in enumerate(["upper", "lower"]):
             sub_transform_grp = create_transform(
                 name=f"{self.side}_{side}_sub_blink_offset_matrix_drivers",
-                parent=self.main_ctrl,
+                parent=self.look_offset,
                 transform=self.guides["center_piv"],
             )
             twist_grps.append(sub_transform_grp)
@@ -367,6 +388,10 @@ class Eyelid:
                     size=self.control_size / 10,
                     control_shape="sphere",
                     direction="z",
+                )
+
+                self.sub_blink_offsets.append(
+                    self.sub_blink_controls[f"{sub_blink}_{side}_blink_ctrl"].transform
                 )
 
                 self.sub_blink_controls[f"{sub_blink}_{side}_blink_ctrl"].SDKGRP = create_transform(  # type:ignore
@@ -413,7 +438,7 @@ class Eyelid:
 
                 driver_grps_list.append(driver_driver)
 
-                # cmds.setAttr(f"{driver_offset}.rotateY", aim / -2)  #  type# : ignore
+                # cmds.setAttr(f"{driver_offset}.rotateY", aim * -1)
 
                 self.main_eyelid_controls[f"{sub_blink}_{side}_eyelid_ctrl"] = create_control(
                     name=f"{sub_blink}_{side}_eyelid_{self.side}",
@@ -502,7 +527,7 @@ class Eyelid:
         for sub in ["inner", "outer"]:
             self.main_eyelid_controls[f"{sub}_corner_eyelid_ctrl"] = create_control(
                 name=f"{sub}_corner_eyelid_{self.side}",
-                parent=self.main_ctrl,
+                parent=self.look_offset,
                 transform=self.guides[f"eyelid_{sub}_corner"],
                 size=self.control_size / 4,
                 control_shape="sphere",
@@ -530,18 +555,51 @@ class Eyelid:
         # Matix Spline Eyelids
         #######
 
-        self.curve_to_matrix_spline(
-            parent=self.parent,
+        self.upper_spline = self.curve_to_matrix_spline(
+            parent=self.control_grp,
             curve=self.guides["eyelid_upper_curve"],
             descriptor="upper_eyelid",
             driver_list=self.upper_driver_controls,
             ignore_handles=True,
         )
 
-        self.curve_to_matrix_spline(
-            parent=self.parent,
+        self.lower_spline = self.curve_to_matrix_spline(
+            parent=self.control_grp,
             curve=self.guides["eyelid_lower_curve"],
             descriptor="lower_eyelid",
             driver_list=self.lower_driver_controls,
             ignore_handles=True,
         )
+
+        cmds.addAttr(
+            self.main_ctrl,
+            longName="eyelid_controls",
+            attributeType="enum",
+            enumName="-------------",
+            keyable=True,
+        )
+
+        for vis_attr in ["sub_blink", "sub_eyelid", "sub_socket"]:
+            cmds.addAttr(
+                self.main_ctrl,
+                longName=vis_attr,
+                attributeType="bool",
+                defaultValue=False,
+                keyable=True,
+            )
+
+            for control in self.main_blink_controls:
+                cmds.addAttr(
+                    f"{control.transform}", longName=vis_attr, proxy=f"{self.main_ctrl}.{vis_attr}"
+                )
+
+        for control in self.sub_blink_offsets:
+            cmds.connectAttr(f"{self.main_ctrl}.sub_blink", f"{control}.visibility")
+            cmds.addAttr(
+                f"{control}",
+                longName="sub_blink",
+                proxy=f"{self.main_ctrl}.sub_blink",
+            )
+
+        cmds.connectAttr(f"{self.main_ctrl}.sub_eyelid", f"{self.upper_spline}.visibility")
+        cmds.connectAttr(f"{self.main_ctrl}.sub_eyelid", f"{self.lower_spline}.visibility")

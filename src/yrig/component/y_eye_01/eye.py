@@ -8,13 +8,18 @@ from yrig.component.y_eye_01.eyelid import Eyelid
 from yrig.component.y_eye_01.socket import Socket
 from yrig.component.y_eye_01.eyeball import Eyeball
 from yrig.transform.matrix import matrix_constraint
+import maya.cmds as cmds
+from yrig.maya_api.node import (
+    BlendColorsNode,
+    AddDLNode,
+)
 
 
 class Eye:
     def __init__(
         self,
         part: str = "eye",
-        side: str = "L",
+        side: str = "",
         parent: str = "face_grp",
         control_parent: str = "neck_M0_head_ctl",
         control_size: float = 1.0,
@@ -60,11 +65,16 @@ class Eye:
 
     def setup_structure(self) -> None:
         self.main_grp = create_transform(name=f"eye_{self.side}", parent=self.parent)
+        self.component_grp = create_transform(
+            name=f"eye_component_{self.side}", parent=self.main_grp
+        )
+        cmds.hide(self.component_grp)
+        self.control_grp = create_transform(name=f"eye_control_{self.side}", parent=self.main_grp)
 
     def create_controls(self) -> None:
         self.main_ctrl = create_control(
             name=self.guides["root_name"],
-            parent=self.main_grp,
+            parent=self.control_grp,
             transform=self.guides["center_piv"],
             size=self.control_size,
             control_shape="round_square",
@@ -90,6 +100,8 @@ class Eye:
             main_ctrl=self.main_ctrl.transform,
             parent=self.main_grp,
             joint_parent=self.main_jnt,
+            componet_grp=self.component_grp,
+            control_grp=self.control_grp,
         )
 
         self.eyelid.build_blink()
@@ -101,6 +113,8 @@ class Eye:
             main_ctrl=self.main_ctrl.transform,
             parent=self.main_grp,
             joint_parent=self.main_jnt,
+            componet_grp=self.component_grp,
+            control_grp=self.control_grp,
         )
 
         self.socket.build_socket()
@@ -121,6 +135,26 @@ class Eye:
             main_ctrl=self.main_ctrl.transform,
             parent=self.main_grp,
             joint_parent=self.main_jnt,
+            componet_grp=self.component_grp,
+            control_grp=self.control_grp,
         )
 
         self.eyeball.build_eyeball()
+
+        self.eye_look_offset_node = BlendColorsNode(name=f"look_blend_{self.side}_BC")
+        # self.eye_look_offset_node.color1.connect_from(f"{self.eyeball.look_root}.rotate")
+        for axes in ["X", "Y", "Z"]:
+            add_node = AddDLNode(name=f"look_{axes}_{self.side}_ADL")
+            add_node.input_1.connect_from(f"{self.eyeball.look_root}.rotate{axes}")
+            add_node.input_2.connect_from(f"{self.eyeball.eye_ctrl}.rotate{axes}")
+            if axes == "X":
+                color = "R"
+            elif axes == "Y":
+                color = "G"
+            else:
+                color = "B"
+            add_node.output.connect_to(f"{self.eye_look_offset_node.color1}{color}")
+
+        self.eye_look_offset_node.blender.set(0.1)
+        self.eye_look_offset_node.color2.set((0, 0, 0))
+        self.eye_look_offset_node.output.connect_to(f"{self.eyelid.look_offset}.rotate")

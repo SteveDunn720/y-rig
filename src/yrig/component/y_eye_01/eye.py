@@ -119,14 +119,14 @@ class Eye:
 
         self.socket.build_socket()
 
-        for side in ["outer", "inner"]:
+        """for side in ["outer", "inner"]:
             matrix_constraint(
                 source_transform=self.eyelid.main_eyelid_controls[
                     f"{side}_corner_eyelid_ctrl"
                 ].transform,
                 constrain_transform=self.socket.major_controls[f"socket_{side}_corner_ctrl"].offset,
                 keep_offset=True,
-            )
+            )"""
 
         self.eyeball = Eyeball(
             side=self.side,

@@ -326,6 +326,7 @@ class Eyelid:
         self.sub_blink_controls: dict[str, Control] = {}
         self.sub_blink_offsets = []
         self.main_eyelid_controls: dict[str, Control] = {}
+        self.blink_drivers = {}
 
         #######
         # Set up look follow
@@ -428,6 +429,8 @@ class Eyelid:
                     transform=self.guides["center_piv"],
                 )
 
+                self.blink_drivers[f"{sub_blink}_{side}_blink_ctrl"] = driver_driven
+
                 driven_grps_list.append(driver_driven)
 
                 driver_driver: str = create_transform(
@@ -524,31 +527,41 @@ class Eyelid:
         # Corner Controls
         #######
         corner_controls = []
-        for sub in ["inner", "outer"]:
-            self.main_eyelid_controls[f"{sub}_corner_eyelid_ctrl"] = create_control(
-                name=f"{sub}_corner_eyelid_{self.side}",
-                parent=self.look_offset,
-                transform=self.guides[f"eyelid_{sub}_corner"],
-                size=self.control_size / 4,
-                control_shape="sphere",
-                direction="z",
-            )
+        for side in ["upper", "lower"]:
+            for sub in ["inner", "outer"]:
+                self.main_eyelid_controls[f"{sub}_{side}_corner_eyelid_ctrl"] = create_control(
+                    name=f"{sub}_{side}_corner_eyelid_{self.side}",
+                    parent=self.look_offset,
+                    transform=self.guides[f"eyelid_{sub}_corner"],
+                    size=self.control_size / 4,
+                    control_shape="sphere",
+                    direction="z",
+                )
 
-            ##### Should i add so blending between the top and botton lids? Translate? Rotate? IDK
+                # blend_md = MultiplyDivideNode(name=f"{sub}_{side}_corner_eyelid_MD")
+                blend_ADL = AddDLNode(name=f"{sub}_{side}_corner_eyelid_ADL")
+                blend_ADL.output.connect_to(
+                    f"{self.main_eyelid_controls[f'{sub}_{side}_corner_eyelid_ctrl']}.rotateX"
+                )
+                blend_ADL.input_1.connect_from(
+                    f"{self.blink_drivers[f'{sub}_{side}_blink_ctrl']}.rotateX"
+                )
+                offset_value = blend_ADL.input_1.get()
+                blend_ADL.input_2.set(offset_value)
 
         self.upper_driver_controls = [
-            self.main_eyelid_controls[f"inner_corner_eyelid_ctrl"],
+            self.main_eyelid_controls[f"inner_upper_corner_eyelid_ctrl"],
             self.main_eyelid_controls[f"inner_upper_eyelid_ctrl"],
             self.main_eyelid_controls[f"mid_upper_eyelid_ctrl"],
             self.main_eyelid_controls[f"outer_upper_eyelid_ctrl"],
-            self.main_eyelid_controls[f"outer_corner_eyelid_ctrl"],
+            self.main_eyelid_controls[f"outer_upper_corner_eyelid_ctrl"],
         ]
         self.lower_driver_controls = [
-            self.main_eyelid_controls[f"inner_corner_eyelid_ctrl"],
+            self.main_eyelid_controls[f"inner_lower_corner_eyelid_ctrl"],
             self.main_eyelid_controls[f"inner_lower_eyelid_ctrl"],
             self.main_eyelid_controls[f"mid_lower_eyelid_ctrl"],
             self.main_eyelid_controls[f"outer_lower_eyelid_ctrl"],
-            self.main_eyelid_controls[f"outer_corner_eyelid_ctrl"],
+            self.main_eyelid_controls[f"outer_lower_corner_eyelid_ctrl"],
         ]
 
         #######

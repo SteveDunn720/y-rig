@@ -109,7 +109,7 @@ def split_weights(
                 new_weights[vertex][influence] += spline_weight * original_weight
 
     set_weights(
-        shape=mesh_shape, new_weights=new_weights, skin_cluster=split_skin_cluster, normalize=True
+        shape=mesh_shape, weights=new_weights, skin_cluster=split_skin_cluster, normalize=True
     )
 
 

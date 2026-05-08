@@ -9,7 +9,7 @@ from maya import cmds
 
 from yrig.build.progress import progress_step, progress_update
 from yrig.name import get_short_name
-from yrig.skin.core import remove_unused_influences, skin_mesh
+from yrig.skin.core import remove_unused_influences, skin_geometry
 from yrig.skin.ng import apply_ng_skin_weights, get_influences_from_ng_skin_weights
 
 if TYPE_CHECKING:
@@ -85,7 +85,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
                     bind_joints = valid_influences
                     if not bind_joints:
                         continue
-                    skin_mesh(bind_joints, geo)
+                    skin_geometry(bind_joints, geo)
                     log.info(f"Skinned {geo} to {len(bind_joints)} joint(s)")
 
                     apply_ng_skin_weights(skin_filepath, geo)
@@ -93,7 +93,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
                 else:
                     if not def_joints:
                         continue
-                    skin_mesh(def_joints, geo)
+                    skin_geometry(def_joints, geo)
                     log.info(f"Default skinning bound {geo} to {len(def_joints)} joint(s)")
 
                 # If this is a non dev build we also remove influences with 0 weights for performance

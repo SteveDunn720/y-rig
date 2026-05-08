@@ -81,6 +81,7 @@ def skin_geometry(
     geometry: str,
     name: str | None = None,
     dual_quaternion: bool = False,
+    local: bool = True,
 ) -> str:
     """
     Creates a skinCluster on the given geometry using the specified bind joints.
@@ -90,8 +91,9 @@ def skin_geometry(
         geometry (str): The name of the geometry to be skinned.
         name (str | None, optional): The name to assign to the skinCluster.
             If None, a name will be auto-generated based on the geometry name.
-        dual_quaternion (bool, optional): Whether to use dual quaternion skinning.
+        dual_quaternion (bool): Whether to use dual quaternion skinning.
             Defaults to False (classic linear skinning).
+        local (bool): Whether to enable local space mode on the skin cluster.
 
     Returns:
         str: The name of the created skinCluster node.
@@ -113,7 +115,8 @@ def skin_geometry(
         skinMethod=1 if dual_quaternion else 0,
         name=name,
     )
-
+    if local:
+        cmds.setAttr(f"{skin_cluster}.relativeSpaceMode")
     return skin_cluster
 
 

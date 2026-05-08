@@ -37,6 +37,7 @@ class BeanMouth:
         cmds.parent(duplicated_mouth_surface, parent)
         self.mouth_surface = cmds.rename(duplicated_mouth_surface, "mouth_surface")
         cmds.hide(self.mouth_surface)
+        # cmds.sets(self.mouth_surface, add="rig_geo_grp")
 
         self.mouth_control = create_control(
             "mouth_M",

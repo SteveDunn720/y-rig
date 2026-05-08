@@ -247,7 +247,7 @@ def get_influence_map(skin_cluster: str) -> dict[int, str]:
     return influence_map
 
 
-def get_weights(shape: str, skin_cluster: str | None = None) -> dict[int, dict[str, float]]:
+def get_skin_weights(geometry: str, skin_cluster: str | None = None) -> dict[int, dict[str, float]]:
     """
     Retrieves skinCluster weights for all vertices of the given mesh shape.
 
@@ -264,9 +264,9 @@ def get_weights(shape: str, skin_cluster: str | None = None) -> dict[int, dict[s
         (joint_name, weight) dictionaries, including only non-zero weights.
     """
     if not skin_cluster:
-        resolved_skin_cluster = get_skin_cluster(shape)
+        resolved_skin_cluster = get_skin_cluster(geometry)
         if not resolved_skin_cluster:
-            raise RuntimeError(f"No skinCluster on {shape}")
+            raise RuntimeError(f"No skinCluster on {geometry}")
     else:
         resolved_skin_cluster = skin_cluster
     sel: MSelectionList = MSelectionList()
@@ -291,12 +291,12 @@ def get_weights(shape: str, skin_cluster: str | None = None) -> dict[int, dict[s
     return weights_dict
 
 
-def set_weights(
+def set_skin_weights(
     shape: str,
     weights: dict[int, dict[str, float]],
     skin_cluster: str | None = None,
     normalize: bool = True,
-) -> None:
+) -> str:
     """
     Sets skinCluster weights for all vertices of the given mesh shape.
 
@@ -305,6 +305,9 @@ def set_weights(
         new_weights (dict): Dictionary of vertex weights: {vtx_index: {influence_name: weight}}.
         skin_cluster: Optional specification of which skinCluster node.
         normalize: When True, the given weights will additionally be normalized.
+
+    Returns:
+        str: Name of the skinCluster the weights were applied to.
     """
     if not skin_cluster:
         resolved_skin_cluster = get_skin_cluster(shape)
@@ -315,7 +318,9 @@ def set_weights(
 
     # Ensure all influences in new_weights exist on the skinCluster
     all_influences_in_data: set[str] = set(
-        influence_name for vtx_weights in weights.values() for influence_name in vtx_weights.keys()
+        influence_name
+        for point_weights in weights.values()
+        for influence_name in point_weights.keys()
     )
     existing_influences = set(
         cmds.skinCluster(resolved_skin_cluster, query=True, influence=True) or []  # type: ignore
@@ -331,7 +336,7 @@ def set_weights(
     sel: MSelectionList = MSelectionList()
     sel.add(shape)
     sel.add(resolved_skin_cluster)
-    sel.add(f"{skin_cluster}.matrix")
+    sel.add(f"{resolved_skin_cluster}.matrix")
     shape_dag: MDagPath = sel.getDagPath(0)
     skin_cluster_mob: MObject = sel.getDependNode(1)
     matrix_list_plug: MPlug = sel.getPlug(2)
@@ -362,8 +367,9 @@ def set_weights(
 
     components = get_components_of_shape(shape_dag)
     component_fn: MFnComponent = MFnComponent(components)
+    num_components: int = component_fn.elementCount
     # Allocate list for weights
-    weights_flat: list[float] = [0.0] * (component_fn.elementCount * num_influences)
+    weights_flat: list[float] = [0.0] * (num_components * num_influences)
 
     # Fill weights list from new_weights dict
     for point_id, point_weights in weights.items():
@@ -386,6 +392,7 @@ def set_weights(
         normalize=normalize,
         returnOldWeights=False,
     )
+    return resolved_skin_cluster
 
 
 def transfer_skin_weights(

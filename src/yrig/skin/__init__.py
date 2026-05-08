@@ -8,5 +8,17 @@ and debug visualization of per-vertex influences.
 
 from . import core as core
 from . import ng as ng
+from . import serialize as serialize
 from . import split as split
 from . import visualize as visualize
+from .serialize import export_skin_weights, import_skin_weights
+
+__all__ = [
+    "core",
+    "ng",
+    "split",
+    "visualize",
+    "serialize",
+    "export_skin_weights",
+    "import_skin_weights",
+]

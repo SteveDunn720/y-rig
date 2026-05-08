@@ -6,8 +6,12 @@ from maya.api.OpenMaya import (
     MDagPathArray,
     MDoubleArray,
     MFn,
+    MFnComponent,
     MFnDependencyNode,
+    MFnDoubleIndexedComponent,
     MFnMesh,
+    MFnNurbsCurve,
+    MFnNurbsSurface,
     MFnSingleIndexedComponent,
     MIntArray,
     MObject,
@@ -17,6 +21,7 @@ from maya.api.OpenMaya import (
     MSpace,
 )
 from maya.api.OpenMayaAnim import MFnSkinCluster
+from maya.OpenMayaAnim import MFnLattice
 
 from yrig.transform.utils import get_shape
 
@@ -159,6 +164,35 @@ def get_mesh_points(fn_mesh: MFnMesh, vertex_indices: list[int] | None = None) -
         for idx in vertex_indices:
             mesh_points.append(all_points[idx])
     return mesh_points
+
+
+def get_components_of_shape(shape_dag_path: MDagPath) -> MObject:
+    api_type = shape_dag_path.apiType()
+
+    if api_type == MFn.kMesh:
+        fn = MFnMesh(shape_dag_path)
+        comp_fn = MFnSingleIndexedComponent()
+        component = comp_fn.create(MFn.kMeshVertComponent)
+        comp_fn.addElements(range(fn.numVertices))
+        return component
+
+    if api_type == MFn.kNurbsCurve:
+        fn = MFnNurbsCurve(shape_dag_path)
+        comp_fn = MFnSingleIndexedComponent()
+        component = comp_fn.create(MFn.kCurveCVComponent)
+        comp_fn.addElements(range(fn.numCVs))
+        return component
+
+    if api_type == MFn.kNurbsSurface:
+        fn = MFnNurbsSurface(shape_dag_path)
+        comp_fn = MFnDoubleIndexedComponent()
+        component = comp_fn.create(MFn.kSurfaceCVComponent)
+        for u in range(fn.numCVsInU):
+            for v in range(fn.numCVsInV):
+                comp_fn.addElement(u, v)
+        return component
+    else:
+        raise TypeError(f"Unsupported shape type: {api_type}")
 
 
 def get_weights_of_influence(skin_cluster: str, joint: str) -> dict[int, float]:
@@ -326,19 +360,15 @@ def set_weights(
     for index in ordered_indices_only:
         influence_indices_array.append(index)
 
-    # Create vertex component
-    num_verts: int = MFnMesh(shape_dag).numVertices
-    fn_comp: MFnSingleIndexedComponent = MFnSingleIndexedComponent()
-    vtx_components = fn_comp.create(MFn.kMeshVertComponent)
-    fn_comp.addElements(list(range(num_verts)))
-
+    components = get_components_of_shape(shape_dag)
+    component_fn: MFnComponent = MFnComponent(components)
     # Allocate list for weights
-    weights_flat: list[float] = [0.0] * (num_verts * num_influences)
+    weights_flat: list[float] = [0.0] * (component_fn.elementCount * num_influences)
 
     # Fill weights list from new_weights dict
-    for vtx_id, vtx_weights in weights.items():
-        base_index = vtx_id * num_influences
-        for influence_name, weight in vtx_weights.items():
+    for point_id, point_weights in weights.items():
+        base_index = point_id * num_influences
+        for influence_name, weight in point_weights.items():
             influence_index = influence_indices[influence_name]
             weights_flat[base_index + influence_index] = weight
 
@@ -350,7 +380,7 @@ def set_weights(
     # Set weights
     mfn_skin_cluster.setWeights(
         shape_dag,
-        vtx_components,
+        components,
         influence_indices_array,
         weights_array,
         normalize=normalize,

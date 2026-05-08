@@ -114,9 +114,9 @@ def skin_geometry(
         shape,
         skinMethod=1 if dual_quaternion else 0,
         name=name,
-    )
+    )[0]
     if local:
-        cmds.setAttr(f"{skin_cluster}.relativeSpaceMode")
+        cmds.setAttr(f"{skin_cluster}.relativeSpaceMode", 1)  # type: ignore
     return skin_cluster
 
 

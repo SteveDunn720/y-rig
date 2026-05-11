@@ -3,8 +3,10 @@ from dataclasses import dataclass
 from maya import cmds
 
 from yrig.control import Control, create_control
+from yrig.joint import collect_joints, create_joint
 from yrig.maya_api.attribute import BooleanAttribute
-from yrig.spline.curve import bound_curve_from_transforms
+from yrig.skin.split import tag_for_weight_split
+from yrig.spline.curve import bound_curve_from_transforms, pin_to_curve_with_motion_path
 from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform
 
@@ -134,17 +136,24 @@ class BeanMouthLip:
         )
 
         if upper:
-            full_cvs = left_corner_cvs + lip_cvs + right_corner_cvs
+            full_lip_cvs = left_corner_cvs + lip_cvs + right_corner_cvs
         else:
             # Reverse order of corner controls for lower lip
-            full_cvs = left_corner_cvs[::-1] + lip_cvs + right_corner_cvs[::-1]
+            full_lip_cvs = left_corner_cvs[::-1] + lip_cvs + right_corner_cvs[::-1]
 
         degree = 3
-        knots = [(i - degree) for i in range(len(full_cvs) + degree + 1)]
+        knots = [(i - degree) for i in range(len(full_lip_cvs) + degree + 1)]
         self.curve = bound_curve_from_transforms(
-            [control.transform for control in full_cvs],
+            [control.transform for control in full_lip_cvs],
             name=f"{self.name}_spline",
             parent=parent,
             degree=degree,
             knots=knots,
         )
+        self.joint = create_joint(name=self.name, parent=joint_parent)
+        segments = 24
+        with collect_joints() as segment_joints:
+            for i in range(segments):
+                joint = create_joint(name=f"{self.curve}_seg{i}", parent=self.joint)
+                pin_to_curve_with_motion_path(self.curve, joint, parameter=(i + 0.5) / segments)
+        tag_for_weight_split(self.joint, segment_joints)

@@ -112,6 +112,7 @@ def skin_geometry(
     skin_cluster: str = cmds.skinCluster(  # type: ignore
         *bind_joints,
         shape,
+        toSelectedBones=True,
         skinMethod=1 if dual_quaternion else 0,
         name=name,
     )[0]

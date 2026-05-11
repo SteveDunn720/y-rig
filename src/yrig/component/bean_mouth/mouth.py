@@ -4,7 +4,7 @@ from maya import cmds
 
 from yrig.control import Control, ControlShape, create_control
 from yrig.spline.curve import bound_curve_from_transforms
-from yrig.spline.matrix_spline.build import JointConfig
+from yrig.spline.matrix_spline.build import JointConfig, matrix_spline_from_transforms
 from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform
 
@@ -70,18 +70,24 @@ class BeanMouth:
         )
 
         self.upper_lip = BeanMouthLip(
-            "upper",
+            upper=True,
             guides=guides.upper_lip,
+            left_corner=self.left_corner,
+            right_corner=self.right_corner,
             mouth_surface=self.mouth_surface,
             parent=parent,
+            joint_parent=joint_parent,
             control_parent=self.mouth_slide,
             control_size=control_size,
         )
         self.lower_lip = BeanMouthLip(
-            "lower",
+            upper=False,
             guides=guides.lower_lip,
+            left_corner=self.left_corner,
+            right_corner=self.right_corner,
             mouth_surface=self.mouth_surface,
             parent=parent,
+            joint_parent=joint_parent,
             control_parent=self.mouth_slide,
             control_size=control_size,
         )
@@ -101,13 +107,13 @@ class BeanMouth:
             self.left_corner.lower_sub_control,
         )
 
-        joint_config = JointConfig(parent=joint_parent, weight_split_periodic=True)
-        bound_curve_from_transforms(
-            transforms=[control.transform for control in mouth_cv_controls],
-            name="mouth_spline",
-            parent=parent,
-            periodic=True,
-        )
+        # bound_curve_from_transforms(
+        #     transforms=[control.transform for control in mouth_cv_controls],
+        #     name="mouth_spline",
+        #     parent=parent,
+        #     periodic=True,
+        # )
+        # joint_config = JointConfig(parent=joint_parent, weight_split_periodic=True)
         # self.mouth_spline = matrix_spline_from_transforms(
         #     "mouth_spline",
         #     cv_transforms=[control.transform for control in mouth_cv_controls],
@@ -120,4 +126,5 @@ class BeanMouth:
         #     periodic=True,
         #     primary_axis=(1, 0, 0),
         #     secondary_axis=(0, 0, 1),
+        #     arc_length=False,
         # )

@@ -4,14 +4,15 @@ from maya import cmds
 
 from yrig.control import Control, create_control
 from yrig.maya_api.attribute import BooleanAttribute
+from yrig.spline.curve import bound_curve_from_transforms
 from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform
+
+from .corner import BeanMouthCorner
 
 
 @dataclass
 class BeanMouthLipGuides:
-    left_corner: str
-    right_corner: str
     lip_mid_left: str
     lip_mid: str
     lip_mid_right: str
@@ -20,37 +21,45 @@ class BeanMouthLipGuides:
 class BeanMouthLip:
     def __init__(
         self,
-        side: str,
+        upper: bool,
         guides: BeanMouthLipGuides,
         mouth_surface: str,
+        left_corner: BeanMouthCorner,
+        right_corner: BeanMouthCorner,
         parent: str,
+        joint_parent: str,
         control_parent: Control | str,
         control_size: float = 1,
         sub_control_vis_attr: BooleanAttribute | None = None,
     ):
         self.guides = guides
-        self.lip_move = create_transform(f"{side}_lip_move", parent=str(control_parent))
-        self.slider = create_transform(f"{side}_lip_slide", parent=str(control_parent))
+        side_string = "upper" if upper else "lower"
+        self.name = f"{side_string}_lip"
+        self.lip_move = create_transform(f"{self.name}_move", parent=str(control_parent))
+        self.slider = create_transform(f"{self.name}_slide", parent=str(control_parent))
         surface_slide_constraint(
             mouth_surface, driver_transform=self.lip_move, slider_transform=self.slider
         )
 
+        self.left_corner = left_corner
+        self.right_corner = right_corner
+
         self.mid_left_control = create_control(
-            f"{side}_lip_mid_L",
+            f"{self.name}_mid_L",
             transform=guides.lip_mid_left,
             parent=self.slider,
             size=control_size,
             direction="z",
         )
         self.mid_control = create_control(
-            f"{side}_lip_mid_M",
+            f"{self.name}_mid_M",
             transform=guides.lip_mid,
             parent=self.slider,
             size=control_size,
             direction="z",
         )
         self.mid_right_control = create_control(
-            f"{side}_lip_mid_R",
+            f"{self.name}_mid_R",
             transform=guides.lip_mid_right,
             parent=self.slider,
             size=control_size,
@@ -61,7 +70,7 @@ class BeanMouthLip:
             cmds.setAttr(f"{control.transform}.translateZ", lock=True)
 
         self.mid_left_sub_control = create_control(
-            f"{side}_lip_mid_L_sub",
+            f"{self.name}_mid_L_sub",
             transform=guides.lip_mid_left,
             parent=self.mid_left_control,
             size=control_size * 0.5,
@@ -73,7 +82,7 @@ class BeanMouthLip:
             slider_transform=self.mid_left_sub_control.offset,
         )
         self.mid_sub_control = create_control(
-            f"{side}_lip_mid_M_sub",
+            f"{self.name}_mid_M_sub",
             transform=guides.lip_mid,
             parent=self.mid_control,
             size=control_size * 0.5,
@@ -85,7 +94,7 @@ class BeanMouthLip:
             slider_transform=self.mid_sub_control.offset,
         )
         self.mid_right_sub_control = create_control(
-            f"{side}_lip_mid_R_sub",
+            f"{self.name}_mid_R_sub",
             transform=guides.lip_mid_right,
             parent=self.mid_right_control,
             size=control_size * 0.5,
@@ -106,3 +115,36 @@ class BeanMouthLip:
         if sub_control_vis_attr is not None:
             for control in self.sub_controls:
                 sub_control_vis_attr.connect_to(f"{control.transform}.visibility")
+
+        lip_cvs: tuple[Control, ...] = (
+            self.mid_left_sub_control,
+            self.mid_sub_control,
+            self.mid_right_sub_control,
+        )
+
+        left_corner_cvs: tuple[Control, ...] = (
+            self.left_corner.lower_sub_control,
+            self.left_corner.sub_control,
+            self.left_corner.upper_sub_control,
+        )
+        right_corner_cvs: tuple[Control, ...] = (
+            self.right_corner.upper_sub_control,
+            self.right_corner.sub_control,
+            self.right_corner.lower_sub_control,
+        )
+
+        if upper:
+            full_cvs = left_corner_cvs + lip_cvs + right_corner_cvs
+        else:
+            # Reverse order of corner controls for lower lip
+            full_cvs = left_corner_cvs[::-1] + lip_cvs + right_corner_cvs[::-1]
+
+        degree = 3
+        knots = [(i - degree) for i in range(len(full_cvs) + degree + 1)]
+        self.curve = bound_curve_from_transforms(
+            [control.transform for control in full_cvs],
+            name=f"{self.name}_spline",
+            parent=parent,
+            degree=degree,
+            knots=knots,
+        )

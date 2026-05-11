@@ -104,4 +104,3 @@ def surface_slide_constraint(
         worldUpVector=secondary_axis,
         worldUpObject=driver_transform,
     )
-    pass

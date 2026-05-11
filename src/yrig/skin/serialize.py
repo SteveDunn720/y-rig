@@ -126,8 +126,11 @@ def import_skin_weights(filepath: Path, geometry: str, skin_cluster: str | None 
         str: The name of the skinCluster that the weights were applied to.
     """
     skin_weight_data = skin_weight_data_from_file(filepath)
+    shape = get_shape(geometry)
+    if shape is None:
+        raise RuntimeError(f"{geometry} has no shape and can't be skinned.")
     applied_skin_cluster = set_skin_weights(
-        geometry, skin_weight_data.skin_weights, skin_cluster=skin_cluster
+        shape, skin_weight_data.skin_weights, skin_cluster=skin_cluster
     )
     log.info(f"Skin weights applied to {applied_skin_cluster} from {filepath}")
     return applied_skin_cluster

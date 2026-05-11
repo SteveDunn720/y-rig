@@ -195,7 +195,7 @@ def get_components_of_shape(shape_dag_path: MDagPath) -> MObject:
                 comp_fn.addElement(u, v)
         return component
     else:
-        raise TypeError(f"Unsupported shape type: {api_type}")
+        raise TypeError(f"Unsupported shape type: {shape_dag_path.node().apiTypeStr}")
 
 
 def get_weights_of_influence(skin_cluster: str, joint: str) -> dict[int, float]:

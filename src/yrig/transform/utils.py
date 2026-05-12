@@ -9,8 +9,12 @@ from maya.api.OpenMaya import (
     MSelectionList,
 )
 
+from yrig.maya_api.attribute import ScalarAttribute
+from yrig.maya_api.node import DistanceBetweenNode, SubtractNode
+from yrig.name import get_short_name
 from yrig.transform.matrix import (
     get_world_matrix,
+    localize_world_matrix,
     set_local_matrix,
     set_world_matrix,
 )
@@ -225,3 +229,34 @@ def clean_parent(transform: str, parent: str, joint_orient: bool = True) -> None
     object_world_matrix: MMatrix = get_world_matrix(transform)
     cmds.parent(transform, parent, relative=True)
     set_world_matrix(transform, object_world_matrix, use_joint_orient=joint_orient)
+
+
+def distance_reader(
+    transform1: str, transform2: str, space: str | None, zero_at_rest: bool = False
+) -> ScalarAttribute:
+    """
+    Creates a distanceBetween node that outputs the live distance between two transforms.
+    If a space is provided, the distance is measured relative to that transform's local space.
+    """
+    transform1_name = get_short_name(transform1)
+    transform2_name = get_short_name(transform2)
+    distance_name = f"{transform1_name}_{transform2_name}_distance"
+    if space is not None:
+        transform1_local = localize_world_matrix(transform1, space).matrix_sum
+        transform2_local = localize_world_matrix(transform2, space).matrix_sum
+    else:
+        transform1_local = f"{transform1}.worldMatrix[0]"
+        transform2_local = f"{transform2}.worldMatrix[0]"
+    distance_node = DistanceBetweenNode(distance_name)
+    distance_node.input_matrix1.connect_from(transform1_local)
+    distance_node.input_matrix2.connect_from(transform2_local)
+
+    if zero_at_rest:
+        zero_at_rest_distance = SubtractNode(f"{distance_name}_zeroed")
+        zero_at_rest_distance.input1.connect_from(distance_node.distance)
+        zero_at_rest_distance.input2.set(distance_node.distance.get())
+        output = zero_at_rest_distance.output
+    else:
+        output = distance_node.distance
+
+    return output

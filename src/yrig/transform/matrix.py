@@ -336,23 +336,8 @@ def matrix_constraint(
     scale: bool = True,
     shear: bool = True,
 ) -> None:
-    """Constrain a transform to follow another using a pure-matrix node graph.
-
-    Builds a ``multMatrix`` → ``decomposeMatrix`` network that drives the
-    constrained transform's translate, rotate, scale, and/or shear channels
-    from the source transform's world matrix.
-
-    When *keep_offset* is ``True``, the current world-space offset between
-    the two transforms is baked into the network so the constrained
-    transform maintains its relative position and orientation.
-
-    When constraining **joints**, special handling is applied to account
-    for ``jointOrient`` and ``segmentScaleCompensate``.  If
-    *use_joint_orient* is ``True`` and the joint has a non-zero orient,
-    an additional matrix branch is created to factor it out of the
-    rotation result so that the orient value is preserved.  Otherwise the
-    ``jointOrient`` is zeroed and the full rotation is driven through
-    the ``rotate`` channels.
+    """
+    Constrain a transform to follow another in world space using a pure-matrix node graph.
 
     Args:
         source_transform: Transform to match (the driver).
@@ -385,8 +370,6 @@ def matrix_constraint(
             # Put the offset into the matrix multiplier
             mult_matrix.matrix_in[mult_index].set(offset_matrix)
             mult_index += 1
-        else:
-            keep_offset = False
 
     # Next we multiply by the world matrix of the source transform
     mult_matrix.matrix_in[mult_index].connect_from(f"{source_transform}.worldMatrix[0]")
@@ -400,6 +383,70 @@ def matrix_constraint(
         mult_index += 1
     else:
         cmds.setAttr(f"{constrain_transform}.inheritsTransform", 0)  # type: ignore
+
+    drive_transform_with_matrix(
+        mult_matrix.matrix_sum,
+        transform=constrain_transform,
+        translate=translate,
+        rotate=rotate,
+        scale=scale,
+        shear=shear,
+        use_joint_orient=use_joint_orient,
+    )
+
+
+def local_constraint(
+    source_transform: str,
+    constrain_transform: str,
+    reference_space: str,
+    keep_offset: bool = True,
+    use_joint_orient: bool = False,
+    translate: bool = True,
+    rotate: bool = True,
+    scale: bool = True,
+    shear: bool = True,
+) -> None:
+    """
+    Constrain a transform to follow another in world space, but with a static baked offset relative to a reference space.
+
+    For example to have the jaw move mouth controls which can also independently slid by their parents.
+    The reference space in this example would be the head.
+
+    Args:
+        source_transform: Transform to match (the driver).
+        constrain_transform: Transform to constrain (the driven).
+        keep_offset: keep the offset of the constrained transform to the source at time of constraint generation.
+        local_space: if False the constrained transform will have inheritsTransform turned off.
+        use_joint_orient: when true the joint orient is taken into account, otherwise it is set to zero.
+        translate: whether to constrain translation.
+        rotate: whether to constrain rotation.
+        scale: whether to constrain scale.
+        shear: whether to constrain shear.
+    """
+    constraint_name: str = get_short_name(constrain_transform)
+    # Create node to multiply matrices, as well as a counter to make sure to input into the right slot.
+    mult_matrix = node.MultMatrixNode(name=f"{constraint_name}_ConstraintMatrixMult")
+    mult_index: int = 0
+
+    if keep_offset:
+        offset_matrix = (
+            get_world_matrix(constrain_transform) * get_world_matrix(source_transform).inverse()
+        )
+        if not is_identity_matrix(matrix=offset_matrix):
+            mult_matrix.matrix_in[mult_index].set(offset_matrix)
+            mult_index += 1
+
+    mult_matrix.matrix_in[mult_index].connect_from(f"{source_transform}.worldMatrix[0]")
+    mult_index += 1
+    mult_matrix.matrix_in[mult_index].connect_from(f"{reference_space}.worldInverseMatrix[0]")
+    mult_index += 1
+
+    reference_offset_matrix = get_world_matrix(reference_space) * get_parent_inverse_matrix(
+        constrain_transform
+    )
+    if not is_identity_matrix(matrix=reference_offset_matrix):
+        mult_matrix.matrix_in[mult_index].set(reference_offset_matrix)
+        mult_index += 1
 
     drive_transform_with_matrix(
         mult_matrix.matrix_sum,

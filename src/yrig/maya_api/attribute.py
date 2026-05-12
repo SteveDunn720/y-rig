@@ -204,17 +204,17 @@ class BooleanAttribute(Attribute[bool]):
         cmds.setAttr(self.attr_path, 1 if value else 0)  # type: ignore
 
 
-class MatrixAttribute(Attribute[MatrixTuple]):
+class MatrixAttribute(Attribute[MMatrix]):
     """A Maya attribute of the matrix type."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-    def get(self) -> MatrixTuple:
+    def get(self) -> MMatrix:
         """Get the value of this attribute."""
         return_list = cmds.getAttr(self.attr_path)
-        matrix_tuple = tuple(return_list)
-        return matrix_tuple
+        matrix = MMatrix(return_list)
+        return matrix
 
     def set(self, value: MatrixTuple | Sequence[float] | MMatrix) -> None:
         """Set the value of this attribute."""

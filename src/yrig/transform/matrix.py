@@ -230,7 +230,7 @@ def matrix_multiply(
         if isinstance(matrix, (MatrixAttribute, str)):
             mult_matrix_node.matrix_in[index].connect_from(matrix)
         else:
-            if is_identity_matrix(matrix) and skip_identity_matrices:
+            if skip_identity_matrices and is_identity_matrix(matrix):
                 continue
             mult_matrix_node.matrix_in[index].set(matrix)
         index += 1

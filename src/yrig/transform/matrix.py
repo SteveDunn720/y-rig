@@ -1,5 +1,5 @@
 import logging
-from typing import Sequence, TypeAlias
+from typing import Iterable, Sequence, TypeAlias
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
@@ -215,6 +215,28 @@ def set_world_matrix(
         set_local_matrix(transform, local_matrix, use_joint_orient)
 
 
+def matrix_multiply(
+    name: str,
+    matrices: Iterable[MatrixAttribute | str | MMatrix | Sequence[float]],
+    skip_identity_matrices: bool = True,
+) -> MultMatrixNode:
+    """
+    Create a ``multMatrix`` node that multiplies the given matrices in input order.
+    Attributes and attribute paths are connected. Matrix values are assigned directly.
+    """
+    mult_matrix_node = MultMatrixNode(name)
+    index: int = 0
+    for matrix in matrices:
+        if isinstance(matrix, (MatrixAttribute, str)):
+            mult_matrix_node.matrix_in[index].connect_from(matrix)
+        else:
+            if is_identity_matrix(matrix) and skip_identity_matrices:
+                continue
+            mult_matrix_node.matrix_in[index].set(matrix)
+        index += 1
+    return mult_matrix_node
+
+
 def localize_world_matrix(transform: str, target_space_transform: str) -> MultMatrixNode:
     """Create a multMatrix node localizing transform into target_space_transform's space."""
     localize_matrix = node.MultMatrixNode(
@@ -352,38 +374,22 @@ def matrix_constraint(
     """
     constraint_name: str = get_short_name(constrain_transform)
 
-    # Create node to multiply matrices, as well as a counter to make sure to input into the right slot.
-    mult_index: int = 0
-    mult_matrix = node.MultMatrixNode(name=f"{constraint_name}_ConstraintMatrixMult")
+    matrices: list[MatrixAttribute | MMatrix] = []
 
-    # If we want to keep the offset, we put the position of the constrained transform into
-    # the source transform's space and record it.
     if keep_offset:
         # Get the offset matrix
         offset_matrix: MMatrix = (
             get_world_matrix(constrain_transform) * get_world_matrix(source_transform).inverse()
         )
+        matrices.append(offset_matrix)
 
-        # Check the matrix against an identity matrix. If it's the same within a margin of error,
-        # the transforms aren't offset, meaning we can skip that extra matrix multiplication.
-        if not is_identity_matrix(matrix=offset_matrix):
-            # Put the offset into the matrix multiplier
-            mult_matrix.matrix_in[mult_index].set(offset_matrix)
-            mult_index += 1
-
-    # Next we multiply by the world matrix of the source transform
-    mult_matrix.matrix_in[mult_index].connect_from(f"{source_transform}.worldMatrix[0]")
-    mult_index += 1
-
-    # If we have a parent transform we then put it into that space by multiplying by its worldInverseMatrix
+    matrices.append(MatrixAttribute(f"{source_transform}.worldMatrix[0]"))
     if local_space:
-        mult_matrix.matrix_in[mult_index].connect_from(
-            f"{constrain_transform}.parentInverseMatrix[0]"
-        )
-        mult_index += 1
+        matrices.append(MatrixAttribute(f"{constrain_transform}.parentInverseMatrix[0]"))
     else:
         cmds.setAttr(f"{constrain_transform}.inheritsTransform", 0)  # type: ignore
 
+    mult_matrix = matrix_multiply(f"{constraint_name}_ConstraintMatrixMult", matrices=matrices)
     drive_transform_with_matrix(
         mult_matrix.matrix_sum,
         transform=constrain_transform,
@@ -430,30 +436,24 @@ def local_constraint(
         shear: whether to constrain shear.
     """
     constraint_name: str = get_short_name(constrain_transform)
-    # Create node to multiply matrices, as well as a counter to make sure to input into the right slot.
-    mult_matrix = node.MultMatrixNode(name=f"{constraint_name}_ConstraintMatrixMult")
-    mult_index: int = 0
+
+    matrices: list[MatrixAttribute | MMatrix] = []
 
     if keep_offset:
         offset_matrix = (
             get_world_matrix(constrain_transform) * get_world_matrix(source_transform).inverse()
         )
-        if not is_identity_matrix(matrix=offset_matrix):
-            mult_matrix.matrix_in[mult_index].set(offset_matrix)
-            mult_index += 1
+        matrices.append(offset_matrix)
 
-    mult_matrix.matrix_in[mult_index].connect_from(f"{source_transform}.worldMatrix[0]")
-    mult_index += 1
-    mult_matrix.matrix_in[mult_index].connect_from(f"{reference_space}.worldInverseMatrix[0]")
-    mult_index += 1
+    matrices.append(MatrixAttribute(f"{source_transform}.worldMatrix[0]"))
+    matrices.append(MatrixAttribute(f"{reference_space}.worldInverseMatrix[0]"))
 
     reference_offset_matrix = get_world_matrix(reference_space) * get_parent_inverse_matrix(
         constrain_transform
     )
-    if not is_identity_matrix(matrix=reference_offset_matrix):
-        mult_matrix.matrix_in[mult_index].set(reference_offset_matrix)
-        mult_index += 1
+    matrices.append(reference_offset_matrix)
 
+    mult_matrix = matrix_multiply(f"{constraint_name}_ConstraintMatrixMult", matrices=matrices)
     drive_transform_with_matrix(
         mult_matrix.matrix_sum,
         transform=constrain_transform,

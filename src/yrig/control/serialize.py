@@ -17,6 +17,7 @@ from maya.api.OpenMaya import (
 
 from yrig.control.utils import get_tagged_controls
 from yrig.transform import create_transform, get_shapes
+from yrig.util import confirm_overwrite
 
 log = logging.getLogger(__name__)
 
@@ -300,39 +301,22 @@ def write_curve_to_library(
     log.info(f"The control shape for {curve} was written to the shape library at {json_path}")
 
 
-def export_control_shapes_file(filepath: Path, force: bool = False) -> None:
+def export_control_shapes_file(filepath: Path, force: bool = False) -> bool:
     controls = get_tagged_controls()
     controls_shape_dict_data: dict[str, dict] = {
         control: get_control_shape_data(control).to_dict() for control in controls
     }
-
-    if filepath.exists():
-        if force:
-            pass
-        else:
-            confirm: str = cmds.confirmDialog(
-                title="File Overwrite",
-                message=f"{filepath} already exists and will be overwritten, are you sure you want to write the file?",
-                button=["Yes", "No"],
-                defaultButton="Yes",
-                cancelButton="No",
-                dismissString="No",
-            )
-            if confirm == "Yes":
-                pass
-            else:
-                return
-
+    if not confirm_overwrite(filepath, force):
+        return False
     json_dump = json.dumps(controls_shape_dict_data, indent=2)
     with open(file=filepath, mode="w") as json_file:
         json_file.write(json_dump)
     log.info(f"Successfully exported control shapes file to {filepath}")
+    return True
 
 
 # Storing control data on the shape node is dumb, but for alwaysDrawOnTop it's the only way.
 # Also mGear hooks things like visibility to the shape for some reason, so we need to maintain these.
-
-
 @dataclass
 class NurbsCurveShapeState:
     visibility: bool | str = True

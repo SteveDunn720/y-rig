@@ -1,7 +1,14 @@
 from maya import cmds
 
 from yrig.maya_api.enum import Axis
-from yrig.maya_api.node import MultMatrixNode, UvPinNode
+from yrig.maya_api.node import (
+    ClosestPointOnSurfaceNode,
+    MultiplyPointByMatrixNode,
+    MultMatrixNode,
+    UvPinNode,
+)
+from yrig.name import get_short_name
+from yrig.transform import get_shape
 from yrig.transform.matrix import drive_transform_with_matrix
 from yrig.transform.structs import Direction
 
@@ -41,8 +48,9 @@ def uv_pin(
 
     shape_output: str = cmds.deformableShape(primary_shape, worldShapeOutAttr=True)[0]  # type: ignore
 
+    pin_name = f"{get_short_name(object_to_pin)}_uvPin"
     # Create the UVPin node and connect it.
-    uv_pin = UvPinNode(f"{object_to_pin}_uvPin")
+    uv_pin = UvPinNode(pin_name)
     uv_pin.original_geometry.connect_from(f"{original_shape}.{shape_output}")
     uv_pin.deformed_geometry.connect_from(f"{primary_shape}.{shape_output}")
 
@@ -56,12 +64,43 @@ def uv_pin(
     uv_pin.normalized_isoparms.set(normalize)
     uv_pin.coordinate[0].set(uv)
 
-    localize_matrix = MultMatrixNode(f"{object_to_pin}_uvPin_localize")
+    localize_matrix = MultMatrixNode(f"{pin_name}_localize")
     localize_matrix.matrix_in[0].connect_from(uv_pin.output_matrix[0])
     localize_matrix.matrix_in[1].connect_from(f"{object_to_pin}.parentInverseMatrix[0]")
     drive_transform_with_matrix(localize_matrix.matrix_sum, object_to_pin, scale=False, shear=False)
     return uv_pin
 
 
-def surface_slide_constraint(surface: str, transform: str) -> None:
-    pass
+def surface_slide_constraint(
+    surface: str,
+    driver_transform: str,
+    slider_transform: str,
+    normal_axis: tuple[float, float, float] = (0, 0, 1),
+    secondary_axis: tuple[float, float, float] = (0, 1, 0),
+) -> None:
+    driver_name = get_short_name(driver_transform)
+    slider_name = get_short_name(slider_transform)
+    closest_point_node = ClosestPointOnSurfaceNode(f"{driver_name}_closestPoint")
+    shape = get_shape(surface)
+    if shape is None:
+        raise ValueError(f"{surface} has no valid shape")
+    closest_point_node.input_surface.connect_from(f"{shape}.worldSpace[0]")
+
+    world_driver_pos = MultiplyPointByMatrixNode(f"{driver_name}_world_pos")
+    world_driver_pos.input_matrix.connect_from(f"{driver_transform}.worldMatrix[0]")
+    closest_point_node.in_position.connect_from(world_driver_pos.output)
+
+    local_slider_pos = MultiplyPointByMatrixNode(f"{slider_name}_local_pos")
+    local_slider_pos.input_point.connect_from(closest_point_node.result.position)
+    local_slider_pos.input_matrix.connect_from(f"{slider_transform}.parentInverseMatrix[0]")
+    local_slider_pos.output.connect_to(f"{slider_transform}.translate")
+
+    cmds.normalConstraint(
+        shape,
+        slider_transform,
+        aimVector=normal_axis,
+        upVector=secondary_axis,
+        worldUpType="objectrotation",
+        worldUpVector=secondary_axis,
+        worldUpObject=driver_transform,
+    )

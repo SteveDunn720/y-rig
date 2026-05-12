@@ -3,6 +3,7 @@ from typing import Sequence
 
 from maya import cmds
 
+from yrig.maya_api.enum import Axis
 from yrig.maya_api.node import MotionPathNode
 from yrig.spline import generate_knots
 from yrig.spline.math import create_periodic_cv_list
@@ -98,16 +99,29 @@ def bound_curve_from_transforms(
 
 
 def pin_to_curve_with_motion_path(
-    curve: str, pinned_transform: str, orient: bool = True
+    curve: str,
+    pinned_transform: str,
+    parameter: float,
+    arc_length: bool = True,
+    orient: bool = True,
+    front_axis: Axis = Axis.X,
+    up_axis: Axis = Axis.Z,
+    up_vector: tuple[float, float, float] = (0, 0, 1),
 ) -> MotionPathNode:
     curve_shape = get_shape(curve)
     if curve_shape is None:
         raise RuntimeError(f"{curve} had no curve shape")
     motion_path = MotionPathNode(f"{pinned_transform}_motion_path")
     motion_path.geometry_path.connect_from(f"{curve_shape}.local")
+    motion_path.u_value.set(parameter)
+    motion_path.fraction_mode.set(arc_length)
     motion_path.follow.set(orient)
     if orient:
+        motion_path.rotate.connect_to(f"{pinned_transform}.rotate")
         motion_path.rotate_order.connect_from(f"{pinned_transform}.rotateOrder")
+        motion_path.front_axis.set(front_axis)
+        motion_path.up_axis.set(up_axis)
+        motion_path.world_up_vector.set(up_vector)
     motion_path.all_coordinates.connect_to(f"{pinned_transform}.translate")
-    motion_path.rotate.connect_to(f"{pinned_transform}.rotate")
+
     return motion_path

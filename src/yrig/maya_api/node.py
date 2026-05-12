@@ -4,6 +4,7 @@ from yrig.maya_api.attribute import (
     AimMatrixAxisAttribute,
     AxisAttribute,
     BooleanAttribute,
+    ClosestPointOnSurfaceResultAttribute,
     GeometryAttribute,
     IndexableBlendMatrixTargetAttribute,
     IndexableMatrixAttribute,
@@ -17,6 +18,7 @@ from yrig.maya_api.attribute import (
     MotionPathWorldUpTypeAttribute,
     MultiplyDivideOperationAttribute,
     NurbsCurveAttribute,
+    NurbsSurfaceAttribute,
     QuatAttribute,
     RotateOrderAttribute,
     ScalarAttribute,
@@ -233,6 +235,18 @@ class ClampRangeNode(Node):
         self.minimum = ScalarAttribute(f"{self.name}.minimum")
         self.maximum = ScalarAttribute(f"{self.name}.maximum")
         self.output = ScalarAttribute(f"{self.name}.output")
+
+
+class ClosestPointOnSurfaceNode(Node):
+    """Maya closestPointOnSurface node with enhanced interface."""
+
+    def __init__(self, name: str = "closestPointOnSurface") -> None:
+        super().__init__("closestPointOnSurface", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_surface = NurbsSurfaceAttribute(f"{self.name}.inputSurface")
+        self.in_position = Vector3Attribute(f"{self.name}.inPosition")
+        self.result = ClosestPointOnSurfaceResultAttribute(f"{self.name}.result")
 
 
 class ComposeMatrixNode(Node):

@@ -7,8 +7,8 @@ from yrig.skin.core import (
     get_skin_cluster,
     get_skin_cluster_influences,
     get_skin_clusters,
-    get_weights,
-    set_weights,
+    get_skin_weights,
+    set_skin_weights,
 )
 from yrig.skin.split.data import WeightSplitData, get_mesh_spline_weights
 from yrig.skin.split.tag import get_weight_split_tag
@@ -51,8 +51,8 @@ def split_weights(
         raise RuntimeError(f"{mesh} has no attached shape node")
     # get the skinCluster and weights
     split_skin_cluster = skin_cluster if skin_cluster is not None else get_skin_cluster(mesh)
-    original_weights: dict[int, dict[str, float]] = get_weights(
-        shape=mesh_shape, skin_cluster=split_skin_cluster
+    original_weights: dict[int, dict[str, float]] = get_skin_weights(
+        geometry=mesh_shape, skin_cluster=split_skin_cluster
     )
 
     # Copy the original weights for modification.
@@ -108,8 +108,8 @@ def split_weights(
                     new_weights[vertex][influence] = 0.0
                 new_weights[vertex][influence] += spline_weight * original_weight
 
-    set_weights(
-        shape=mesh_shape, new_weights=new_weights, skin_cluster=split_skin_cluster, normalize=True
+    set_skin_weights(
+        shape=mesh_shape, weights=new_weights, skin_cluster=split_skin_cluster, normalize=True
     )
 
 

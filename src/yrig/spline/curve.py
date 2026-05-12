@@ -114,8 +114,8 @@ def pin_to_curve_with_motion_path(
     motion_path = MotionPathNode(f"{pinned_transform}_motion_path")
     motion_path.geometry_path.connect_from(f"{curve_shape}.local")
     motion_path.u_value.set(parameter)
-    motion_path.follow.set(orient)
     motion_path.fraction_mode.set(arc_length)
+    motion_path.follow.set(orient)
     if orient:
         motion_path.rotate.connect_to(f"{pinned_transform}.rotate")
         motion_path.rotate_order.connect_from(f"{pinned_transform}.rotateOrder")

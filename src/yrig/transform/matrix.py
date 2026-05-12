@@ -407,10 +407,16 @@ def local_constraint(
     shear: bool = True,
 ) -> None:
     """
-    Constrain a transform to follow another in world space, but with a static baked offset relative to a reference space.
+    Constrain a transform to follow another relative to a reference space.
 
-    For example to have the jaw move mouth controls which can also independently slid by their parents.
-    The reference space in this example would be the head.
+    The driven transform follows the source transform's motion *within the
+    coordinate system of the reference space*, while preserving its existing
+    placement relative to its own parent hierarchy.
+
+    This is useful when a control should inherit motion from another object
+    without being fully parented beneath it. For example, mouth controls can
+    follow jaw motion relative to the head while still allowing independent
+    local movement from their own control hierarchy.
 
     Args:
         source_transform: Transform to match (the driver).

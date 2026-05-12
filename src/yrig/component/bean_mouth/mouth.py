@@ -8,7 +8,7 @@ from yrig.spline.curve import bound_curve_from_transforms
 from yrig.spline.matrix_spline.build import JointConfig, matrix_spline_from_transforms
 from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform
-from yrig.transform.matrix import localize_world_matrix
+from yrig.transform.matrix import local_constraint, localize_world_matrix
 
 from .corner import BeanMouthCorner
 from .lip import BeanMouthLip, BeanMouthLipGuides
@@ -102,4 +102,8 @@ class BeanMouth:
             joint_parent=joint_parent,
             control_parent=self.mouth_slide,
             control_size=control_size,
+        )
+
+        local_constraint(
+            self.jaw_control.transform, self.lower_lip.lip_move, reference_space=str(control_parent)
         )

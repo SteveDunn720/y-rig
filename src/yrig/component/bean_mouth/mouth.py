@@ -4,6 +4,7 @@ from maya import cmds
 
 from yrig.control import Control, ControlShape, create_control
 from yrig.joint import create_joint
+from yrig.maya_api.enum import RotateOrder
 from yrig.spline.curve import bound_curve_from_transforms
 from yrig.spline.matrix_spline.build import JointConfig, matrix_spline_from_transforms
 from yrig.surface import surface_slide_constraint
@@ -56,6 +57,7 @@ class BeanMouth:
             size=control_size * 8,
             control_shape=ControlShape.LINE,
             direction="z",
+            rotation_order=RotateOrder.YZX,
         )
         self.jaw_joint = create_joint(name="jaw_M", transform=self.jaw_control, parent=joint_parent)
 

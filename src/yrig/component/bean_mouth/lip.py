@@ -124,36 +124,58 @@ class BeanMouthLip:
             self.mid_right_sub_control,
         )
 
-        left_corner_cvs: tuple[Control, ...] = (
+        raw_left_corner_cvs: tuple[Control, ...] = (
             self.left_corner.lower_sub_control,
             self.left_corner.sub_control,
             self.left_corner.upper_sub_control,
         )
-        right_corner_cvs: tuple[Control, ...] = (
+        raw_right_corner_cvs: tuple[Control, ...] = (
             self.right_corner.upper_sub_control,
             self.right_corner.sub_control,
             self.right_corner.lower_sub_control,
         )
 
         if upper:
-            full_lip_cvs = left_corner_cvs + lip_cvs + right_corner_cvs
+            left_corner_cvs = raw_left_corner_cvs
+            right_corner_cvs = raw_right_corner_cvs
         else:
             # Reverse order of corner controls for lower lip
-            full_lip_cvs = left_corner_cvs[::-1] + lip_cvs + right_corner_cvs[::-1]
+            left_corner_cvs = raw_left_corner_cvs[::-1]
+            right_corner_cvs = raw_right_corner_cvs[::-1]
+
+        full_lip_cvs = left_corner_cvs + lip_cvs + right_corner_cvs
+        left_lip_cvs = left_corner_cvs + lip_cvs
+        right_lip_cvs = lip_cvs + right_corner_cvs
 
         degree = 3
-        knots = [(i - degree) for i in range(len(full_lip_cvs) + degree + 1)]
-        self.curve = bound_curve_from_transforms(
-            [control.transform for control in full_lip_cvs],
-            name=f"{self.name}_spline",
+        left_knots = [(i - degree) for i in range(len(left_lip_cvs) + degree + 1)]
+        self.left_curve = bound_curve_from_transforms(
+            [control.transform for control in left_lip_cvs],
+            name=f"{self.name}_L_spline",
             parent=parent,
             degree=degree,
-            knots=knots,
+            knots=left_knots,
         )
+        right_knots = [(i - degree) for i in range(len(right_lip_cvs) + degree + 1)]
+        self.right_curve = bound_curve_from_transforms(
+            [control.transform for control in right_lip_cvs],
+            name=f"{self.name}_R_spline",
+            parent=parent,
+            degree=degree,
+            knots=right_knots,
+        )
+
         self.joint = create_joint(name=self.name, parent=joint_parent)
-        segments = 24
+        segments = 6
         with collect_joints() as segment_joints:
             for i in range(segments):
-                joint = create_joint(name=f"{self.curve}_seg{i}", parent=self.joint)
-                pin_to_curve_with_motion_path(self.curve, joint, parameter=(i + 0.5) / segments)
+                joint = create_joint(name=f"{self.left_curve}_seg{i}", parent=self.joint)
+                pin_to_curve_with_motion_path(
+                    self.left_curve, joint, parameter=(i + 0.5) / segments
+                )
+            for i in range(segments):
+                joint = create_joint(name=f"{self.right_curve}_seg{i}", parent=self.joint)
+                pin_to_curve_with_motion_path(
+                    self.right_curve, joint, parameter=(i + 0.5) / segments
+                )
         tag_for_weight_split(self.joint, segment_joints)

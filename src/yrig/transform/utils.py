@@ -7,14 +7,17 @@ from maya.api.OpenMaya import (
     MMatrix,
     MPoint,
     MSelectionList,
+    MSpace,
+    MTransformationMatrix,
 )
 
-from yrig.maya_api.attribute import ScalarAttribute
+from yrig.maya_api.attribute import MatrixAttribute, ScalarAttribute
 from yrig.maya_api.node import DistanceBetweenNode, SubtractNode
 from yrig.name import get_short_name
 from yrig.transform.matrix import (
     get_world_matrix,
     localize_world_matrix,
+    matrix_multiply,
     set_local_matrix,
     set_world_matrix,
 )
@@ -232,24 +235,71 @@ def clean_parent(transform: str, parent: str, joint_orient: bool = True) -> None
 
 
 def distance_reader(
-    transform1: str, transform2: str, space: str | None, zero_at_rest: bool = False
+    transform1: str,
+    transform2: str,
+    space: str | None,
+    zero_at_rest: bool = False,
+    axes: tuple[bool, bool, bool] = (True, True, True),
 ) -> ScalarAttribute:
     """
     Creates a distanceBetween node that outputs the live distance between two transforms.
     If a space is provided, the distance is measured relative to that transform's local space.
+
+    Args:
+    zero_at_rest: When enabled, the current distance is subtracted so the
+        reader outputs ``0`` in its initial state.
+    axes: Can be used to project the transforms onto specific axes before the
+        distance is computed, allowing 1D or planar distance measurements.
+        The tuple corresponds to XYZ axes.
     """
     transform1_name = get_short_name(transform1)
     transform2_name = get_short_name(transform2)
     distance_name = f"{transform1_name}_{transform2_name}_distance"
+
+    transform1_matrices: list[MatrixAttribute | MMatrix] = []
+    transform2_matrices: list[MatrixAttribute | MMatrix] = []
+
     if space is not None:
-        transform1_local = localize_world_matrix(transform1, space).matrix_sum
-        transform2_local = localize_world_matrix(transform2, space).matrix_sum
+        transform1_matrices.append(MatrixAttribute(f"{transform1}.worldMatrix[0]"))
+        transform1_matrices.append(MatrixAttribute(f"{space}.worldInverseMatrix[0]"))
+
+        transform2_matrices.append(MatrixAttribute(f"{transform2}.worldMatrix[0]"))
+        transform2_matrices.append(MatrixAttribute(f"{space}.worldInverseMatrix[0]"))
     else:
-        transform1_local = f"{transform1}.worldMatrix[0]"
-        transform2_local = f"{transform2}.worldMatrix[0]"
+        transform1_matrices.append(MatrixAttribute(f"{transform1}.worldMatrix[0]"))
+        transform2_matrices.append(MatrixAttribute(f"{transform2}.worldMatrix[0]"))
+
+    if not all(axes):
+        transform_matrix: MTransformationMatrix = MTransformationMatrix()
+        transform_matrix.setScale(tuple(int(axis) for axis in axes), MSpace.kTransform)
+        projection_matrix: MMatrix = transform_matrix.asMatrix()
+
+        transform1_matrices.append(projection_matrix)
+        transform2_matrices.append(projection_matrix)
+
+    if len(transform1_matrices) > 1:
+        transform1_local = matrix_multiply(
+            f"{transform1_name}_distance_matrix", transform1_matrices
+        ).matrix_sum
+    else:
+        transform1_local = transform1_matrices[0]
+
+    if len(transform2_matrices) > 1:
+        transform2_local = matrix_multiply(
+            f"{transform2_name}_distance_matrix", transform2_matrices
+        ).matrix_sum
+    else:
+        transform2_local = transform2_matrices[0]
+
     distance_node = DistanceBetweenNode(distance_name)
-    distance_node.input_matrix1.connect_from(transform1_local)
-    distance_node.input_matrix2.connect_from(transform2_local)
+    if isinstance(transform1_local, MatrixAttribute):
+        distance_node.input_matrix1.connect_from(transform1_local)
+    else:
+        distance_node.input_matrix1.set(transform1_local)
+    if isinstance(transform2_local, MatrixAttribute):
+        distance_node.input_matrix2.connect_from(transform2_local)
+    else:
+        distance_node.input_matrix2.set(transform2_local)
 
     if zero_at_rest:
         zero_at_rest_distance = SubtractNode(f"{distance_name}_zeroed")

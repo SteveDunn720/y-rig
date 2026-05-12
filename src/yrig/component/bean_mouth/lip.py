@@ -52,7 +52,11 @@ class BeanMouthLipMidpoint:
         )
         self.main_control_driven = create_transform(f"{name}_driven", parent=self.main_control_rest)
         corner_distance = distance_reader(
-            corner.sub_control.offset, distance_transform, space=parent, zero_at_rest=True
+            corner.sub_control.offset,
+            distance_transform,
+            space=parent,
+            zero_at_rest=True,
+            axes=(True, False, False),
         )
         corner_distance_scale = MultiplyNode(f"{name}_distance_scale")
         corner_distance_scale.input[0].connect_from(corner_distance)

@@ -8,7 +8,7 @@ from yrig.maya_api.enum import RotateOrder
 from yrig.spline.curve import bound_curve_from_transforms
 from yrig.spline.matrix_spline.build import JointConfig, matrix_spline_from_transforms
 from yrig.surface import surface_slide_constraint
-from yrig.transform import create_transform
+from yrig.transform import create_transform, matrix_constraint
 from yrig.transform.matrix import local_constraint, localize_world_matrix
 
 from .corner import BeanMouthCorner
@@ -42,6 +42,8 @@ class BeanMouth:
         self.mouth_surface = cmds.rename(duplicated_mouth_surface, "mouth_surface")
         cmds.hide(self.mouth_surface)
 
+        reference_space = str(control_parent)
+
         self.mouth_control = create_control(
             "mouth_M",
             transform=guides.mouth,
@@ -60,13 +62,25 @@ class BeanMouth:
             rotation_order=RotateOrder.YZX,
         )
         self.jaw_joint = create_joint(name="jaw_M", transform=self.jaw_control, parent=joint_parent)
-
+        self.jaw_blend = create_transform(
+            "jaw_M_blend", parent=parent, transform=self.jaw_control.transform
+        )
         self.mouth_slide = create_transform(f"mouth_M_slide", parent=self.mouth_control.transform)
         surface_slide_constraint(
             self.mouth_surface,
             driver_transform=self.mouth_control.transform,
             slider_transform=self.mouth_slide,
         )
+        cmds.parentConstraint(
+            self.jaw_control.transform,
+            reference_space,
+            self.jaw_blend,
+            maintainOffset=True,
+        )
+        self.jaw_blend_local = create_transform(
+            "jaw_M_blend_local", parent=self.mouth_slide, transform=self.jaw_control.transform
+        )
+        local_constraint(self.jaw_blend, self.jaw_blend_local, reference_space=reference_space)
 
         self.left_corner = BeanMouthCorner(
             side="L",
@@ -82,6 +96,9 @@ class BeanMouth:
             control_parent=self.mouth_slide,
             control_size=control_size,
         )
+
+        matrix_constraint(self.jaw_blend_local, self.left_corner.main_control.offset)
+        matrix_constraint(self.jaw_blend_local, self.right_corner.main_control.offset)
 
         self.upper_lip = BeanMouthLip(
             upper=True,
@@ -107,5 +124,5 @@ class BeanMouth:
         )
 
         local_constraint(
-            self.jaw_control.transform, self.lower_lip.lip_move, reference_space=str(control_parent)
+            self.jaw_control.transform, self.lower_lip.lip_move, reference_space=reference_space
         )

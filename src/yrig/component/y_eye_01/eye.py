@@ -29,7 +29,6 @@ class Eye:
         self.parent: str = parent
         self.control_parent: str = control_parent
         self.control_size: float = control_size
-
         self.guides: dict[str, str] = {
             "root_name": f"eye_root_{side}",
             "center_piv": f"eye_center_{self.side}",
@@ -37,6 +36,10 @@ class Eye:
             "eyelid_inner_corner": f"eyelid_innercorner_{self.side}",
             "eyelid_inner_upper": f"eyelid_innerupper_{self.side}",
             "eyelid_inner_lower": f"eyelid_innerlower_{self.side}",
+            "eyelid_corner_inner_lower": f"eyelid_corner_innerlower_{self.side}",
+            "eyelid_corner_outer_lower": f"eyelid_corner_outerlower_{self.side}",
+            "eyelid_corner_inner_upper": f"eyelid_corner_innerupper_{self.side}",
+            "eyelid_corner_outer_upper": f"eyelid_corner_outerupper_{self.side}",
             "eyelid_mid_upper": f"eyelid_upper_{self.side}",
             "eyelid_mid_lower": f"eyelid_lower_{self.side}",
             "eyelid_outer_upper": f"eyelid_outerupper_{self.side}",

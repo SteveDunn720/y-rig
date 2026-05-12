@@ -327,6 +327,7 @@ class Eyelid:
         self.sub_blink_offsets = []
         self.main_eyelid_controls: dict[str, Control] = {}
         self.blink_drivers = {}
+        self.main_eyelid_joints: dict[str, str] = {}
 
         #######
         # Set up look follow
@@ -350,7 +351,7 @@ class Eyelid:
             )
             twist_grps.append(sub_transform_grp)
 
-        for sub_blink in ["inner", "mid", "outer"]:
+        for sub_blink in ["corner_inner", "inner", "mid", "outer", "corner_outer"]:
             driven_grps_list: list[str] = []
             driver_grps_list: list[str] = []
 
@@ -452,6 +453,14 @@ class Eyelid:
                     direction="z",
                 )
 
+                self.main_eyelid_joints[f"{sub_blink}_{side}_eyelid_jnt"] = create_joint(
+                    name=f"{sub_blink}_{side}_eyelid_{self.side}",
+                    transform=self.main_eyelid_controls[
+                        f"{sub_blink}_{side}_eyelid_ctrl"
+                    ].transform,
+                    parent=self.joint_parent,
+                )
+
                 ##### Adding x translate control funtionality to the controls
 
                 x_md = MultiplyDivideNode(name=f"{sub_blink}_{side}_{self.side}_L")
@@ -509,9 +518,9 @@ class Eyelid:
                 f"{blink_ctrl.transform}.translateY",
                 f"{self.sub_blink_controls[f'mid_{side}_blink_ctrl'].SDKGRP}.translateY",  # type:ignore
             )
-
-            for i, sub in enumerate(["inner", "outer"]):
-                mod = 1 if sub == "outer" else -1
+            mod_values = [-2, -1, 1, 2]
+            for i, sub in enumerate(["corner_inner", "inner", "outer", "corner_outer"]):
+                mod: int = mod_values[i]
                 input_mult = MultiplyDivideNode(name=f"{self.side}_{side}_{sub}_input_MD")
                 addDL_node: AddDLNode = AddDLNode(name=f"{self.side}_{side}_{sub}_ADL")
                 input_mult.input1.x.connect_from(f"{blink_ctrl.transform}.rotateZ")
@@ -538,8 +547,47 @@ class Eyelid:
                     direction="z",
                 )
 
+                self.main_eyelid_joints[f"{sub}_{side}_corner_eyelid_jnt"] = create_joint(
+                    name=f"{sub}_{side}_corner_eyelid_{self.side}",
+                    transform=self.main_eyelid_controls[
+                        f"{sub}_{side}_corner_eyelid_ctrl"
+                    ].transform,
+                    parent=self.joint_parent,
+                )
+
+                matrix_constraint(
+                    self.blink_drivers[f"{sub}_{side}_blink_ctrl"],
+                    self.main_eyelid_controls[f"{sub}_{side}_corner_eyelid_ctrl"].offset,
+                    translate=False,
+                    rotate=True,
+                    keep_offset=True,
+                    scale=False,
+                    shear=False,
+                )
+
+                """matrix_constraint(
+                    self.main_eyelid_controls[f"corner_{sub}_{side}_eyelid_ctrl"].transform,
+                    self.main_eyelid_controls[f"{sub}_{side}_corner_eyelid_ctrl"].offset,
+                    translate=True,
+                    rotate=False,
+                    keep_offset=True,
+                    scale=False,
+                    shear=False,
+                )"""
+
+                cmds.pointConstraint(
+                    self.main_eyelid_controls[f"corner_{sub}_{side}_eyelid_ctrl"].transform,
+                    self.main_eyelid_controls[f"{sub}_{side}_corner_eyelid_ctrl"].offset,
+                    maintainOffset=True,
+                )
+                cmds.pointConstraint(
+                    self.main_ctrl,
+                    self.main_eyelid_controls[f"{sub}_{side}_corner_eyelid_ctrl"].offset,
+                    maintainOffset=True,
+                )
+
                 # blend_md = MultiplyDivideNode(name=f"{sub}_{side}_corner_eyelid_MD")
-                blend_ADL = AddDLNode(name=f"{sub}_{side}_corner_eyelid_ADL")
+                """blend_ADL = AddDLNode(name=f"{sub}_{side}_corner_eyelid_ADL")
                 blend_ADL.output.connect_to(
                     f"{self.main_eyelid_controls[f'{sub}_{side}_corner_eyelid_ctrl']}.rotateX"
                 )
@@ -547,20 +595,24 @@ class Eyelid:
                     f"{self.blink_drivers[f'{sub}_{side}_blink_ctrl']}.rotateX"
                 )
                 offset_value = blend_ADL.input_1.get()
-                blend_ADL.input_2.set(offset_value)
-
-        self.upper_driver_controls = [
+                blend_ADL.input_2.set(offset_value)"""
+        ## corner_inner
+        """self.upper_driver_controls = [
             self.main_eyelid_controls[f"inner_upper_corner_eyelid_ctrl"],
+            self.main_eyelid_controls[f"corner_inner_upper_eyelid_ctrl"],
             self.main_eyelid_controls[f"inner_upper_eyelid_ctrl"],
             self.main_eyelid_controls[f"mid_upper_eyelid_ctrl"],
             self.main_eyelid_controls[f"outer_upper_eyelid_ctrl"],
+            self.main_eyelid_controls[f"corner_outer_upper_eyelid_ctrl"],
             self.main_eyelid_controls[f"outer_upper_corner_eyelid_ctrl"],
         ]
         self.lower_driver_controls = [
             self.main_eyelid_controls[f"inner_lower_corner_eyelid_ctrl"],
+            self.main_eyelid_controls[f"corner_inner_lower_eyelid_ctrl"],
             self.main_eyelid_controls[f"inner_lower_eyelid_ctrl"],
             self.main_eyelid_controls[f"mid_lower_eyelid_ctrl"],
             self.main_eyelid_controls[f"outer_lower_eyelid_ctrl"],
+            self.main_eyelid_controls[f"corner_outer_lower_eyelid_ctrl"],
             self.main_eyelid_controls[f"outer_lower_corner_eyelid_ctrl"],
         ]
 
@@ -582,6 +634,35 @@ class Eyelid:
             descriptor="lower_eyelid",
             driver_list=self.lower_driver_controls,
             ignore_handles=True,
+        )"""
+
+        self.upper_driver_joint = [
+            self.main_eyelid_joints[f"inner_upper_corner_eyelid_jnt"],
+            self.main_eyelid_joints[f"corner_inner_upper_eyelid_jnt"],
+            self.main_eyelid_joints[f"inner_upper_eyelid_jnt"],
+            self.main_eyelid_joints[f"mid_upper_eyelid_jnt"],
+            self.main_eyelid_joints[f"outer_upper_eyelid_jnt"],
+            self.main_eyelid_joints[f"corner_outer_upper_eyelid_jnt"],
+            self.main_eyelid_joints[f"outer_upper_corner_eyelid_jnt"],
+        ]
+        self.lower_driver_joint = [
+            self.main_eyelid_joints[f"inner_lower_corner_eyelid_jnt"],
+            self.main_eyelid_joints[f"corner_inner_lower_eyelid_jnt"],
+            self.main_eyelid_joints[f"inner_lower_eyelid_jnt"],
+            self.main_eyelid_joints[f"mid_lower_eyelid_jnt"],
+            self.main_eyelid_joints[f"outer_lower_eyelid_jnt"],
+            self.main_eyelid_joints[f"corner_outer_lower_eyelid_jnt"],
+            self.main_eyelid_joints[f"outer_lower_corner_eyelid_jnt"],
+        ]
+
+        tag_for_weight_split(
+            influence=self.lower_driver_joint[0],  # <-- your SOURCE joint (must already exist)
+            split_influences=self.lower_driver_joint,  # <-- the ones you just created
+        )
+
+        tag_for_weight_split(
+            influence=self.upper_driver_joint[0],  # <-- your SOURCE joint (must already exist)
+            split_influences=self.upper_driver_joint,  # <-- the ones you just created
         )
 
         cmds.addAttr(
@@ -614,5 +695,5 @@ class Eyelid:
                 proxy=f"{self.main_ctrl}.sub_blink",
             )
 
-        cmds.connectAttr(f"{self.main_ctrl}.sub_eyelid", f"{self.upper_spline}.visibility")
-        cmds.connectAttr(f"{self.main_ctrl}.sub_eyelid", f"{self.lower_spline}.visibility")
+        # cmds.connectAttr(f"{self.main_ctrl}.sub_eyelid", f"{self.upper_spline}.visibility")
+        # cmds.connectAttr(f"{self.main_ctrl}.sub_eyelid", f"{self.lower_spline}.visibility")

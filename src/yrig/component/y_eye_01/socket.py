@@ -204,6 +204,7 @@ class Socket:
     def build_socket(self) -> None:
         self.major_controls = {}
         self.parent_controls = {}
+        self.main_joints = {}
         major_guides = [
             "socket_inner_upper",
             "socket_mid_upper",
@@ -241,27 +242,42 @@ class Socket:
                 control_shape="circle",
                 direction="z",
             )
+            self.main_joints[f"{guide}_jnt"] = create_joint(
+                name=f"{guide}_{self.side}",
+                transform=self.major_controls[f"{guide}_ctrl"].transform,
+                parent=self.joint_parent,
+            )
 
         self.upper_driver_controls = [
-            self.major_controls[f"socket_inner_corner_ctrl"],
-            self.major_controls[f"socket_inner_upper_ctrl"],
-            self.major_controls[f"socket_mid_upper_ctrl"],
-            self.major_controls[f"socket_outer_upper_ctrl"],
-            self.major_controls[f"socket_outer_corner_ctrl"],
+            self.main_joints[f"socket_inner_corner_jnt"],
+            self.main_joints[f"socket_inner_upper_jnt"],
+            self.main_joints[f"socket_mid_upper_jnt"],
+            self.main_joints[f"socket_outer_upper_jnt"],
+            self.main_joints[f"socket_outer_corner_jnt"],
         ]
         self.lower_driver_controls = [
-            self.major_controls[f"socket_inner_corner_ctrl"],
-            self.major_controls[f"socket_inner_lower_ctrl"],
-            self.major_controls[f"socket_mid_lower_ctrl"],
-            self.major_controls[f"socket_outer_lower_ctrl"],
-            self.major_controls[f"socket_outer_corner_ctrl"],
+            self.main_joints[f"socket_inner_corner_jnt"],
+            self.main_joints[f"socket_inner_lower_jnt"],
+            self.main_joints[f"socket_mid_lower_jnt"],
+            self.main_joints[f"socket_outer_lower_jnt"],
+            self.main_joints[f"socket_outer_corner_jnt"],
         ]
+
+        tag_for_weight_split(
+            influence=self.lower_driver_controls[2],  # <-- your SOURCE joint (must already exist)
+            split_influences=self.lower_driver_controls,  # <-- the ones you just created
+        )
+
+        tag_for_weight_split(
+            influence=self.upper_driver_controls[2],  # <-- your SOURCE joint (must already exist)
+            split_influences=self.upper_driver_controls,  # <-- the ones you just created
+        )
 
         #######
         # Matix Spline Eyelids
         #######
 
-        self.upper_spline = self.curve_to_matrix_spline(
+        """self.upper_spline = self.curve_to_matrix_spline(
             parent=self.control_grp,
             curve=self.guides["socket_upper_curve"],
             descriptor="upper_socket",
@@ -275,7 +291,7 @@ class Socket:
             descriptor="lower_socket",
             driver_list=self.lower_driver_controls,
             ignore_handles=True,
-        )
+        )"""
 
-        cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{self.upper_spline}.visibility")
-        cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{self.lower_spline}.visibility")
+        """cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{self.upper_spline}.visibility")
+        cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{self.lower_spline}.visibility")"""

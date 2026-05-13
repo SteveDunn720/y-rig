@@ -65,7 +65,7 @@ def deboor_setup(
     t: float,
     degree: int = 3,
     knots: Sequence[float] | None = None,
-    normalize: bool = True,
+    normalize: bool = False,
 ) -> tuple[list[float], int, float, bool]:
     # Algorithm and code originally from Cole O'Brien. Modified to support periodic splines.
     # https://coleobrien.medium.com/matrix-splines-in-maya-ec17f3b3741

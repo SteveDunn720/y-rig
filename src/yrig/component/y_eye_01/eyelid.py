@@ -401,7 +401,7 @@ class Eyelid:
             )
             twist_grps.append(sub_transform_grp)
 
-        sub_mult = [-40, -30, -40, -40, -40, -30, -40]
+        sub_mult = [-40, -40, -40, -40, -40, -40, -40]
 
         for x, sub_blink in enumerate(
             [

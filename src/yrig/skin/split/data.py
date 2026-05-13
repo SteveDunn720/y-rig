@@ -173,7 +173,8 @@ def get_mesh_surface_weights(
     # iterate over the points and get the closest parameter
     parameters: list[float] = []
     for i, point in enumerate(mesh_points):  # type: ignore
-        parameter: float = fn_surface.closestPoint(point, space=om2.MSpace.kObject)[2]
+        uv: tuple[float, float] = fn_surface.getParamAtPoint(point, space=om2.MSpace.kObject)
+        parameter = uv[1]
         new_parameter = remap(
             input=parameter,
             input_range=(surface_v_range),

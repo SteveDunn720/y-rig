@@ -30,7 +30,7 @@ def closest_point_on_surface(
         position: Query point.
 
     Returns:
-        Tuple of (closest point, (u, v)) in object space.
+        Tuple of (closest point, (u, v)).
     """
     shape = get_shape(surface)
     msel: MSelectionList = MSelectionList()
@@ -160,12 +160,6 @@ def uv_pin(
     return uv_pin_node
 
 
-def add_to_uv_pin(
-    uv_pin_node: UvPinNode, object_to_pin: str, uv: tuple[float, float] | None = None
-) -> None:
-    pass
-
-
 def uv_pin_multi(
     name: str,
     surface: str,
@@ -175,6 +169,28 @@ def uv_pin_multi(
     normal_axis: Axis | Direction = Axis.Z,
     tangent_axis: Axis | Direction = Axis.X,
 ) -> UvPinNode:
+    """
+    Pin multiple objects to a surface using a single shared uvPin node.
+
+    Creates one UvPinNode and iterates over ``objects_to_pin`` pinning each.
+    UV coordinates are matched positionally to objects; any object without a
+    corresponding entry in ``uv_coords`` falls back to closest-point sampling.
+
+    Args:
+        name: Base name used to build the uvPin node name (``<name>_uvPin``).
+        surface: The name of the surface (mesh or NURBS) to pin to.
+        objects_to_pin: Ordered collection of object names to pin.
+        uv_coords: Optional ordered collection of (u, v) pairs, matched
+            positionally to ``objects_to_pin``. When fewer UV pairs than
+            objects are provided the remaining objects are pinned to their
+            closest point on the surface.
+        normalize: Enable isoparm normalization (NURBS UV remapped to [0, 1]).
+        normal_axis: Normal axis of the uvPin node, can be x y z -x -y -z.
+        tangent_axis: Tangent axis of the uvPin node, can be x y z -x -y -z.
+
+    Returns:
+        The shared UvPinNode with all objects registered as pin slots.
+    """
 
     primary_shape, original_shape, shape_output = _get_surface_shapes(surface)
     pin_name = f"{name}_uvPin"
@@ -207,6 +223,21 @@ def surface_slide_constraint(
     normal_axis: tuple[float, float, float] = (0, 0, 1),
     secondary_axis: tuple[float, float, float] = (0, 1, 0),
 ) -> None:
+    """
+    Constrain a slider transform to slide along a surface, driven by another transform.
+
+    Args:
+        surface: The name of the surface (mesh or NURBS) to slide along.
+        driver_transform: The transform that drives the slide position. Its world
+            position and rotation is projected onto the surface.
+        slider_transform: The transform to be constrained. Its translation will
+            follow the closest point on the surface to the driver.
+        normal_axis: Local axis on ``slider_transform`` that should align with
+            the surface normal. Defaults to (0, 0, 1) (Z-axis).
+        secondary_axis: Local axis on ``slider_transform`` used as the up-vector
+            for the normal constraint. Defaults to (0, 1, 0) (Y-axis).
+    """
+
     driver_name = get_short_name(driver_transform)
     slider_name = get_short_name(slider_transform)
     closest_point_node = ClosestPointOnSurfaceNode(f"{driver_name}_closestPoint")

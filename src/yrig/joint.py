@@ -52,6 +52,7 @@ def create_joint(
     transform: str | Control | MMatrix | None = None,
     parent: str | None = None,
     connect: bool = True,
+    radius: float = 1,
 ) -> str:
     joint = cmds.createNode("joint", name=f"{name}{JOINT_SUFFIX}")
     if parent is not None:
@@ -71,6 +72,10 @@ def create_joint(
         match_transform(joint, source_transform, use_joint_orient=True)
         if connect:
             matrix_constraint(source_transform, joint, False, use_joint_orient=True)
+
+    if radius != 1:
+        cmds.setAttr(f"{joint}.radius", radius)  # type: ignore
+
     _register_joint(joint)
     # This is mGear specific and may need changed if you stop using mGear.
     add_to_joint_set(joint)

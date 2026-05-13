@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Sequence
 
 from maya import cmds
 
@@ -60,7 +60,7 @@ class BeanMouthLipMidpoint:
         )
         corner_distance_scale = MultiplyNode(f"{name}_distance_scale")
         corner_distance_scale.input[0].connect_from(corner_distance)
-        corner_distance_scale.input[1].set(0.5)
+        corner_distance_scale.input[1].set(0.75)
         corner_distance_scale.output.connect_to(f"{self.main_control_driven}.translateX")
 
         self.main_control_slide = create_transform(f"{name}_slide", parent=parent)
@@ -82,6 +82,87 @@ class BeanMouthLipMidpoint:
             driver_transform=self.main_control.transform,
             slider_transform=self.sub_control.offset,
         )
+
+
+def _create_lip_main_spline(
+    name: str,
+    cvs: Sequence[Control],
+    parent: str,
+    joint_parent: str,
+    surface: str,
+    segments: int = 6,
+) -> str:
+    degree = 3
+    knots = [(i - degree) for i in range(len(cvs) + degree + 1)]
+    curve = bound_curve_from_transforms(
+        [control.offset for control in cvs],
+        name=name,
+        parent=parent,
+        degree=degree,
+        knots=knots,
+    )
+
+    for i in range(segments):
+        segment_name = f"{curve}_seg{i}"
+        curve_pin = create_transform(f"{segment_name}_curve_pin", parent=parent)
+        pin_to_curve_with_motion_path(
+            curve,
+            curve_pin,
+            parameter=((i + 0.5) / segments),
+            orient=False,
+        )
+        cmds.normalConstraint(
+            surface,
+            curve_pin,
+            aimVector=(0, 0, 1),
+            upVector=(0, 1, 0),
+            worldUpType="objectrotation",
+            worldUpVector=(0, 1, 0),
+            worldUpObject=parent,
+        )
+        joint = create_joint(
+            name=segment_name, transform=curve_pin, parent=joint_parent, radius=0.5
+        )
+
+    return curve
+
+
+def _create_lip_sub_spline(
+    name: str,
+    cvs: Sequence[Control],
+    parent: str,
+    joint_parent: str,
+    surface: str,
+    segments: int = 6,
+) -> str:
+    degree = 3
+    knots = [(i - degree) for i in range(len(cvs) + degree + 1)]
+    curve = bound_curve_from_transforms(
+        [control.transform for control in cvs],
+        name=name,
+        parent=parent,
+        degree=degree,
+        knots=knots,
+    )
+
+    for i in range(segments):
+        segment_name = f"{curve}_seg{i}"
+        curve_pin = create_transform(f"{segment_name}_curve_pin", parent=parent)
+        pin_to_curve_with_motion_path(curve, curve_pin, parameter=(i + 0.5) / segments)
+        cmds.normalConstraint(
+            surface,
+            curve_pin,
+            aimVector=(0, 0, 1),
+            upVector=(0, 1, 0),
+            worldUpType="objectrotation",
+            worldUpVector=(0, 1, 0),
+            worldUpObject=parent,
+        )
+        joint = create_joint(
+            name=segment_name, transform=curve_pin, parent=joint_parent, radius=0.5
+        )
+
+    return curve
 
 
 class BeanMouthLip:
@@ -188,35 +269,38 @@ class BeanMouthLip:
         left_lip_cvs = left_corner_cvs + lip_cvs
         right_lip_cvs = lip_cvs + right_corner_cvs
 
-        degree = 3
-        left_knots = [(i - degree) for i in range(len(left_lip_cvs) + degree + 1)]
-        self.left_curve = bound_curve_from_transforms(
-            [control.transform for control in left_lip_cvs],
-            name=f"{self.name}_L_spline",
-            parent=parent,
-            degree=degree,
-            knots=left_knots,
-        )
-        right_knots = [(i - degree) for i in range(len(right_lip_cvs) + degree + 1)]
-        self.right_curve = bound_curve_from_transforms(
-            [control.transform for control in right_lip_cvs],
-            name=f"{self.name}_R_spline",
-            parent=parent,
-            degree=degree,
-            knots=right_knots,
-        )
+        self.main_joint = create_joint(name=f"{self.name}_main", parent=joint_parent)
+        with collect_joints() as main_joints:
+            self.left_main_curve = _create_lip_main_spline(
+                f"{self.name}_L_main_spline",
+                left_lip_cvs,
+                parent=parent,
+                joint_parent=self.main_joint,
+                surface=mouth_surface,
+            )
+            self.right_main_curve = _create_lip_main_spline(
+                f"{self.name}_R_main_spline",
+                right_lip_cvs,
+                parent=parent,
+                joint_parent=self.main_joint,
+                surface=mouth_surface,
+            )
+        tag_for_weight_split(self.main_joint, main_joints)
 
-        self.joint = create_joint(name=self.name, parent=joint_parent)
-        segments = 6
-        with collect_joints() as segment_joints:
-            for i in range(segments):
-                joint = create_joint(name=f"{self.left_curve}_seg{i}", parent=self.joint)
-                pin_to_curve_with_motion_path(
-                    self.left_curve, joint, parameter=(i + 0.5) / segments
-                )
-            for i in range(segments):
-                joint = create_joint(name=f"{self.right_curve}_seg{i}", parent=self.joint)
-                pin_to_curve_with_motion_path(
-                    self.right_curve, joint, parameter=(i + 0.5) / segments
-                )
-        tag_for_weight_split(self.joint, segment_joints)
+        self.sub_joint = create_joint(name=f"{self.name}_sub", parent=joint_parent)
+        with collect_joints() as sub_joints:
+            self.left_sub_curve = _create_lip_sub_spline(
+                f"{self.name}_L_sub_spline",
+                left_lip_cvs,
+                parent=parent,
+                joint_parent=self.sub_joint,
+                surface=mouth_surface,
+            )
+            self.right_sub_curve = _create_lip_sub_spline(
+                f"{self.name}_R_sub_spline",
+                right_lip_cvs,
+                parent=parent,
+                joint_parent=self.sub_joint,
+                surface=mouth_surface,
+            )
+        tag_for_weight_split(self.sub_joint, sub_joints)

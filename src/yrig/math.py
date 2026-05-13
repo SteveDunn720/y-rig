@@ -1,7 +1,7 @@
 def remap(
     input: float,
-    input_range: tuple[float, float],
-    output_range: tuple[float, float],
+    input_range: tuple[float, float] = (0, 1),
+    output_range: tuple[float, float] = (0, 1),
 ) -> float:
     """Linearly remap a value from one range to another.
 

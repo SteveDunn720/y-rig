@@ -42,7 +42,7 @@ class Eyeball:
         main_ctrl: str = "",
         parent: str = "",
         joint_parent: str = "",
-        componet_grp: str = "",
+        component_grp: str = "",
         control_grp: str = "",
     ) -> None:
         self.side = side
@@ -51,7 +51,7 @@ class Eyeball:
         self.control_size = control_size
         self.parent = parent
         self.joint_parent = joint_parent
-        self.componet_grp = componet_grp
+        self.component_grp = component_grp
         self.control_grp = control_grp
 
     # -------------------
@@ -218,7 +218,7 @@ class Eyeball:
         self.look_root = create_joint(
             transform=self.eye_ctrl.transform,
             name=f"look_root_{self.side}",
-            parent=self.componet_grp,
+            parent=self.component_grp,
             connect=False,
         )
 
@@ -236,7 +236,7 @@ class Eyeball:
             solver="ikSCsolver",
         )
 
-        cmds.parent(self.ik_handle, self.componet_grp)
+        cmds.parent(self.ik_handle, self.component_grp)
 
         matrix_constraint(self.look_ctrl.transform, self.ik_handle)
         cmds.pointConstraint(self.main_ctrl, self.look_root, maintainOffset=True)

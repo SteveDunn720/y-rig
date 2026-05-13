@@ -26,6 +26,7 @@ from yrig.maya_api.node import (
 )
 
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
+from yrig.eye_guide_curve import GuideCurve
 
 
 class Socket:
@@ -37,7 +38,7 @@ class Socket:
         main_ctrl: str = "",
         parent: str = "",
         joint_parent: str = "",
-        componet_grp: str = "",
+        component_grp: str = "",
         control_grp: str = "",
     ) -> None:
         self.side = side
@@ -46,7 +47,7 @@ class Socket:
         self.control_size = control_size
         self.parent = parent
         self.joint_parent = joint_parent
-        self.componet_grp = componet_grp
+        self.component_grp = component_grp
         self.control_grp = control_grp
 
     # -------------------
@@ -195,7 +196,7 @@ class Socket:
             name=f"{self.side}_{descriptor}",
             pinned_transforms=sub_eyelid_offsets,
             cv_transforms=driver_list,
-            parent=self.componet_grp,
+            parent=self.component_grp,
             degree=2,
         )
 
@@ -227,71 +228,47 @@ class Socket:
                 dimensions=(1, 0.2, 0.2),
             )
 
-        for i, guide in enumerate(major_guides):
-            if i in [0, 1, 2]:
-                parent = self.parent_controls["upper_ctrl"]
-            elif i in [3, 4, 5]:
-                parent = self.parent_controls["lower_ctrl"]
-            else:
-                parent = self.main_ctrl
-            self.major_controls[f"{guide}_ctrl"] = create_control(
-                name=f"{guide}_{self.side}",
-                parent=parent,
-                transform=self.guides[f"{guide}"],
-                size=self.control_size / 8,
-                control_shape="circle",
-                direction="z",
+        for x, side in enumerate(["upper", "lower"]):
+            curveguides = GuideCurve(
+                curve=self.guides[f"socket_{side}_curve"],
+                resample_amount=7,
+                output_names=[
+                    f"{side}_inner_corner",
+                    f"{side}_inner_01",
+                    f"{side}_inner_02",
+                    f"{side}_mid",
+                    f"{side}_outer_02",
+                    f"{side}_outer_01",
+                    f"{side}_outer_corner",
+                ],
+                ignore_handles=True,
+                align_normals=True,
             )
-            self.main_joints[f"{guide}_jnt"] = create_joint(
-                name=f"{guide}_{self.side}",
-                transform=self.major_controls[f"{guide}_ctrl"].transform,
-                parent=self.joint_parent,
+            jnt_list = []
+            for i, guide in enumerate(curveguides.locator_list):
+                if x == 0 and i in [1, 2, 3, 4, 5]:
+                    parent = self.parent_controls["upper_ctrl"]
+                elif x == 1 and i in [1, 2, 3, 4, 5]:
+                    parent = self.parent_controls["lower_ctrl"]
+                else:
+                    parent = self.main_ctrl
+                self.major_controls[f"{guide.name}_ctrl"] = create_control(
+                    name=f"{guide.name}_{self.side}",
+                    parent=parent,
+                    transform=guide.name,
+                    size=self.control_size / 8,
+                    control_shape="circle",
+                    direction="z",
+                )
+                self.main_joints[f"{guide.name}_jnt"] = create_joint(
+                    name=f"{guide.name}_{self.side}",
+                    transform=self.major_controls[f"{guide.name}_ctrl"].transform,
+                    parent=self.joint_parent,
+                )
+
+                jnt_list.append(self.main_joints[f"{guide.name}_jnt"])
+            tag_for_weight_split(
+                influence=jnt_list[0],  # <-- your SOURCE joint (must already exist)
+                split_influences=jnt_list,  # <-- the ones you just created
             )
-
-        self.upper_driver_controls = [
-            self.main_joints[f"socket_inner_corner_jnt"],
-            self.main_joints[f"socket_inner_upper_jnt"],
-            self.main_joints[f"socket_mid_upper_jnt"],
-            self.main_joints[f"socket_outer_upper_jnt"],
-            self.main_joints[f"socket_outer_corner_jnt"],
-        ]
-        self.lower_driver_controls = [
-            self.main_joints[f"socket_inner_corner_jnt"],
-            self.main_joints[f"socket_inner_lower_jnt"],
-            self.main_joints[f"socket_mid_lower_jnt"],
-            self.main_joints[f"socket_outer_lower_jnt"],
-            self.main_joints[f"socket_outer_corner_jnt"],
-        ]
-
-        tag_for_weight_split(
-            influence=self.lower_driver_controls[2],  # <-- your SOURCE joint (must already exist)
-            split_influences=self.lower_driver_controls,  # <-- the ones you just created
-        )
-
-        tag_for_weight_split(
-            influence=self.upper_driver_controls[2],  # <-- your SOURCE joint (must already exist)
-            split_influences=self.upper_driver_controls,  # <-- the ones you just created
-        )
-
-        #######
-        # Matix Spline Eyelids
-        #######
-
-        """self.upper_spline = self.curve_to_matrix_spline(
-            parent=self.control_grp,
-            curve=self.guides["socket_upper_curve"],
-            descriptor="upper_socket",
-            driver_list=self.upper_driver_controls,
-            ignore_handles=True,
-        )
-
-        self.lower_spline = self.curve_to_matrix_spline(
-            parent=self.control_grp,
-            curve=self.guides["socket_lower_curve"],
-            descriptor="lower_socket",
-            driver_list=self.lower_driver_controls,
-            ignore_handles=True,
-        )"""
-
-        """cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{self.upper_spline}.visibility")
-        cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{self.lower_spline}.visibility")"""
+            cmds.delete(curveguides.group)

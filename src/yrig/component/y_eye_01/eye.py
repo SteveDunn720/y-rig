@@ -103,7 +103,7 @@ class Eye:
             main_ctrl=self.main_ctrl.transform,
             parent=self.main_grp,
             joint_parent=self.main_jnt,
-            componet_grp=self.component_grp,
+            component_grp=self.component_grp,
             control_grp=self.control_grp,
         )
 
@@ -116,7 +116,7 @@ class Eye:
             main_ctrl=self.main_ctrl.transform,
             parent=self.main_grp,
             joint_parent=self.main_jnt,
-            componet_grp=self.component_grp,
+            component_grp=self.component_grp,
             control_grp=self.control_grp,
         )
 
@@ -138,7 +138,7 @@ class Eye:
             main_ctrl=self.main_ctrl.transform,
             parent=self.main_grp,
             joint_parent=self.main_jnt,
-            componet_grp=self.component_grp,
+            component_grp=self.component_grp,
             control_grp=self.control_grp,
         )
 

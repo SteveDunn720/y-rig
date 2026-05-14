@@ -25,6 +25,7 @@ from yrig.maya_api.enum import (
     ConditionOperation,
     MotionPathWorldUpType,
     MultiplyDivideOperation,
+    PlusMinusAverageOperation,
     RotateOrder,
     UnsignedAxis,
     UvPinNormalOverride,
@@ -377,6 +378,10 @@ class UvPinRelativeSpaceModeAttribute(EnumAttribute[UvPinRelativeSpaceMode]):
 
 class ConditionOperationAttribute(EnumAttribute[ConditionOperation]):
     enum_type = ConditionOperation
+
+
+class PlusMinusAverageOperationAttribute(EnumAttribute[PlusMinusAverageOperation]):
+    enum_type = PlusMinusAverageOperation
 
 
 class IndexableAttribute(Attribute, Generic[AttributeType], Iterable[AttributeType]):

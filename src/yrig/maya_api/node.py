@@ -23,6 +23,7 @@ from yrig.maya_api.attribute import (
     MultiplyDivideOperationAttribute,
     NurbsCurveAttribute,
     NurbsSurfaceAttribute,
+    PlusMinusAverageOperationAttribute,
     QuatAttribute,
     RotateOrderAttribute,
     ScalarAttribute,
@@ -629,7 +630,7 @@ class PlusMinusAverageNode(Node):
         self.output_3d = IndexableVector3Attribute(f"{self.name}.output3D")
         self.output_2d = IndexableVector2Attribute(f"{self.name}.output2D")
         self.output_1d = IndexableScalarAttribute(f"{self.name}.output1D")
-        self.operation = EnumAttribute(f"{self.name}.operation")
+        self.operation = PlusMinusAverageOperationAttribute(f"{self.name}.operation")
 
 
 class RemapValueNode(Node):

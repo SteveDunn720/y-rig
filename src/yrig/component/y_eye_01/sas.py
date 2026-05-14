@@ -94,7 +94,7 @@ class Socket:
 
         # 6. optional: freeze transforms (common for rig proxies)
 
-        return cube
+        return "cube"
 
         return ""
 

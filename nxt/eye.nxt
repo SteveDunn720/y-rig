@@ -1,0 +1,25 @@
+{
+    "version": "1.17",
+    "alias": "eye",
+    "color": "#c91781",
+    "mute": false,
+    "solo": false,
+    "meta_data": {
+        "positions": {
+            "/eye": [
+                -693.7090375074679,
+                611.6873276618954
+            ],
+            "/eye_def": [
+                -694.9069891928125,
+                671.3286967044602
+            ]
+        }
+    },
+    "nodes": {
+        "/eye": {
+            "instance": "/component"
+        },
+        "/eye_def": {}
+    }
+}

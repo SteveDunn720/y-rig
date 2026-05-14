@@ -158,10 +158,6 @@ class Eye:
                 color = "B"
             add_node.output.connect_to(f"{self.eye_look_offset_node.color1}{color}")
 
-        if self.side == "L":
-            blend_mod = 0.1
-        else:
-            blend_mod = -0.1
-        self.eye_look_offset_node.blender.set(blend_mod)
+        self.eye_look_offset_node.blender.set(0.1)
         self.eye_look_offset_node.color2.set((0, 0, 0))
         self.eye_look_offset_node.output.connect_to(f"{self.eyelid.look_offset}.rotate")

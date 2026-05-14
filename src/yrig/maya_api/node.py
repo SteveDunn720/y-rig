@@ -28,6 +28,10 @@ from yrig.maya_api.attribute import (
     UvPinRelativeSpaceModeAttribute,
     Vector3Attribute,
     Vector4Attribute,
+    IndexableVector3Attribute,
+    IndexableVector2Attribute,
+    ColorAttribute,
+    EnumAttribute,
 )
 from yrig.maya_api.utils import ensure_plugin_loaded
 
@@ -145,6 +149,29 @@ class Node:
         return self.name
 
 
+class AbsoluteNode(Node):
+    """Maya absolute node with enhanced interface."""
+
+    def __init__(self, name: str = "absolute") -> None:
+        super().__init__("absolute", name)
+
+    def _setup_attributes(self) -> None:
+        self.input = ScalarAttribute(f"{self.name}.input")
+        self.output = ScalarAttribute(f"{self.name}.output")
+
+
+class AddDLNode(Node):
+    """Maya addDL node with enhanced interface."""
+
+    def __init__(self, name: str = "addDL") -> None:
+        super().__init__("addDL", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_1 = ScalarAttribute(f"{self.name}.input1")
+        self.input_2 = ScalarAttribute(f"{self.name}.input2")
+        self.output = ScalarAttribute(f"{self.name}.output")
+
+
 class AimMatrixNode(Node):
     """Maya aimMatrix node with enhanced interface."""
 
@@ -182,6 +209,19 @@ class BlendMatrixNode(Node):
         self.pre_space_matrix = MatrixAttribute(f"{self.name}.preSpaceMatrix")
         self.target = IndexableBlendMatrixTargetAttribute(f"{self.name}.target")
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+
+class BlendColorsNode(Node):
+    """Maya blendColors node with enhanced interface."""
+
+    def __init__(self, name: str = "blendColors") -> None:
+        super().__init__("blendColors", name)
+
+    def _setup_attributes(self) -> None:
+        self.color1: ColorAttribute = ColorAttribute(f"{self.name}.color1")
+        self.color2: ColorAttribute = ColorAttribute(f"{self.name}.color2")
+        self.output: ColorAttribute = ColorAttribute(f"{self.name}.output")
+        self.blender = ScalarAttribute(f"{self.name}.blender")
 
 
 class ClampRangeNode(Node):
@@ -224,6 +264,21 @@ class ComposeMatrixNode(Node):
         self.input_shear = Vector3Attribute(f"{self.name}.inputShear")
         self.input_translate = Vector3Attribute(f"{self.name}.inputTranslate")
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+
+class ConditionNode(Node):
+    """Maya condition node with enhanced interface."""
+
+    def __init__(self, name: str = "condition") -> None:
+        super().__init__("condition", name)
+
+    def _setup_attributes(self) -> None:
+        self.first_term: ScalarAttribute = ScalarAttribute(f"{self.name}.firstTerm")
+        self.second_term: ScalarAttribute = ScalarAttribute(f"{self.name}.secondTerm")
+        self.color_if_true: ColorAttribute = ColorAttribute(f"{self.name}.colorIfTrue")
+        self.color_if_false: ColorAttribute = ColorAttribute(f"{self.name}.colorIfFalse")
+        self.operation: EnumAttribute = EnumAttribute(f"{self.name}.operation")
+        self.out_color: ColorAttribute = ColorAttribute(f"{self.name}.outColor")
 
 
 class CosNode(Node):
@@ -303,6 +358,18 @@ class DivideNode(Node):
         self.input1 = ScalarAttribute(f"{self.name}.input1")
         self.input2 = ScalarAttribute(f"{self.name}.input2")
         self.output = ScalarAttribute(f"{self.name}.output")
+
+
+class EulerToQuatNode(Node):
+    """Maya eulerToQuat node with enhanced interface."""
+
+    def __init__(self, name: str = "eulerToQuat") -> None:
+        super().__init__("eulerToQuat", name)
+
+    def _setup_attributes(self) -> None:
+        self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
+        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate = Vector3Attribute(f"{self.name}.inputRotate")
 
 
 class FourByFourMatrixNode(Node):
@@ -545,6 +612,37 @@ class PickMatrixNode(Node):
         self.use_scale = BooleanAttribute(f"{self.name}.useScale")
         self.use_shear = BooleanAttribute(f"{self.name}.useShear")
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+
+class PlusMinusAverageNode(Node):
+    """Maya plusMinusAverage node with enhanced interface."""
+
+    def __init__(self, name: str = "plusMinusAverage") -> None:
+        super().__init__("plusMinusAverage", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_3d = IndexableVector3Attribute(f"{self.name}.input3D")
+        self.input_2d = IndexableVector2Attribute(f"{self.name}.input3D")
+        self.input_1d = IndexableScalarAttribute(f"{self.name}.input1D")
+        self.output_3d = IndexableVector3Attribute(f"{self.name}.output3D")
+        self.output_2d = IndexableVector2Attribute(f"{self.name}.output2D")
+        self.output_1d = IndexableScalarAttribute(f"{self.name}.output1D")
+        self.operation = EnumAttribute(f"{self.name}.operation")
+
+
+class RemapValueNode(Node):
+    """Maya remapValue node with enhanced interface."""
+
+    def __init__(self, name: str = "remapValue") -> None:
+        super().__init__("remapValue", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_value = ScalarAttribute(f"{self.name}.inputValue")
+        self.output = ScalarAttribute(f"{self.name}.output")
+        self.input_max = ScalarAttribute(f"{self.name}.inputMax")
+        self.input_min = ScalarAttribute(f"{self.name}.inputMin")
+        self.output_max = ScalarAttribute(f"{self.name}.outputMax")
+        self.output_min = ScalarAttribute(f"{self.name}.outputMin")
 
 
 class RowFromMatrixNode(Node):

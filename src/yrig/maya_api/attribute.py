@@ -241,6 +241,26 @@ class NurbsCurveAttribute(GeometryAttribute):
         super().__init__(attr_path)
 
 
+class Vector2Attribute(Attribute[tuple[float, float]]):
+    """A Maya attribute of the type double2 (XY)"""
+
+    def __init__(self, attr_path: str):
+        super().__init__(attr_path)
+
+        self.x = ScalarAttribute(f"{attr_path}X")
+        self.y = ScalarAttribute(f"{attr_path}Y")
+
+    def get(self) -> tuple[float, float]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[float, float]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore
+
+
 class NurbsSurfaceAttribute(GeometryAttribute):
     """A Maya attribute of the nurbsSurface type."""
 
@@ -279,6 +299,27 @@ class Vector4Attribute(Attribute[tuple[float, float, float]]):
         self.y = ScalarAttribute(f"{attr_path}Y")
         self.z = ScalarAttribute(f"{attr_path}Z")
         self.w = ScalarAttribute(f"{attr_path}W")
+
+
+class ColorAttribute(Attribute[tuple[float, float, float]]):
+    """A Maya attribute of the type color (RGB)"""
+
+    def __init__(self, attr_path: str):
+        super().__init__(attr_path)
+
+        self.r = ScalarAttribute(f"{attr_path}R")
+        self.g = ScalarAttribute(f"{attr_path}G")
+        self.b = ScalarAttribute(f"{attr_path}B")
+
+    def get(self) -> tuple[float, float, float]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[float, float, float]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore
 
 
 class QuatAttribute(Attribute[tuple[float, float, float]]):
@@ -361,6 +402,18 @@ class IndexableScalarAttribute(IndexableAttribute[ScalarAttribute]):
     def __getitem__(self, index: int) -> ScalarAttribute:
         """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
         return ScalarAttribute(attr_path=f"{self.attr_path}[{index}]")
+
+
+class IndexableVector2Attribute(IndexableAttribute[Vector2Attribute]):
+    """A Maya attribute that supports indexing Vector3 attributes with bracket notation."""
+
+    def __getitem__(self, index: int) -> Vector2Attribute:
+        """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
+        return Vector2Attribute(attr_path=f"{self.attr_path}[{index}]")
+
+
+class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):
+    """A Maya attribute that supports indexing Vector3 attributes with bracket notation."""
 
 
 class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):

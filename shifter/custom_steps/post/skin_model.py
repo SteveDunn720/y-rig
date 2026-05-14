@@ -65,8 +65,8 @@ class CustomShifterStep(cstp.customShifterMainStep):
         def_joints = cmds.ls(def_in_set, type="joint")  # type: ignore
 
         def _fallback_skin(geometry: str):
-            skin_geometry(def_joints, geo)
-            log.info(f"Default skinning bound {geo} to {len(def_joints)} joint(s)")
+            skin_geometry(def_joints, geometry)
+            log.info(f"Default skinning bound {geometry} to {len(def_joints)} joint(s)")
 
         skin_and_apply_weights_from_directory(
             skin_path, geo_in_set, fallback_skinning=_fallback_skin

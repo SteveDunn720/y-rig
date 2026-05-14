@@ -151,6 +151,7 @@ class Eyeball:
         new_attr_tgt: None | str,
         offset_x_attr: str,
         offset_y_attr: str,
+        offset_z_attr: str,
         scale_x_attr: str,
         scale_y_attr: str,
     ) -> None:
@@ -168,7 +169,14 @@ class Eyeball:
         ETQ_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
         radius_adjust = MultiplyDivideNode(name=f"{circle_type}_radius_adjust_{self.side}_MD")
         radius_adjust.input1.x.connect_from(ETQ_node.output_quat.x)
-        radius_adjust.output.x.connect_to(f"{obj}.translateZ")
+
+        z_trans_adl = AddDLNode(name=f"{circle_type}_translateZ_{self.side}_ADL")
+
+        radius_adjust.output.x.connect_to(z_trans_adl.input_1)
+
+        z_trans_adl.output.connect_to(f"{obj}.translateZ")
+
+        # radius_adjust.output.x.connect_to(f"{obj}.translateZ")
         ETQ_node.output_quat.w.connect_to(f"{obj}.scaleZ")
         radius_adjust.input2.x.set(eye_radius)
 
@@ -180,6 +188,8 @@ class Eyeball:
         radius_adjust.input2.y.connect_from(scale_y_attr)
         radius_adjust.output.y.connect_to(f"{obj}.scaleY")
         radius_adjust.output.z.connect_to(f"{obj}.scaleX")
+
+        z_trans_adl.input_2.connect_from(offset_z_attr)
         cmds.connectAttr(offset_y_attr, f"{obj}.translateY")
         cmds.connectAttr(offset_x_attr, f"{obj}.translateX")
 
@@ -351,6 +361,14 @@ class Eyeball:
                 keyable=key,
             )
 
+            cmds.addAttr(
+                self.main_ctrl,
+                longName=f"{circle_type}_offsetZ",
+                attributeType="double",
+                defaultValue=0,
+                keyable=key,
+            )
+
             if circle_type == "center":
                 pass
             else:
@@ -375,6 +393,7 @@ class Eyeball:
                     scale_y_attr=f"{self.main_ctrl}.{circle_type}_scaleY",
                     offset_x_attr=f"{self.main_ctrl}.{circle_type}_offsetX",
                     offset_y_attr=f"{self.main_ctrl}.{circle_type}_offsetY",
+                    offset_z_attr=f"{self.main_ctrl}.{circle_type}_offsetZ",
                 )
 
         # joints
@@ -429,6 +448,8 @@ class Eyeball:
             blendnode2.color1.b.connect_from(source_attr=f"{self.main_ctrl}.{blend[0]}_offsetX")
             blendnode2.color2.g.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_offsetY")
             blendnode2.color2.b.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_offsetX")
+            blendnode2.color1.r.connect_from(source_attr=f"{self.main_ctrl}.{blend[0]}_offsetZ")
+            blendnode2.color2.r.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_offsetZ")
 
             self.dilation_nodes(
                 circle_type=f"{i:02d}",
@@ -441,6 +462,7 @@ class Eyeball:
                 scale_y_attr=f"{blendnode.output.g}",
                 offset_x_attr=f"{blendnode2.output.b}",
                 offset_y_attr=f"{blendnode2.output.g}",
+                offset_z_attr=f"{blendnode2.output.r}",
             )
         tag_for_weight_split(
             influence=self.dilation_joints[0],
@@ -455,10 +477,12 @@ class Eyeball:
             "pupil_dilation",
             "iris_offsetX",
             "iris_offsetY",
+            "iris_offsetZ",
             "iris_scaleX",
             "iris_scaleY",
             "pupil_offsetX",
             "pupil_offsetY",
+            "pupil_offsetZ",
             "pupil_scaleX",
             "pupil_scaleY",
         ]:

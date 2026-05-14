@@ -413,10 +413,6 @@ class IndexableVector2Attribute(IndexableAttribute[Vector2Attribute]):
 
 
 class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):
-    """A Maya attribute that supports indexing Vector3 attributes with bracket notation."""
-
-
-class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):
     """A Maya attribute that supports indexing vector3 elements with bracket notation."""
 
     def __getitem__(self, index: int) -> Vector3Attribute:

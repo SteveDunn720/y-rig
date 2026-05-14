@@ -8,13 +8,6 @@ from yrig.transform.utils import get_position
 import math
 from yrig.skin.split.tag import tag_for_weight_split
 
-from yrig.maya_api.node import (
-    PlusMinusAverageNode,
-    ConditionNode,
-    MultMatrixNode,
-    DecomposeMatrixNode,
-    MultiplyDivideNode,
-)
 
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.eye_guide_curve import GuideCurve

@@ -4,7 +4,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Self
 
-from maya import cmds
 
 from yrig.skin.core import (
     get_skin_cluster,

@@ -1,9 +1,3 @@
-from yrig import transform
-from mgear.core.blendshape import transfer_blendshapes
-import dataclasses
-from mgear.utilbits.xplorer import _maya_icon_cache
-import mailbox
-from numpy import iterable
 from yrig.control.core import Control
 from typing import Any, Literal
 
@@ -638,22 +632,22 @@ class Eyelid:
                 )
 
         self.upper_driver_joint = [
-            self.main_eyelid_controls[f"upper_inner_corner"].joint,
-            self.main_eyelid_controls[f"upper_inner_01"].joint,
-            self.main_eyelid_controls[f"upper_inner_02"].joint,
-            self.main_eyelid_controls[f"upper_mid"].joint,
-            self.main_eyelid_controls[f"upper_outer_02"].joint,
-            self.main_eyelid_controls[f"upper_outer_01"].joint,
-            self.main_eyelid_controls[f"upper_outer_corner"].joint,
+            self.main_eyelid_controls["upper_inner_corner"].joint,
+            self.main_eyelid_controls["upper_inner_01"].joint,
+            self.main_eyelid_controls["upper_inner_02"].joint,
+            self.main_eyelid_controls["upper_mid"].joint,
+            self.main_eyelid_controls["upper_outer_02"].joint,
+            self.main_eyelid_controls["upper_outer_01"].joint,
+            self.main_eyelid_controls["upper_outer_corner"].joint,
         ]
         self.lower_driver_joint = [
-            self.main_eyelid_controls[f"lower_inner_corner"].joint,
-            self.main_eyelid_controls[f"lower_inner_01"].joint,
-            self.main_eyelid_controls[f"lower_inner_02"].joint,
-            self.main_eyelid_controls[f"lower_mid"].joint,
-            self.main_eyelid_controls[f"lower_outer_02"].joint,
-            self.main_eyelid_controls[f"lower_outer_01"].joint,
-            self.main_eyelid_controls[f"lower_outer_corner"].joint,
+            self.main_eyelid_controls["lower_inner_corner"].joint,
+            self.main_eyelid_controls["lower_inner_01"].joint,
+            self.main_eyelid_controls["lower_inner_02"].joint,
+            self.main_eyelid_controls["lower_mid"].joint,
+            self.main_eyelid_controls["lower_outer_02"].joint,
+            self.main_eyelid_controls["lower_outer_01"].joint,
+            self.main_eyelid_controls["lower_outer_corner"].joint,
         ]
 
         tag_for_weight_split(

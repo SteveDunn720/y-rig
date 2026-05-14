@@ -1,5 +1,4 @@
-from itertools import chain
-from typing import Sequence, TypeVar
+from typing import Sequence
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (

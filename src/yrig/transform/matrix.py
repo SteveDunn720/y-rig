@@ -19,11 +19,8 @@ from maya.api.OpenMaya import (
 from yrig.maya_api import node
 from yrig.maya_api.attribute import MatrixAttribute, Vector3Attribute
 from yrig.maya_api.node import (
-    ComposeMatrixNode,
     DecomposeMatrixNode,
-    InverseMatrixNode,
     MultMatrixNode,
-    PickMatrixNode,
 )
 from yrig.name import get_short_name
 

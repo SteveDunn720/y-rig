@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal, Sequence
+from typing import Sequence
 
 from maya import cmds
 
@@ -7,7 +7,7 @@ from yrig.control import Control, create_control
 from yrig.joint import collect_joints, create_joint
 from yrig.maya_api.attribute import BooleanAttribute
 from yrig.maya_api.enum import RotateOrder
-from yrig.maya_api.node import MultiplyNode, SubtractNode
+from yrig.maya_api.node import MultiplyNode
 from yrig.skin.split import tag_for_weight_split
 from yrig.spline.curve import bound_curve_from_transforms, pin_to_curve_with_motion_path
 from yrig.surface import surface_slide_constraint

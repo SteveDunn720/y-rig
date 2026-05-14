@@ -5,11 +5,15 @@ from yrig.maya_api.attribute import (
     AxisAttribute,
     BooleanAttribute,
     ClosestPointOnSurfaceResultAttribute,
+    ColorAttribute,
+    ConditionOperationAttribute,
+    EnumAttribute,
     GeometryAttribute,
     IndexableBlendMatrixTargetAttribute,
     IndexableMatrixAttribute,
     IndexableScalarAttribute,
     IndexableUvAttribute,
+    IndexableVector2Attribute,
     IndexableVector3Attribute,
     IndexableWtMatrixAttribute,
     IntegerAttribute,
@@ -19,6 +23,7 @@ from yrig.maya_api.attribute import (
     MultiplyDivideOperationAttribute,
     NurbsCurveAttribute,
     NurbsSurfaceAttribute,
+    PlusMinusAverageOperationAttribute,
     QuatAttribute,
     RotateOrderAttribute,
     ScalarAttribute,
@@ -28,10 +33,6 @@ from yrig.maya_api.attribute import (
     UvPinRelativeSpaceModeAttribute,
     Vector3Attribute,
     Vector4Attribute,
-    IndexableVector3Attribute,
-    IndexableVector2Attribute,
-    ColorAttribute,
-    EnumAttribute,
 )
 from yrig.maya_api.utils import ensure_plugin_loaded
 
@@ -48,6 +49,7 @@ def is_target_2026_or_newer() -> bool:
 
 # Mapping of Node -> Actual name depending on maya version
 NODE_TYPES: dict[str, dict[str, str]] = {
+    "absolute": {"standard": "absolute", "DL": "absoluteDL"},
     "multiply": {"standard": "multiply", "DL": "multiplyDL"},
     "subtract": {"standard": "subtract", "DL": "subtractDL"},
     "sum": {"standard": "sum", "DL": "sumDL"},
@@ -277,7 +279,9 @@ class ConditionNode(Node):
         self.second_term: ScalarAttribute = ScalarAttribute(f"{self.name}.secondTerm")
         self.color_if_true: ColorAttribute = ColorAttribute(f"{self.name}.colorIfTrue")
         self.color_if_false: ColorAttribute = ColorAttribute(f"{self.name}.colorIfFalse")
-        self.operation: EnumAttribute = EnumAttribute(f"{self.name}.operation")
+        self.operation: ConditionOperationAttribute = ConditionOperationAttribute(
+            f"{self.name}.operation"
+        )
         self.out_color: ColorAttribute = ColorAttribute(f"{self.name}.outColor")
 
 
@@ -627,7 +631,7 @@ class PlusMinusAverageNode(Node):
         self.output_3d = IndexableVector3Attribute(f"{self.name}.output3D")
         self.output_2d = IndexableVector2Attribute(f"{self.name}.output2D")
         self.output_1d = IndexableScalarAttribute(f"{self.name}.output1D")
-        self.operation = EnumAttribute(f"{self.name}.operation")
+        self.operation = PlusMinusAverageOperationAttribute(f"{self.name}.operation")
 
 
 class RemapValueNode(Node):

@@ -1,36 +1,19 @@
-from logging import critical
-from os import name
-from yrig import control
-import enum
-import mailbox
-from numpy import iterable
-from yrig.control.core import Control
-from typing import Any, Literal
-
 import maya.cmds as cmds
 from yrig.control import create_control
 from yrig.joint import create_joint
 
 from yrig.transform import create_transform, match_location
-from maya.api.OpenMaya import MMatrix, MTransformationMatrix, MVector, MEulerRotation, MSpace
 from yrig.transform.utils import get_position
 import math
 from yrig.transform.matrix import matrix_constraint
 from yrig.skin.split.tag import tag_for_weight_split
 
 from yrig.maya_api.node import (
-    PlusMinusAverageNode,
-    ConditionNode,
-    MultMatrixNode,
-    DecomposeMatrixNode,
     MultiplyDivideNode,
     SumNode,
     EulerToQuatNode,
     BlendColorsNode,
 )
-
-from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
-import math
 
 
 class Eyeball:
@@ -196,13 +179,13 @@ class Eyeball:
     def build_eyeball(self) -> None:
         cmds.addAttr(
             self.main_ctrl,
-            longName=f"dilation_controls",
+            longName="dilation_controls",
             attributeType="enum",
             enumName="-------------",
             keyable=True,
         )
 
-        eye_radius: float = self.get_nurbs_surface_radius(self.guides[f"eye_diam"])
+        eye_radius: float = self.get_nurbs_surface_radius(self.guides["eye_diam"])
 
         self.eye_ctrl = create_control(
             name=f"eye_{self.side}",
@@ -258,17 +241,17 @@ class Eyeball:
             )
 
         pupil_degree: float = round(
-            self.compare_radius_and_angle(self.guides[f"eye_diam"], self.guides[f"pupil_diam"])
+            self.compare_radius_and_angle(self.guides["eye_diam"], self.guides["pupil_diam"])
         )
 
         iris_degree: float = round(
-            self.compare_radius_and_angle(self.guides[f"eye_diam"], self.guides[f"iris_diam"])
+            self.compare_radius_and_angle(self.guides["eye_diam"], self.guides["iris_diam"])
         )
 
         pupil_percent = pupil_degree / 90
         iris_percent = iris_degree / 90
 
-        eye_center_pos = get_position(self.guides[f"center_piv"])
+        eye_center_pos = get_position(self.guides["center_piv"])
 
         percents = [0, iris_percent, pupil_percent, 1]
 
@@ -406,7 +389,7 @@ class Eyeball:
             jnt = create_joint(
                 name=f"eye_dilation_{i:02d}_{self.side}",
                 parent=parent,
-                transform=self.guides[f"center_piv"],
+                transform=self.guides["center_piv"],
                 connect=False,
             )
             self.dilation_joints.append(jnt)

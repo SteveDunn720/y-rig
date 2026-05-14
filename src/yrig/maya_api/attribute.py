@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import IntEnum
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Generic,
     Iterable,
     Iterator,
@@ -13,17 +12,17 @@ from typing import (
     Sequence,
     TypeAlias,
     TypeVar,
-    overload,
 )
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import MMatrix
-from mgear.animbits.cache_manager.mayautils import long
 
 from yrig.maya_api.enum import (
     Axis,
+    ConditionOperation,
     MotionPathWorldUpType,
     MultiplyDivideOperation,
+    PlusMinusAverageOperation,
     RotateOrder,
     UnsignedAxis,
     UvPinNormalOverride,
@@ -374,6 +373,14 @@ class UvPinRelativeSpaceModeAttribute(EnumAttribute[UvPinRelativeSpaceMode]):
     enum_type = UvPinRelativeSpaceMode
 
 
+class ConditionOperationAttribute(EnumAttribute[ConditionOperation]):
+    enum_type = ConditionOperation
+
+
+class PlusMinusAverageOperationAttribute(EnumAttribute[PlusMinusAverageOperation]):
+    enum_type = PlusMinusAverageOperation
+
+
 class IndexableAttribute(Attribute, Generic[AttributeType], Iterable[AttributeType]):
     """Base class for array-style Maya attributes supporting indexed access."""
 
@@ -410,10 +417,6 @@ class IndexableVector2Attribute(IndexableAttribute[Vector2Attribute]):
     def __getitem__(self, index: int) -> Vector2Attribute:
         """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
         return Vector2Attribute(attr_path=f"{self.attr_path}[{index}]")
-
-
-class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):
-    """A Maya attribute that supports indexing Vector3 attributes with bracket notation."""
 
 
 class IndexableVector3Attribute(IndexableAttribute[Vector3Attribute]):

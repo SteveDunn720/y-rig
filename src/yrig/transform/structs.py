@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Literal
 
 Axis = Literal["x", "y", "z"]

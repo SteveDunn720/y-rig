@@ -9,7 +9,7 @@ from maya import cmds
 from yrig.skin.split import auto_split_weights
 
 if TYPE_CHECKING:
-    from mgear.shifter import Rig
+    pass
 
 log = logging.getLogger(__name__)
 

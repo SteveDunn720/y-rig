@@ -1,6 +1,6 @@
 from bisect import bisect_left
 from itertools import chain
-from typing import Iterable, Iterator, Sequence, TypeVar
+from typing import Iterable, Sequence, TypeVar
 
 import numpy as np
 

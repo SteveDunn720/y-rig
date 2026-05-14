@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence
+from typing import Iterable
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
@@ -21,7 +21,6 @@ from maya.api.OpenMaya import (
     MSpace,
 )
 from maya.api.OpenMayaAnim import MFnSkinCluster
-from maya.OpenMayaAnim import MFnLattice
 
 from yrig.transform.utils import get_shape
 

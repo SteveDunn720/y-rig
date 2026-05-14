@@ -1,8 +1,6 @@
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
-    MAngle,
     MDagPath,
-    MEulerRotation,
     MFnDagNode,
     MMatrix,
     MPoint,
@@ -16,7 +14,6 @@ from yrig.maya_api.node import DistanceBetweenNode, SubtractNode
 from yrig.name import get_short_name
 from yrig.transform.matrix import (
     get_world_matrix,
-    localize_world_matrix,
     matrix_multiply,
     set_local_matrix,
     set_world_matrix,

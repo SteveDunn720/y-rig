@@ -202,7 +202,7 @@ def uv_pin_multi(
         objects_to_pin, uv_coords if uv_coords else (), fillvalue=None
     ):
         if object_to_pin is None:
-            raise ValueError(f"More uv_coordinates than objects_to_pin. Unable to pin.")
+            raise ValueError("More uv_coordinates than objects_to_pin. Unable to pin.")
         uv_pin(
             surface,
             object_to_pin,

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from enum import IntEnum
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Generic,
     Iterable,
     Iterator,
@@ -13,12 +12,10 @@ from typing import (
     Sequence,
     TypeAlias,
     TypeVar,
-    overload,
 )
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import MMatrix
-from mgear.animbits.cache_manager.mayautils import long
 
 from yrig.maya_api.enum import (
     Axis,

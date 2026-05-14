@@ -5,11 +5,9 @@ from maya import cmds
 from yrig.control import Control, ControlShape, create_control
 from yrig.joint import create_joint
 from yrig.maya_api.enum import RotateOrder
-from yrig.spline.curve import bound_curve_from_transforms
-from yrig.spline.matrix_spline.build import JointConfig, matrix_spline_from_transforms
 from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform, matrix_constraint
-from yrig.transform.matrix import local_constraint, localize_world_matrix
+from yrig.transform.matrix import local_constraint
 
 from .corner import BeanMouthCorner
 from .lip import BeanMouthLip, BeanMouthLipGuides
@@ -65,7 +63,7 @@ class BeanMouth:
         self.jaw_blend = create_transform(
             "jaw_M_blend", parent=parent, transform=self.jaw_control.transform
         )
-        self.mouth_slide = create_transform(f"mouth_M_slide", parent=self.mouth_control.transform)
+        self.mouth_slide = create_transform("mouth_M_slide", parent=self.mouth_control.transform)
         surface_slide_constraint(
             self.mouth_surface,
             driver_transform=self.mouth_control.transform,

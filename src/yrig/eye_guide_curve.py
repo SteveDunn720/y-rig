@@ -1,5 +1,4 @@
 from __future__ import annotations
-from gettext import translation
 
 from dataclasses import dataclass
 from typing import Optional

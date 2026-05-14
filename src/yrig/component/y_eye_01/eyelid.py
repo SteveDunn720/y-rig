@@ -25,7 +25,7 @@ from yrig.maya_api.node import (
     MultMatrixNode,
     DecomposeMatrixNode,
     MultiplyDivideNode,
-    AddDLNode,
+    SumNode,
 )
 
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
@@ -627,11 +627,11 @@ class Eyelid:
             ):
                 mod: float = mod_values[i]
                 input_mult = MultiplyDivideNode(name=f"{self.side}_{side}_{sub}_input_MD")
-                addDL_node: AddDLNode = AddDLNode(name=f"{self.side}_{side}_{sub}_ADL")
+                addDL_node: SumNode = SumNode(name=f"{self.side}_{side}_{sub}_ADL")
                 input_mult.input1.x.connect_from(f"{blink_ctrl.transform}.rotateZ")
                 cmds.setAttr(f"{input_mult.input2.x}", 0.03 * mod)  # type:ignore
-                cmds.connectAttr(f"{blink_ctrl.transform}.translateY", f"{addDL_node.input_1}")
-                cmds.connectAttr(f"{input_mult.output.x}", f"{addDL_node.input_2}")
+                cmds.connectAttr(f"{blink_ctrl.transform}.translateY", f"{addDL_node.input[0]}")
+                cmds.connectAttr(f"{input_mult.output.x}", f"{addDL_node.input[1]}")
                 cmds.connectAttr(
                     f"{addDL_node.output}",
                     f"{self.main_eyelid_controls[f'{side}_{sub}'].blink_offset}.translateY",

@@ -11,7 +11,7 @@ from yrig.transform.matrix import matrix_constraint
 import maya.cmds as cmds
 from yrig.maya_api.node import (
     BlendColorsNode,
-    AddDLNode,
+    SumNode,
 )
 
 
@@ -147,9 +147,9 @@ class Eye:
         self.eye_look_offset_node = BlendColorsNode(name=f"look_blend_{self.side}_BC")
         # self.eye_look_offset_node.color1.connect_from(f"{self.eyeball.look_root}.rotate")
         for axes in ["X", "Y", "Z"]:
-            add_node = AddDLNode(name=f"look_{axes}_{self.side}_ADL")
-            add_node.input_1.connect_from(f"{self.eyeball.look_root}.rotate{axes}")
-            add_node.input_2.connect_from(f"{self.eyeball.eye_ctrl}.rotate{axes}")
+            add_node = SumNode(name=f"look_{axes}_{self.side}_ADL")
+            add_node.input[0].connect_from(f"{self.eyeball.look_root}.rotate{axes}")
+            add_node.input[1].connect_from(f"{self.eyeball.eye_ctrl}.rotate{axes}")
             if axes == "X":
                 color = "R"
             elif axes == "Y":
@@ -158,6 +158,10 @@ class Eye:
                 color = "B"
             add_node.output.connect_to(f"{self.eye_look_offset_node.color1}{color}")
 
-        self.eye_look_offset_node.blender.set(0.1)
+        if self.side == "L":
+            blend_mod = 0.1
+        else:
+            blend_mod = -0.1
+        self.eye_look_offset_node.blender.set(blend_mod)
         self.eye_look_offset_node.color2.set((0, 0, 0))
         self.eye_look_offset_node.output.connect_to(f"{self.eyelid.look_offset}.rotate")

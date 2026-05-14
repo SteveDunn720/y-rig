@@ -22,7 +22,6 @@ from yrig.maya_api.node import (
     MultMatrixNode,
     DecomposeMatrixNode,
     MultiplyDivideNode,
-    AddDLNode,
 )
 
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms

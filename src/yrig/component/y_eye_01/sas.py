@@ -1,9 +1,6 @@
-
 import maya.cmds as cmds
 
 from yrig.transform.utils import match_location
-
-
 
 
 class Socket:

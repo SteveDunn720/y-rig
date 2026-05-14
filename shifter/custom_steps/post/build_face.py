@@ -11,7 +11,6 @@ from yrig.build.context import get_build_scope
 from yrig.build.nxt_api import execute_nxt_graph
 
 if TYPE_CHECKING:
-
     from ..pre.paths import CustomShifterStep as PathsStep
 
 log = logging.getLogger(__name__)

@@ -1,5 +1,3 @@
-
-
 from yrig.control import create_control
 from yrig.joint import create_joint
 from yrig.transform import create_transform

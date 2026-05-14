@@ -1,4 +1,3 @@
-
 import maya.cmds as cmds
 from yrig.control import create_control
 from yrig.joint import create_joint
@@ -15,7 +14,6 @@ from yrig.maya_api.node import (
     EulerToQuatNode,
     BlendColorsNode,
 )
-
 
 
 class Eyeball:

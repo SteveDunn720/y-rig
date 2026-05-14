@@ -22,6 +22,7 @@ from mgear.animbits.cache_manager.mayautils import long
 
 from yrig.maya_api.enum import (
     Axis,
+    ConditionOperation,
     MotionPathWorldUpType,
     MultiplyDivideOperation,
     RotateOrder,
@@ -372,6 +373,10 @@ class UvPinNormalOverrideAttribute(EnumAttribute[UvPinNormalOverride]):
 
 class UvPinRelativeSpaceModeAttribute(EnumAttribute[UvPinRelativeSpaceMode]):
     enum_type = UvPinRelativeSpaceMode
+
+
+class ConditionOperationAttribute(EnumAttribute[ConditionOperation]):
+    enum_type = ConditionOperation
 
 
 class IndexableAttribute(Attribute, Generic[AttributeType], Iterable[AttributeType]):

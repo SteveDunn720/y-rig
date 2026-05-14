@@ -5,11 +5,15 @@ from yrig.maya_api.attribute import (
     AxisAttribute,
     BooleanAttribute,
     ClosestPointOnSurfaceResultAttribute,
+    ColorAttribute,
+    ConditionOperationAttribute,
+    EnumAttribute,
     GeometryAttribute,
     IndexableBlendMatrixTargetAttribute,
     IndexableMatrixAttribute,
     IndexableScalarAttribute,
     IndexableUvAttribute,
+    IndexableVector2Attribute,
     IndexableVector3Attribute,
     IndexableWtMatrixAttribute,
     IntegerAttribute,
@@ -28,10 +32,6 @@ from yrig.maya_api.attribute import (
     UvPinRelativeSpaceModeAttribute,
     Vector3Attribute,
     Vector4Attribute,
-    IndexableVector3Attribute,
-    IndexableVector2Attribute,
-    ColorAttribute,
-    EnumAttribute,
 )
 from yrig.maya_api.utils import ensure_plugin_loaded
 
@@ -277,7 +277,9 @@ class ConditionNode(Node):
         self.second_term: ScalarAttribute = ScalarAttribute(f"{self.name}.secondTerm")
         self.color_if_true: ColorAttribute = ColorAttribute(f"{self.name}.colorIfTrue")
         self.color_if_false: ColorAttribute = ColorAttribute(f"{self.name}.colorIfFalse")
-        self.operation: EnumAttribute = EnumAttribute(f"{self.name}.operation")
+        self.operation: ConditionOperationAttribute = ConditionOperationAttribute(
+            f"{self.name}.operation"
+        )
         self.out_color: ColorAttribute = ColorAttribute(f"{self.name}.outColor")
 
 

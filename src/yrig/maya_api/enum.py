@@ -70,3 +70,12 @@ class UvPinRelativeSpaceMode(IntEnum):
     WORLD = 0
     LOCAL = 1
     CUSTOM = 2
+
+
+class ConditionOperation(IntEnum):
+    EQUAL = 0
+    NOT_EQUAL = 1
+    GREATER_THAN = 2
+    GREATER_OR_EQUAL = 3
+    LESS_THAN = 4
+    LESS_OR_EQUAL = 5

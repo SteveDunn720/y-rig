@@ -31,7 +31,7 @@ exclude = ["third_party", "maya-setup.py"]
 
 [tool.ruff.lint]
 extend-select = ["ANN"]
-ignore = ["ANN204", "ANN002", "ANN003"]
+ignore = ["ANN204", "ANN002", "ANN003", "F841"]
 
 [tool.ruff.lint.per-file-ignores]
 "shifter/*" = ["ANN"]

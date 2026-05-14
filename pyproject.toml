@@ -30,7 +30,7 @@ line-length = 100
 exclude = ["third_party", "maya-setup.py"]
 
 [tool.ruff.lint]
-select = ["ANN"]
+extend-select = ["ANN"]
 ignore = ["ANN204", "ANN002", "ANN003"]
 
 [tool.ruff.lint.per-file-ignores]

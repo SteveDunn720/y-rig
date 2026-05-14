@@ -7,11 +7,8 @@ from typing import TYPE_CHECKING
 import mgear.shifter.custom_step as cstp
 from maya import cmds
 
-from yrig.build.progress import progress_step, progress_update
-from yrig.name import get_short_name
+from yrig.skin import skin_and_apply_weights_from_directory
 from yrig.skin.core import remove_unused_influences, skin_geometry
-from yrig.skin.ng import apply_ng_skin_weights, get_influences_from_ng_skin_weights
-from yrig.skin.serialize import apply_skin_weight_data, skin_weight_data_from_file
 
 if TYPE_CHECKING:
     from mgear.shifter import Rig
@@ -66,53 +63,17 @@ class CustomShifterStep(cstp.customShifterMainStep):
         geo_in_set: list[str] = cmds.sets("rig_geo_grp", query=True)  # type: ignore
         def_in_set = cmds.sets("rig_deformers_grp", query=True)
         def_joints = cmds.ls(def_in_set, type="joint")  # type: ignore
-        with progress_step("Skin Model"):
-            total = len(geo_in_set)
-            for i, geo in enumerate(geo_in_set):
-                ng_skin_filepath: Path = skin_path / f"{geo}.json"
-                yskin_filepath: Path = skin_path / f"{geo}.yskin"
-                if ng_skin_filepath.exists():
-                    influence_paths = get_influences_from_ng_skin_weights(ng_skin_filepath)
-                    influence_names = [get_short_name(path) for path in influence_paths]
-                    # Filter to joints that actually exist in scene
-                    valid_influences = [j for j in influence_names if cmds.objExists(j)]
-                    missing_influences = set(influence_names) - set(valid_influences)
-                    if missing_influences:
-                        log.warning(
-                            f"[{geo}] Missing {len(missing_influences)} influence(s) that were defined in its skin file : {sorted(missing_influences)}"
-                        )
 
-                    # Only bind to joints specified in the skin file for final build
-                    bind_joints = valid_influences
-                    if not bind_joints:
-                        continue
-                    skin_geometry(bind_joints, geo)
-                    log.info(f"Skinned {geo} to {len(bind_joints)} joint(s)")
+        def _fallback_skin(geometry: str):
+            skin_geometry(def_joints, geo)
+            log.info(f"Default skinning bound {geo} to {len(def_joints)} joint(s)")
 
-                    apply_ng_skin_weights(ng_skin_filepath, geo)
-                    log.info(f"Loaded ng skin file for {geo}")
-                elif yskin_filepath.exists():
-                    skin_weight_data = skin_weight_data_from_file(yskin_filepath)
-                    influence_names = skin_weight_data.influences
-                    valid_influences = [j for j in influence_names if cmds.objExists(j)]
-                    missing_influences = set(influence_names) - set(valid_influences)
-                    if missing_influences:
-                        log.warning(
-                            f"[{geo}] Missing {len(missing_influences)} influence(s) that were defined in its skin file : {sorted(missing_influences)}"
-                        )
-                    skin_geometry(valid_influences, geo)
-                    apply_skin_weight_data(skin_weight_data, geo)
-                    log.info(f"Loaded yskin file for {geo}")
-                else:
-                    if not def_joints:
-                        continue
-                    skin_geometry(def_joints, geo)
-                    log.info(f"Default skinning bound {geo} to {len(def_joints)} joint(s)")
-
-                # If this is a non dev build we also remove influences with 0 weights for performance
-                if not dev_build:
-                    removed = remove_unused_influences(geo)
-                    if removed:
-                        log.info(f"Removed {len(removed)} unused influences on {geo}")
-
-                progress_update(i / total)
+        skin_and_apply_weights_from_directory(
+            skin_path, geo_in_set, fallback_skinning=_fallback_skin
+        )
+        for geo in geo_in_set:
+            # If this is a non dev build we also remove influences with 0 weights for performance
+            if not dev_build:
+                removed = remove_unused_influences(geo)
+                if removed:
+                    log.info(f"Removed {len(removed)} unused influences on {geo}")

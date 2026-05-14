@@ -49,6 +49,7 @@ def is_target_2026_or_newer() -> bool:
 
 # Mapping of Node -> Actual name depending on maya version
 NODE_TYPES: dict[str, dict[str, str]] = {
+    "absolute": {"standard": "absolute", "DL": "absoluteDL"},
     "multiply": {"standard": "multiply", "DL": "multiplyDL"},
     "subtract": {"standard": "subtract", "DL": "subtractDL"},
     "sum": {"standard": "sum", "DL": "sumDL"},

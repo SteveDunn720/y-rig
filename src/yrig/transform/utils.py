@@ -14,7 +14,7 @@ from yrig.maya_api.node import DistanceBetweenNode, SubtractNode
 from yrig.name import get_short_name
 from yrig.transform.matrix import (
     get_world_matrix,
-    matrix_multiply,
+    multiply_matrices,
     set_local_matrix,
     set_world_matrix,
 )
@@ -275,14 +275,14 @@ def distance_reader(
         transform2_matrices.append(projection_matrix)
 
     if len(transform1_matrices) > 1:
-        transform1_local = matrix_multiply(
+        transform1_local = multiply_matrices(
             f"{transform1_name}_distance_matrix", transform1_matrices
         ).matrix_sum
     else:
         transform1_local = transform1_matrices[0]
 
     if len(transform2_matrices) > 1:
-        transform2_local = matrix_multiply(
+        transform2_local = multiply_matrices(
             f"{transform2_name}_distance_matrix", transform2_matrices
         ).matrix_sum
     else:

@@ -106,3 +106,5 @@ class Look:
             parent_list=self.parent_list,
             target_control=self.main_ctrl.transform,
         )
+
+        cmds.delete(mid_guide)

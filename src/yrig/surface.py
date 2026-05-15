@@ -2,19 +2,19 @@ from itertools import zip_longest
 from typing import Iterable
 
 from maya import cmds
-from maya.api.OpenMaya import MDagPath, MFnNurbsSurface, MPoint, MSelectionList, MSpace
+from maya.api.OpenMaya import MDagPath, MFnNurbsSurface, MMatrix, MPoint, MSelectionList, MSpace
 
 from yrig.math import remap
+from yrig.maya_api.attribute import MatrixAttribute
 from yrig.maya_api.enum import Axis
 from yrig.maya_api.node import (
     ClosestPointOnSurfaceNode,
     MultiplyPointByMatrixNode,
-    MultMatrixNode,
     UvPinNode,
 )
 from yrig.name import get_short_name
 from yrig.transform import get_shape
-from yrig.transform.matrix import drive_transform_with_matrix
+from yrig.transform.matrix import drive_transform_with_matrix, get_world_matrix, multiply_matrices
 from yrig.transform.structs import Direction
 from yrig.transform.utils import get_position
 
@@ -108,6 +108,7 @@ def uv_pin(
     normal_axis: Axis | Direction = Axis.Z,
     tangent_axis: Axis | Direction = Axis.X,
     uv_pin_node: UvPinNode | None = None,
+    keep_offset: bool = False,
 ) -> UvPinNode:
     """
     Create a uvPin node that pins an object to a given surface at specified UV coordinates.
@@ -121,6 +122,8 @@ def uv_pin(
         normal_axis: Normal axis of the generated uvPin, can be x y z -x -y -z.
         tangent_axis: Tangent axis of the generated uvPin, can be x y z -x -y -z.
         uv_pin_node: When specified the object will be pinned as an additional slot in the given uvPin node.
+        keep_offset: When True, the pinned object will be offset to be in
+            the same world space placement as before being pinned.
     Returns:
         The created UVPin node.
     """
@@ -153,9 +156,16 @@ def uv_pin(
     resolved_uv = _resolve_uv_for_pin(primary_shape, object_to_pin, uv, normalize)
     uv_pin_node.coordinate[index].set(resolved_uv)
 
-    localize_matrix = MultMatrixNode(f"{pin_name}_localize")
-    localize_matrix.matrix_in[0].connect_from(uv_pin_node.output_matrix[index])
-    localize_matrix.matrix_in[1].connect_from(f"{object_to_pin}.parentInverseMatrix[0]")
+    matrices: list[MatrixAttribute | MMatrix] = []
+    if keep_offset:
+        offset_matrix: MMatrix = (
+            get_world_matrix(object_to_pin) * uv_pin_node.output_matrix[index].get().inverse()
+        )
+        matrices.append(offset_matrix)
+    matrices.append(uv_pin_node.output_matrix[index])
+    matrices.append(MatrixAttribute(f"{object_to_pin}.parentInverseMatrix[0]"))
+    localize_matrix = multiply_matrices(f"{pin_name}_localize", matrices)
+
     drive_transform_with_matrix(localize_matrix.matrix_sum, object_to_pin, scale=False, shear=False)
     return uv_pin_node
 
@@ -168,6 +178,7 @@ def uv_pin_multi(
     normalize: bool = False,
     normal_axis: Axis | Direction = Axis.Z,
     tangent_axis: Axis | Direction = Axis.X,
+    keep_offset: bool = False,
 ) -> UvPinNode:
     """
     Pin multiple objects to a surface using a single shared uvPin node.
@@ -187,6 +198,8 @@ def uv_pin_multi(
         normalize: Enable isoparm normalization (NURBS UV remapped to [0, 1]).
         normal_axis: Normal axis of the uvPin node, can be x y z -x -y -z.
         tangent_axis: Tangent axis of the uvPin node, can be x y z -x -y -z.
+        keep_offset: When True, the pinned objects will be offset to be in
+            the same world space placements as before being pinned.
 
     Returns:
         The shared UvPinNode with all objects registered as pin slots.
@@ -211,6 +224,7 @@ def uv_pin_multi(
             normal_axis=normal_axis,
             tangent_axis=tangent_axis,
             uv_pin_node=uv_pin_node,
+            keep_offset=keep_offset,
         )
 
     return uv_pin_node

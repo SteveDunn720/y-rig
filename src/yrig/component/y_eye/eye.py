@@ -1,9 +1,9 @@
 from yrig.control import create_control
 from yrig.joint import create_joint
 from yrig.transform import create_transform
-from yrig.component.y_eye_01.eyelid import Eyelid
-from yrig.component.y_eye_01.socket import Socket
-from yrig.component.y_eye_01.eyeball import Eyeball
+from yrig.component.y_eye.eyelid import Eyelid
+from yrig.component.y_eye.socket import Socket
+from yrig.component.y_eye.eyeball import Eyeball
 import maya.cmds as cmds
 from yrig.maya_api.node import (
     BlendColorsNode,

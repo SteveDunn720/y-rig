@@ -16,8 +16,8 @@ if [[ ${#STAGED_PY_FILES[@]} -eq 0 ]]; then
 fi
 
 echo "Static type checking (ty)..."
-ty check "${STAGED_PY_FILES[@]}"
+ty check --force-exclude "${STAGED_PY_FILES[@]}"
 echo "Linting (ruff)..."
-ruff check "${STAGED_PY_FILES[@]}"
+ruff check --force-exclude "${STAGED_PY_FILES[@]}"
 echo "Formatting (ruff)..."
-ruff format "${STAGED_PY_FILES[@]}"
+ruff format --force-exclude "${STAGED_PY_FILES[@]}"

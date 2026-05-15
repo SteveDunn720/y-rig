@@ -1,4 +1,3 @@
-from numpy.f2py.rules import k
 from yrig.transform.matrix import matrix_constraint
 from yrig.control import create_control
 from yrig.joint import create_joint

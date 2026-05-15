@@ -10,7 +10,7 @@ def create_parent_space_switch(
     parent_list: Sequence[str],
     target_control: str,
     attribute_name: str = "space",
-) -> str:
+) -> None:
     """Create a parent space switch setup.
 
     Args:
@@ -79,7 +79,6 @@ def create_parent_space_switch(
 
         # Equal operation
         # 0 == Equal in Maya condition node
-
         condition.operation.set(0)
 
         # Compare enum value
@@ -94,5 +93,3 @@ def create_parent_space_switch(
 
         # Drive parentConstraint weight
         condition.out_color.r.connect_to(f"{parent_constraint}.{weight_attr}")
-
-    return parent_constraint

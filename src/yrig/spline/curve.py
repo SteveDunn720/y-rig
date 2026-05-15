@@ -1,12 +1,14 @@
-from typing import Sequence
+from typing import Callable, Sequence
 
 from maya import cmds
+from maya.api.OpenMaya import MDagPath, MFnNurbsCurve, MPoint, MSelectionList, MSpace
 
 from yrig.maya_api.enum import Axis
 from yrig.maya_api.node import MotionPathNode
 from yrig.spline import generate_knots
 from yrig.spline.math import create_periodic_cv_list
 from yrig.transform import create_transform, get_shape, get_shapes, matrix_constraint
+from yrig.transform.utils import set_position
 
 
 def bound_curve_from_transforms(
@@ -95,6 +97,61 @@ def bound_curve_from_transforms(
             f"{curve_transform}.controlPoints[{index}]",
         )
     return curve_transform
+
+
+def get_curve_cvs(curve: str, world_space: bool = True) -> list[MPoint]:
+    """
+    Get all CV positions from a NURBS curve.
+
+    Args:
+        curve: Curve transform or nurbsCurve shape node.
+        world_space: Whether to return CV positions in world space.
+            If ``False``, positions are returned in object space.
+
+    Returns:
+        List of CV positions as ``MPoint`` objects.
+    """
+    shape = get_shape(curve)
+    if shape is None:
+        raise RuntimeError(f"{curve} had no shape node!")
+    if not cmds.nodeType(shape) == "nurbsCurve":
+        raise RuntimeError(f"{curve} is not a nurbsCurve")
+
+    sel = MSelectionList()
+    sel.add(shape)
+    dag_path: MDagPath = sel.getDagPath(0)
+    curve_fn = MFnNurbsCurve(dag_path)
+    return curve_fn.cvPositions(MSpace.kWorld if world_space else MSpace.kObject)
+
+
+def create_transforms_at_curve_cvs(
+    curve: str, name_format: str | Callable[[int], str], parent: str | None = None
+) -> list[str]:
+    """
+    Create transforms positioned at each CV of a NURBS curve.
+
+    Args:
+        curve: Curve transform or nurbsCurve shape node.
+        name_format: Naming rule for created transforms.
+            If a string is provided, names are generated as "{name_format}_{index}".
+            If a callable is provided, it is called with the CV index and must return the transform name.
+        parent: Optional parent transform for created nodes.
+
+    Returns:
+        List of created transform node names.
+    """
+    curve_cvs = get_curve_cvs(curve)
+    transforms: list[str] = []
+    for index, cv in enumerate(curve_cvs):
+        transform_name: str
+        if isinstance(name_format, str):
+            transform_name = f"{name_format}_{index}"
+        else:
+            transform_name = name_format(index)
+        transform = create_transform(transform_name, parent)
+        set_position(transform, cv)
+        transforms.append(transform)
+    return transforms
 
 
 def pin_to_curve_with_motion_path(

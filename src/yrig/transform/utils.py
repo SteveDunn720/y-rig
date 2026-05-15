@@ -14,7 +14,7 @@ from yrig.maya_api.node import DistanceBetweenNode, SubtractNode
 from yrig.name import get_short_name
 from yrig.transform.matrix import (
     get_world_matrix,
-    matrix_multiply,
+    multiply_matrices,
     set_local_matrix,
     set_world_matrix,
 )
@@ -138,6 +138,22 @@ def get_position(transform: str, world_space: bool = True) -> MPoint:
         An ``MPoint`` containing the XYZ translation of the transform.
     """
     return MPoint(cmds.xform(transform, query=True, worldSpace=world_space, translation=True))
+
+
+def set_position(
+    transform: str, position: MPoint | tuple[float, float, float], world_space: bool = True
+) -> None:
+    """Set the translation of a transform as an ``MPoint``.
+
+    Args:
+        transform: The name of the Maya transform node to query.
+        world_space: If ``True`` (the default), the position is set in
+            world space.  If ``False``, local (object) space is used.
+    """
+    position_tuple = (
+        (position.x, position.y, position.z) if isinstance(position, MPoint) else position
+    )
+    cmds.xform(transform, worldSpace=world_space, translation=position_tuple)
 
 
 def match_transform(transform: str, target_transform: str, use_joint_orient: bool = True) -> None:
@@ -275,14 +291,14 @@ def distance_reader(
         transform2_matrices.append(projection_matrix)
 
     if len(transform1_matrices) > 1:
-        transform1_local = matrix_multiply(
+        transform1_local = multiply_matrices(
             f"{transform1_name}_distance_matrix", transform1_matrices
         ).matrix_sum
     else:
         transform1_local = transform1_matrices[0]
 
     if len(transform2_matrices) > 1:
-        transform2_local = matrix_multiply(
+        transform2_local = multiply_matrices(
             f"{transform2_name}_distance_matrix", transform2_matrices
         ).matrix_sum
     else:

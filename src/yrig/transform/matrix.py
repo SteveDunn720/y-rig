@@ -212,7 +212,7 @@ def set_world_matrix(
         set_local_matrix(transform, local_matrix, use_joint_orient)
 
 
-def matrix_multiply(
+def multiply_matrices(
     name: str,
     matrices: Iterable[MatrixAttribute | str | MMatrix | Sequence[float]],
     skip_identity_matrices: bool = True,
@@ -386,7 +386,7 @@ def matrix_constraint(
     else:
         cmds.setAttr(f"{constrain_transform}.inheritsTransform", 0)  # type: ignore
 
-    mult_matrix = matrix_multiply(f"{constraint_name}_ConstraintMatrixMult", matrices=matrices)
+    mult_matrix = multiply_matrices(f"{constraint_name}_ConstraintMatrixMult", matrices=matrices)
     drive_transform_with_matrix(
         mult_matrix.matrix_sum,
         transform=constrain_transform,
@@ -450,7 +450,7 @@ def local_constraint(
     )
     matrices.append(reference_offset_matrix)
 
-    mult_matrix = matrix_multiply(f"{constraint_name}_ConstraintMatrixMult", matrices=matrices)
+    mult_matrix = multiply_matrices(f"{constraint_name}_ConstraintMatrixMult", matrices=matrices)
     drive_transform_with_matrix(
         mult_matrix.matrix_sum,
         transform=constrain_transform,

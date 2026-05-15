@@ -140,6 +140,22 @@ def get_position(transform: str, world_space: bool = True) -> MPoint:
     return MPoint(cmds.xform(transform, query=True, worldSpace=world_space, translation=True))
 
 
+def set_position(
+    transform: str, position: MPoint | tuple[float, float, float], world_space: bool = True
+) -> None:
+    """Set the translation of a transform as an ``MPoint``.
+
+    Args:
+        transform: The name of the Maya transform node to query.
+        world_space: If ``True`` (the default), the position is set in
+            world space.  If ``False``, local (object) space is used.
+    """
+    position_tuple = (
+        (position.x, position.y, position.z) if isinstance(position, MPoint) else position
+    )
+    cmds.xform(transform, worldSpace=world_space, translation=position_tuple)
+
+
 def match_transform(transform: str, target_transform: str, use_joint_orient: bool = True) -> None:
     """
     Match a transform to another in world space.

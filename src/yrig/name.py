@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 LEFT_SIDE_NAME = "L"
 RIGHT_SIDE_NAME = "R"
@@ -57,3 +58,17 @@ def get_short_name(transform: str) -> str:
         The short (leaf) name without any leading path components.
     """
     return transform.rsplit("|", 1)[-1]
+
+
+def normalize_name(name: str | None) -> str:
+    """Normalize a name to be a more friendly filename or filepath.
+
+    Steps: unicode normalize → encode ASCII → lowercase → spaces to underscores
+    → strip non-alphanumeric characters.
+    """
+    if not name:
+        return ""
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+    normalized_name = ascii_name.strip().lower().replace(" ", "_")
+    normalized_name = re.sub(r"[^a-z0-9_]", "", normalized_name)
+    return normalized_name

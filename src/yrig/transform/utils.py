@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence
+
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
     MDagPath,
@@ -10,7 +14,7 @@ from maya.api.OpenMaya import (
 )
 
 from yrig.maya_api.attribute import MatrixAttribute, ScalarAttribute
-from yrig.maya_api.node import DistanceBetweenNode, SubtractNode
+from yrig.maya_api.node import ConditionNode, DistanceBetweenNode, SubtractNode
 from yrig.name import get_short_name
 from yrig.transform.matrix import (
     get_world_matrix,
@@ -18,6 +22,9 @@ from yrig.transform.matrix import (
     set_local_matrix,
     set_world_matrix,
 )
+
+if TYPE_CHECKING:
+    from yrig.control import Control
 
 
 def partial_path_name(transform: str) -> str:
@@ -323,3 +330,97 @@ def distance_reader(
         output = distance_node.distance
 
     return output
+
+
+def create_space_switch(
+    target_transform: str,
+    parents: Sequence[str],
+    target_control: Control | str,
+    attribute_name: str = "space",
+) -> str:
+    """Create a parent space switch setup.
+
+    Args:
+        target_transform: Transform that receives the parent constraint.
+        parents: List of parent spaces.
+        target_control: Object that receives the enum attribute.
+        attribute_name: Name of the enum attribute.
+
+    Returns:
+        The created parentConstraint node.
+    """
+
+    # ------------------------------------------------------------------
+    # Validate inputs
+    # ------------------------------------------------------------------
+
+    if not cmds.objExists(target_transform):
+        raise RuntimeError(f"Target transform does not exist: {target_transform}")
+
+    control_transform = str(target_control)
+
+    if not cmds.objExists(control_transform):
+        raise RuntimeError(f"Target control does not exist: {control_transform}")
+
+    if not parents:
+        raise RuntimeError("Parent list is empty.")
+
+    for parent in parents:
+        if not cmds.objExists(parent):
+            raise RuntimeError(f"Parent does not exist: {parent}")
+
+    # ------------------------------------------------------------------
+    # Add enum attribute
+    # ------------------------------------------------------------------
+
+    enum_names = ":".join(parents)
+
+    attr_path = f"{control_transform}.{attribute_name}"
+
+    if not cmds.attributeQuery(attribute_name, node=control_transform, exists=True):
+        cmds.addAttr(
+            control_transform,
+            longName=attribute_name,
+            attributeType="enum",
+            enumName=enum_names,
+            keyable=True,
+        )
+
+    # ------------------------------------------------------------------
+    # Create parent constraint
+    # ------------------------------------------------------------------
+
+    parent_constraint: str = cmds.parentConstraint(  # type:ignore
+        parents,  # type:ignore
+        target_transform,
+        maintainOffset=True,
+        name=f"{target_transform}_spaceSwitch_PC",
+    )[0]
+
+    # ------------------------------------------------------------------
+    # Create condition nodes
+    # ------------------------------------------------------------------
+
+    weight_aliases = cmds.parentConstraint(parent_constraint, query=True, weightAliasList=True)
+
+    for index, (parent, weight_attr) in enumerate(zip(parents, weight_aliases)):  # type:ignore
+        condition = ConditionNode(name=f"{target_transform}_{parent}_spaceSwitch_COND")
+
+        # Equal operation
+        # 0 == Equal in Maya condition node
+        condition.operation.set(0)
+
+        # Compare enum value
+        condition.first_term.connect_from(attr_path)
+
+        condition.second_term.set(index)
+        # True = 1
+        condition.color_if_true.r.set(1)
+
+        # False = 0
+        condition.color_if_false.r.set(0)
+
+        # Drive parentConstraint weight
+        condition.out_color.r.connect_to(f"{parent_constraint}.{weight_attr}")
+
+    return parent_constraint

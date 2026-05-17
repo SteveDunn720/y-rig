@@ -1,10 +1,9 @@
-from yrig.control import create_control
-from yrig.transform import create_transform
-from yrig.transform.utils import get_position
-
 import maya.cmds as cmds
 from maya.api.OpenMaya import MPoint
-from yrig.parent_switch import create_parent_space_switch
+
+from yrig.control import create_control
+from yrig.transform import create_transform
+from yrig.transform.utils import create_space_switch, get_position
 
 
 class Look:
@@ -101,9 +100,9 @@ class Look:
             dimensions=(3, 1, 1),
         )
 
-        create_parent_space_switch(
+        create_space_switch(
             target_transform=self.main_ctrl.offset,
-            parent_list=self.parent_list,
+            parents=self.parent_list,
             target_control=self.main_ctrl.transform,
         )
 

@@ -47,7 +47,7 @@ class Socket:
 
         return max(x, y, z) * 0.5
 
-    def build_proxy_cube(self, size_guide: str, pos_guide: str, offset_size: float = 1.2) -> str:
+    def create_proxy_cube(self, size_guide: str, pos_guide: str, offset_size: float = 1.2) -> str:
         # 1. radius from circle
         radius = self.get_nurbs_surface_radius(size_guide)
 
@@ -58,19 +58,22 @@ class Socket:
         cube_size = diameter * offset_size
 
         # 4. create cube
-        cube = cmds.polyCube(
-            width=cube_size, height=cube_size, depth=cube_size, name=f"{size_guide}_proxy_geo"
+        cube: tuple[str | str] = cmds.polyCube(  # type:ignore
+            width=cube_size,
+            height=cube_size,
+            depth=cube_size,
+            name=f"eye_lattice_proxy_{self.side}",
         )
 
         # 5. place cube at position
 
-        match_location
+        match_location(transform=cube[0], target_transform=pos_guide)
 
-        # 6. optional: freeze transforms (common for rig proxies)
+        return cube[0]
 
-        return "cube"
+    def create_lattice(self, input_object: str, division: tuple, resolution: tuple) -> None:
 
-        return ""
+        pass
 
     def build_sas(self) -> None:
         pass

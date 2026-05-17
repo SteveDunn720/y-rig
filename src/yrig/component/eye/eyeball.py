@@ -10,7 +10,7 @@ from yrig.skin.split.tag import tag_for_weight_split
 
 from yrig.maya_api.node import (
     MultiplyDivideNode,
-    AddDLNode,
+    SumNode,
     EulerToQuatNode,
     BlendColorsNode,
 )
@@ -153,9 +153,9 @@ class Eyeball:
         radius_adjust = MultiplyDivideNode(name=f"{circle_type}_radius_adjust_{self.side}_MD")
         radius_adjust.input1.x.connect_from(ETQ_node.output_quat.x)
 
-        z_trans_adl = AddDLNode(name=f"{circle_type}_translateZ_{self.side}_ADL")
+        z_trans_adl = SumNode(name=f"{circle_type}_translateZ_{self.side}_ADL")
 
-        radius_adjust.output.x.connect_to(z_trans_adl.input_1)
+        radius_adjust.output.x.connect_to(z_trans_adl.input[0])
 
         z_trans_adl.output.connect_to(f"{obj}.translateZ")
 
@@ -172,7 +172,7 @@ class Eyeball:
         radius_adjust.output.y.connect_to(f"{obj}.scaleY")
         radius_adjust.output.z.connect_to(f"{obj}.scaleX")
 
-        z_trans_adl.input_2.connect_from(offset_z_attr)
+        z_trans_adl.input[1].connect_from(offset_z_attr)
         cmds.connectAttr(offset_y_attr, f"{obj}.translateY")
         cmds.connectAttr(offset_x_attr, f"{obj}.translateX")
 
@@ -356,14 +356,12 @@ class Eyeball:
                 pass
             else:
                 # percents[i]
-                dilation_offset_node = AddDLNode(
-                    name=f"{circle_type}_dilation_mult_{self.side}_ADL"
-                )
+                dilation_offset_node = SumNode(name=f"{circle_type}_dilation_mult_{self.side}_ADL")
                 cmds.connectAttr(
-                    f"{self.main_ctrl}.{circle_type}_dilation", f"{dilation_offset_node.input_2}"
+                    f"{self.main_ctrl}.{circle_type}_dilation", f"{dilation_offset_node.input[1]}"
                 )
                 cmds.connectAttr(f"{dilation_offset_node.output}", f"{circle}.dilation_amount")
-                cmds.setAttr(f"{dilation_offset_node.input_1}", percents[i] * 10)  # type:ignore
+                cmds.setAttr(f"{dilation_offset_node.input[0]}", percents[i] * 10)  # type:ignore
 
                 self.dilation_nodes(
                     circle_type=circle_type,

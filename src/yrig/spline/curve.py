@@ -5,8 +5,9 @@ from maya.api.OpenMaya import MDagPath, MFnNurbsCurve, MPoint, MSelectionList, M
 
 from yrig.maya_api.enum import Axis
 from yrig.maya_api.node import MotionPathNode
+from yrig.name import get_short_name
 from yrig.spline import generate_knots
-from yrig.spline.math import create_periodic_cv_list
+from yrig.spline.math import collapse_periodic_cv_list, create_periodic_cv_list
 from yrig.transform import create_transform, get_shape, get_shapes, matrix_constraint
 from yrig.transform.utils import set_position
 
@@ -125,7 +126,10 @@ def get_curve_cvs(curve: str, world_space: bool = True) -> list[MPoint]:
 
 
 def create_transforms_at_curve_cvs(
-    curve: str, name_format: str | Callable[[int], str], parent: str | None = None
+    curve: str,
+    name_format: str | Callable[[int], str] | None = None,
+    parent: str | None = None,
+    create_periodic_duplicate_cvs: bool = False,
 ) -> list[str]:
     """
     Create transforms positioned at each CV of a NURBS curve.
@@ -133,19 +137,34 @@ def create_transforms_at_curve_cvs(
     Args:
         curve: Curve transform or nurbsCurve shape node.
         name_format: Naming rule for created transforms.
-            If a string is provided, names are generated as "{name_format}_{index}".
-            If a callable is provided, it is called with the CV index and must return the transform name.
+            - None: names are generated as "{curve_name}_cv{index}"
+            - str: names are generated as "{name_format}{index}"
+            - callable: called with the CV index and must return the name
         parent: Optional parent transform for created nodes.
 
     Returns:
         List of created transform node names.
     """
     curve_cvs = get_curve_cvs(curve)
+
+    shape = get_shape(curve)
+    if shape is None:
+        raise RuntimeError(f"{curve} had no shape node!")
+
+    if not create_periodic_duplicate_cvs:
+        # Remove duplicated CVs from periodic curves
+        if cmds.getAttr(f"{shape}.form") == 2:  # periodic
+            degree = cmds.getAttr(f"{shape}.degree")
+            curve_cvs = collapse_periodic_cv_list(curve_cvs, degree)
+
     transforms: list[str] = []
     for index, cv in enumerate(curve_cvs):
         transform_name: str
-        if isinstance(name_format, str):
-            transform_name = f"{name_format}_{index}"
+        if name_format is None:
+            curve_name = get_short_name(curve)
+            transform_name = f"{curve_name}_cv{index}"
+        elif isinstance(name_format, str):
+            transform_name = f"{name_format}{index}"
         else:
             transform_name = name_format(index)
         transform = create_transform(transform_name, parent)

@@ -55,9 +55,50 @@ def is_periodic_knot_vector(knots: Sequence[float], degree: int = 3) -> bool:
 
 
 def create_periodic_cv_list(cvs: Sequence[T], degree: int) -> list[T]:
+    """
+    Periodic NURBS curves require duplicated CVs at the beginning and end
+    of the list to preserve continuity across the seam. This function adds
+    the wrapped CVs needed for a curve of the given degree.
+
+    Args:
+        cvs: Sequence of unique CV values.
+        degree: Curve degree.
+
+    Returns:
+        Expanded CV list with wrapped prefix/suffix CVs suitable for
+        periodic curve creation.
+
+    Example:
+        >>> create_periodic_cv_list([0, 1, 2, 3, 4], degree=3)
+        [4, 0, 1, 2, 3, 4, 0]
+    """
     shift = degree // 2
     prefix = cvs[-shift:] if shift > 0 else ()
     return list(chain(prefix, cvs, cvs[: degree - shift]))
+
+
+def collapse_periodic_cv_list(cvs: Sequence[T], degree: int) -> list[T]:
+    """
+    Remove wrapped periodic CVs and recover the unique CV list.
+
+    This is the inverse operation of ``create_periodic_cv_list`` and assumes
+    the input CV sequence follows the same wrapping convention.
+
+    Args:
+        cvs: Expanded periodic CV sequence.
+        degree: Curve degree used to generate the periodic list.
+
+    Returns:
+        List of unique CV values with duplicated periodic CVs removed.
+
+    Example:
+        >>> collapse_periodic_cv_list([4, 0, 1, 2, 3, 4, 0], degree=3)
+        [0, 1, 2, 3, 4]
+    """
+    shift = degree // 2
+    start = shift
+    end = len(cvs) - (degree - shift)
+    return list(cvs[start:end])
 
 
 def deboor_setup(

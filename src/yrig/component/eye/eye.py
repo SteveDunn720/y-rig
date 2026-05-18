@@ -1,12 +1,14 @@
-from yrig.transform.matrix import matrix_constraint
+import maya.cmds as cmds
+
 from yrig.control import create_control
 from yrig.joint import create_joint
+from yrig.maya_api.node import BlendColorsNode, MultiplyDivideNode, SumNode
 from yrig.transform import create_transform
-from yrig.component.eye.eyelid import Eyelid
-from yrig.component.eye.socket import Socket
-from yrig.component.eye.eyeball import Eyeball
-import maya.cmds as cmds
-from yrig.maya_api.node import BlendColorsNode, SumNode, MultiplyDivideNode
+from yrig.transform.matrix import matrix_constraint
+
+from .eyeball import Eyeball
+from .eyelid import Eyelid
+from .socket import Socket
 
 
 class Eye:

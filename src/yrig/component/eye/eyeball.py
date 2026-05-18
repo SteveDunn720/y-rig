@@ -1,19 +1,19 @@
+import math
+
 import maya.cmds as cmds
+
 from yrig.control import create_control
 from yrig.joint import create_joint
-
-from yrig.transform import create_transform, match_location
-from yrig.transform.utils import get_position
-import math
-from yrig.transform.matrix import matrix_constraint
-from yrig.skin.split.tag import tag_for_weight_split
-
 from yrig.maya_api.node import (
+    BlendColorsNode,
+    EulerToQuatNode,
     MultiplyDivideNode,
     SumNode,
-    EulerToQuatNode,
-    BlendColorsNode,
 )
+from yrig.skin.split.tag import tag_for_weight_split
+from yrig.transform import create_transform, match_location
+from yrig.transform.matrix import matrix_constraint
+from yrig.transform.utils import get_position
 
 
 class Eyeball:

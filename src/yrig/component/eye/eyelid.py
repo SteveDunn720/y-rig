@@ -1,29 +1,28 @@
-from yrig.control.core import Control
+import math
+from dataclasses import dataclass
 from typing import Any, Literal
 
 import maya.cmds as cmds
+from maya.api.OpenMaya import MEulerRotation, MMatrix, MSpace, MTransformationMatrix, MVector
+
 from yrig.control import create_control
+from yrig.control.core import Control
 from yrig.joint import create_joint
-from yrig.eye_guide_curve import GuideCurve
-
-from yrig.transform import create_transform
-from maya.api.OpenMaya import MMatrix, MTransformationMatrix, MVector, MEulerRotation, MSpace
-from yrig.transform.utils import get_position
-import math
-from yrig.transform.matrix import matrix_constraint
-from yrig.skin.split.tag import tag_for_weight_split
-
 from yrig.maya_api.node import (
-    PlusMinusAverageNode,
     ConditionNode,
-    MultMatrixNode,
     DecomposeMatrixNode,
     MultiplyDivideNode,
+    MultMatrixNode,
+    PlusMinusAverageNode,
     SumNode,
 )
-
+from yrig.skin.split.tag import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
-from dataclasses import dataclass
+from yrig.transform import create_transform
+from yrig.transform.matrix import matrix_constraint
+from yrig.transform.utils import get_position
+
+from .guide_curve import GuideCurve
 
 
 @dataclass

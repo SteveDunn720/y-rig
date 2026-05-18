@@ -6,7 +6,7 @@
     "solo": false,
     "meta_data": {
         "positions": {
-            "/eye": [
+            "/eye_component": [
                 -693.7090375074679,
                 611.6873276618954
             ],
@@ -14,14 +14,14 @@
                 -694.9069891928125,
                 671.3286967044602
             ],
-            "/look": [
+            "/look_component": [
                 -677.0648238874182,
                 728.5641617222554
             ]
         }
     },
     "nodes": {
-        "/eye": {
+        "/eye_component": {
             "instance": "/component",
             "attrs": {
                 "joint_parent": {
@@ -60,7 +60,7 @@
             ]
         },
         "/eye_def": {},
-        "/look": {
+        "/look_component": {
             "instance": "/component",
             "attrs": {
                 "joint_parent": {

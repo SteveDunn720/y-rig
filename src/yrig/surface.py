@@ -73,7 +73,7 @@ def _get_surface_shapes(surface: str) -> tuple[str, str, str]:
     primary_shape: str = shapes[0]
     original_shape_geo: str = cmds.deformableShape(primary_shape, originalGeometry=True)[0]  # type: ignore
     if not original_shape_geo:
-        original_shape_geo = cmds.deformableShape(primary_shape, createOriginalGeometry=True)  # type: ignore
+        original_shape_geo = cmds.deformableShape(primary_shape, createOriginalGeometry=True)[0]  # type: ignore
     # the return from deformableShape is in the form ["shapeName.local"] so we pull the node name with a split
     original_shape: str = original_shape_geo.split(".", 1)[0]
     shape_output: str = cmds.deformableShape(primary_shape, worldShapeOutAttr=True)[0]  # type: ignore
@@ -188,7 +188,7 @@ def uv_pin_multi(
     corresponding entry in ``uv_coords`` falls back to closest-point sampling.
 
     Args:
-        name: Base name used to build the uvPin node name (``<name>_uvPin``).
+        name: Name for the created uvPin node.
         surface: The name of the surface (mesh or NURBS) to pin to.
         objects_to_pin: Ordered collection of object names to pin.
         uv_coords: Optional ordered collection of (u, v) pairs, matched
@@ -206,8 +206,7 @@ def uv_pin_multi(
     """
 
     primary_shape, original_shape, shape_output = _get_surface_shapes(surface)
-    pin_name = f"{name}_uvPin"
-    uv_pin_node = UvPinNode(pin_name)
+    uv_pin_node = UvPinNode(name)
     uv_pin_node.original_geometry.connect_from(f"{original_shape}.{shape_output}")
     uv_pin_node.deformed_geometry.connect_from(f"{primary_shape}.{shape_output}")
 

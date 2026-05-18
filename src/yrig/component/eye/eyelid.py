@@ -5,7 +5,7 @@ from typing import Any, Literal
 import maya.cmds as cmds
 from maya.api.OpenMaya import MEulerRotation, MMatrix, MSpace, MTransformationMatrix, MVector
 
-from yrig.control import create_control
+from yrig.control import ControlShape, create_control
 from yrig.control.core import Control
 from yrig.joint import create_joint
 from yrig.maya_api.node import (
@@ -593,15 +593,15 @@ class Eyelid:
         # Main Control Behavior
         ##########
         for i, side in enumerate(["upper", "lower"]):
-            mod = "high" if side == "upper" else "low"
             blink_matrix: Any = self.convert_to_matrix(pos=(blink_x, blink_y, blink_z))
             blink_ctrl = create_control(
                 name=f"{side}_blink_{self.side}",
                 parent=self.main_ctrl,
                 transform=blink_matrix,
                 size=self.control_size,
-                control_shape=f"{mod}_semi_circle",
+                control_shape=ControlShape.SEMI_CIRCLE,
                 direction="z",
+                dimensions=(1, 1, 1 if side == "upper" else -1),
             )
             twist_MD = MultiplyDivideNode(name=f"{self.side}_{side}_twist_DM")
             cmds.connectAttr(f"{blink_ctrl.transform}.translateX", f"{twist_MD.input1.x}")

@@ -4,7 +4,7 @@ from typing import Sequence
 from maya import cmds
 
 from yrig.control import Control, create_control
-from yrig.joint import collect_joints, create_joint
+from yrig.joint import create_joint
 from yrig.maya_api.attribute import BooleanAttribute
 from yrig.maya_api.enum import RotateOrder
 from yrig.maya_api.node import MultiplyNode
@@ -14,23 +14,23 @@ from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform
 from yrig.transform.utils import distance_reader
 
-from .corner import BeanMouthCorner
+from .corner import MouthCorner
 
 
 @dataclass
-class BeanMouthLipGuides:
+class LipGuides:
     lip_mid_left: str
     lip_mid: str
     lip_mid_right: str
 
 
-class BeanMouthLipMidpoint:
+class LipMidpoint:
     def __init__(
         self,
         name: str,
         guide: str,
         mouth_surface: str,
-        corner: BeanMouthCorner,
+        corner: MouthCorner,
         control_parent: Control | str,
         parent: str,
         distance_transform: str,
@@ -84,95 +84,57 @@ class BeanMouthLipMidpoint:
         )
 
 
-def _create_lip_main_spline(
-    name: str,
-    cvs: Sequence[Control],
-    parent: str,
-    joint_parent: str,
-    surface: str,
-    segments: int = 6,
-) -> str:
-    degree = 3
-    knots = [(i - degree) for i in range(len(cvs) + degree + 1)]
-    curve = bound_curve_from_transforms(
-        [control.offset for control in cvs],
-        name=name,
-        parent=parent,
-        degree=degree,
-        knots=knots,
-    )
-
-    for i in range(segments):
-        segment_name = f"{curve}_seg{i}"
-        curve_pin = create_transform(f"{segment_name}_curve_pin", parent=parent)
-        pin_to_curve_with_motion_path(
-            curve,
-            curve_pin,
-            parameter=((i + 0.5) / segments),
-            orient=False,
+class BeanMouthLipSpline:
+    def __init__(
+        self,
+        name: str,
+        cvs: Sequence[str],
+        parent: str,
+        joint_parent: str,
+        surface: str,
+        segments: int = 6,
+        orient: bool = True,
+    ):
+        degree = 3
+        knots = [(i - degree) for i in range(len(cvs) + degree + 1)]
+        self.curve = bound_curve_from_transforms(
+            cvs,
+            name=name,
+            parent=parent,
+            degree=degree,
+            knots=knots,
         )
-        cmds.normalConstraint(
-            surface,
-            curve_pin,
-            aimVector=(0, 0, 1),
-            upVector=(0, 1, 0),
-            worldUpType="objectrotation",
-            worldUpVector=(0, 1, 0),
-            worldUpObject=parent,
-        )
-        joint = create_joint(
-            name=segment_name, transform=curve_pin, parent=joint_parent, radius=0.5
-        )
-
-    return curve
-
-
-def _create_lip_sub_spline(
-    name: str,
-    cvs: Sequence[Control],
-    parent: str,
-    joint_parent: str,
-    surface: str,
-    segments: int = 6,
-) -> str:
-    degree = 3
-    knots = [(i - degree) for i in range(len(cvs) + degree + 1)]
-    curve = bound_curve_from_transforms(
-        [control.transform for control in cvs],
-        name=name,
-        parent=parent,
-        degree=degree,
-        knots=knots,
-    )
-
-    for i in range(segments):
-        segment_name = f"{curve}_seg{i}"
-        curve_pin = create_transform(f"{segment_name}_curve_pin", parent=parent)
-        pin_to_curve_with_motion_path(curve, curve_pin, parameter=(i + 0.5) / segments)
-        cmds.normalConstraint(
-            surface,
-            curve_pin,
-            aimVector=(0, 0, 1),
-            upVector=(0, 1, 0),
-            worldUpType="objectrotation",
-            worldUpVector=(0, 1, 0),
-            worldUpObject=parent,
-        )
-        joint = create_joint(
-            name=segment_name, transform=curve_pin, parent=joint_parent, radius=0.5
-        )
-
-    return curve
+        self.joints: list[str] = []
+        for i in range(segments):
+            segment_name = f"{self.curve}_seg{i}"
+            curve_pin = create_transform(f"{segment_name}_curve_pin", parent=parent)
+            pin_to_curve_with_motion_path(
+                self.curve, curve_pin, parameter=(i + 0.5) / segments, orient=orient
+            )
+            if not orient:
+                cmds.normalConstraint(
+                    surface,
+                    curve_pin,
+                    aimVector=(0, 0, 1),
+                    upVector=(0, 1, 0),
+                    worldUpType="objectrotation",
+                    worldUpVector=(0, 1, 0),
+                    worldUpObject=parent,
+                )
+            joint = create_joint(
+                name=segment_name, transform=curve_pin, parent=joint_parent, radius=0.5
+            )
+            self.joints.append(joint)
 
 
-class BeanMouthLip:
+class Lip:
     def __init__(
         self,
         upper: bool,
-        guides: BeanMouthLipGuides,
+        guides: LipGuides,
         mouth_surface: str,
-        left_corner: BeanMouthCorner,
-        right_corner: BeanMouthCorner,
+        left_corner: MouthCorner,
+        right_corner: MouthCorner,
         parent: str,
         joint_parent: str,
         control_parent: Control | str,
@@ -192,7 +154,7 @@ class BeanMouthLip:
         self.left_corner = left_corner
         self.right_corner = right_corner
 
-        self.mid_left = BeanMouthLipMidpoint(
+        self.mid_left = LipMidpoint(
             name=f"{self.name}_mid_L",
             guide=guides.lip_mid_left,
             mouth_surface=mouth_surface,
@@ -220,7 +182,7 @@ class BeanMouthLip:
             driver_transform=self.mid_control.transform,
             slider_transform=self.mid_sub_control.offset,
         )
-        self.mid_right = BeanMouthLipMidpoint(
+        self.mid_right = LipMidpoint(
             name=f"{self.name}_mid_R",
             guide=guides.lip_mid_right,
             mouth_surface=mouth_surface,
@@ -270,37 +232,43 @@ class BeanMouthLip:
         right_lip_cvs = lip_cvs + right_corner_cvs
 
         self.main_joint = create_joint(name=f"{self.name}_main", parent=joint_parent)
-        with collect_joints() as main_joints:
-            self.left_main_curve = _create_lip_main_spline(
-                f"{self.name}_L_main_spline",
-                left_lip_cvs,
-                parent=parent,
-                joint_parent=self.main_joint,
-                surface=mouth_surface,
-            )
-            self.right_main_curve = _create_lip_main_spline(
-                f"{self.name}_R_main_spline",
-                right_lip_cvs,
-                parent=parent,
-                joint_parent=self.main_joint,
-                surface=mouth_surface,
-            )
-        tag_for_weight_split(self.main_joint, main_joints)
+
+        self.left_main_spline = BeanMouthLipSpline(
+            f"{self.name}_L_main_spline",
+            [control.offset for control in left_lip_cvs],
+            parent=parent,
+            joint_parent=self.main_joint,
+            surface=mouth_surface,
+            orient=False,
+        )
+        self.right_main_spline = BeanMouthLipSpline(
+            f"{self.name}_R_main_spline",
+            [control.offset for control in right_lip_cvs],
+            parent=parent,
+            joint_parent=self.main_joint,
+            surface=mouth_surface,
+            orient=False,
+        )
+        tag_for_weight_split(
+            self.main_joint, self.left_main_spline.joints + self.right_main_spline.joints
+        )
 
         self.sub_joint = create_joint(name=f"{self.name}_sub", parent=joint_parent)
-        with collect_joints() as sub_joints:
-            self.left_sub_curve = _create_lip_sub_spline(
-                f"{self.name}_L_sub_spline",
-                left_lip_cvs,
-                parent=parent,
-                joint_parent=self.sub_joint,
-                surface=mouth_surface,
-            )
-            self.right_sub_curve = _create_lip_sub_spline(
-                f"{self.name}_R_sub_spline",
-                right_lip_cvs,
-                parent=parent,
-                joint_parent=self.sub_joint,
-                surface=mouth_surface,
-            )
-        tag_for_weight_split(self.sub_joint, sub_joints)
+
+        self.left_sub_spline = BeanMouthLipSpline(
+            f"{self.name}_L_sub_spline",
+            [control.transform for control in left_lip_cvs],
+            parent=parent,
+            joint_parent=self.sub_joint,
+            surface=mouth_surface,
+        )
+        self.right_sub_spline = BeanMouthLipSpline(
+            f"{self.name}_R_sub_spline",
+            [control.transform for control in right_lip_cvs],
+            parent=parent,
+            joint_parent=self.sub_joint,
+            surface=mouth_surface,
+        )
+        tag_for_weight_split(
+            self.sub_joint, self.left_sub_spline.joints + self.right_sub_spline.joints
+        )

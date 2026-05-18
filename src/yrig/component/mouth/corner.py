@@ -8,7 +8,7 @@ from yrig.maya_api.node import MultiplyNode
 from yrig.surface import surface_slide_constraint
 
 
-class BeanMouthCorner:
+class MouthCorner:
     def __init__(
         self,
         side: Literal["L"] | Literal["R"],

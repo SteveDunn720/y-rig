@@ -9,24 +9,24 @@ from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform, matrix_constraint
 from yrig.transform.matrix import local_constraint
 
-from .corner import BeanMouthCorner
-from .lip import BeanMouthLip, BeanMouthLipGuides
+from .corner import MouthCorner
+from .lip import Lip, LipGuides
 
 
 @dataclass
-class BeanMouthGuides:
+class MouthGuides:
     mouth: str
     jaw: str
     left_corner: str
     right_corner: str
-    upper_lip: BeanMouthLipGuides
-    lower_lip: BeanMouthLipGuides
+    upper_lip: LipGuides
+    lower_lip: LipGuides
 
 
-class BeanMouth:
+class Mouth:
     def __init__(
         self,
-        guides: BeanMouthGuides,
+        guides: MouthGuides,
         mouth_surface: str,
         parent: str,
         control_parent: Control | str,
@@ -80,14 +80,14 @@ class BeanMouth:
         )
         local_constraint(self.jaw_blend, self.jaw_blend_local, reference_space=reference_space)
 
-        self.left_corner = BeanMouthCorner(
+        self.left_corner = MouthCorner(
             side="L",
             guide=guides.left_corner,
             mouth_surface=self.mouth_surface,
             control_parent=self.mouth_slide,
             control_size=control_size,
         )
-        self.right_corner = BeanMouthCorner(
+        self.right_corner = MouthCorner(
             side="R",
             guide=guides.right_corner,
             mouth_surface=self.mouth_surface,
@@ -98,7 +98,7 @@ class BeanMouth:
         matrix_constraint(self.jaw_blend_local, self.left_corner.main_control.offset)
         matrix_constraint(self.jaw_blend_local, self.right_corner.main_control.offset)
 
-        self.upper_lip = BeanMouthLip(
+        self.upper_lip = Lip(
             upper=True,
             guides=guides.upper_lip,
             mouth_surface=self.mouth_surface,
@@ -109,7 +109,7 @@ class BeanMouth:
             control_parent=self.mouth_slide,
             control_size=control_size,
         )
-        self.lower_lip = BeanMouthLip(
+        self.lower_lip = Lip(
             upper=False,
             guides=guides.lower_lip,
             mouth_surface=self.mouth_surface,

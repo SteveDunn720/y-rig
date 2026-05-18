@@ -1,1 +1,2 @@
-from . import bean_mouth as bean_mouth
+from . import eye as eye
+from . import mouth as mouth

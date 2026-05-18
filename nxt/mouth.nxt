@@ -6,14 +6,14 @@
     "solo": false,
     "meta_data": {
         "positions": {
-            "/bean_mouth": [
+            "/mouth_component": [
                 -1011.9459426257373,
                 318.98296017550416
             ]
         }
     },
     "nodes": {
-        "/bean_mouth": {
+        "/mouth_component": {
             "instance": "/component",
             "child_order": [
                 "build",
@@ -35,33 +35,27 @@
                     "type": "raw",
                     "value": "face_grp"
                 }
-            },
-            "code": [
-                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
-                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
-                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
-                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
-            ]
+            }
         },
-        "/bean_mouth/build": {
+        "/mouth_component/build": {
             "code": [
-                "from yrig.component.bean_mouth import BeanMouth, BeanMouthGuides, BeanMouthLipGuides",
+                "from yrig.component.mouth import Mouth, MouthGuides, LipGuides",
                 "",
                 "mouth_surface = \"face_surface\"",
                 "",
                 "left_corner_guide = \"mouth_corner_L\"",
                 "right_corner_guide = \"mouth_corner_R\"",
                 "",
-                "upper_lip_guides = BeanMouthLipGuides(",
+                "upper_lip_guides = LipGuides(",
                 "    lip_mid_left = \"upper_lip_mid_L\",",
                 "    lip_mid =\"upper_lip_mid_M\",",
                 "    lip_mid_right=\"upper_lip_mid_R\")",
-                "lower_lip_guides = BeanMouthLipGuides(",
+                "lower_lip_guides = LipGuides(",
                 "    lip_mid_left = \"lower_lip_mid_L\",",
                 "    lip_mid = \"lower_lip_mid_M\",",
                 "    lip_mid_right = \"lower_lip_mid_R\")",
                 "    ",
-                "mouth_guides = BeanMouthGuides(",
+                "mouth_guides = MouthGuides(",
                 "    mouth = \"mouth_M\",",
                 "    jaw = \"jaw_M\",",
                 "    left_corner = left_corner_guide,",
@@ -71,7 +65,7 @@
                 ")",
                 "",
                 "with yrig.control.collect_controls() as component_controls:",
-                "    mouth = BeanMouth(",
+                "    mouth = Mouth(",
                 "        guides=mouth_guides, ",
                 "        mouth_surface=mouth_surface,",
                 "        parent=\"${component_group}\",",
@@ -83,7 +77,7 @@
                 "STAGE.control_list.extend(component_controls)"
             ]
         },
-        "/bean_mouth/skin_surface": {
+        "/mouth_component/skin_surface": {
             "code": [
                 "face_path = STAGE.face_path",
                 "mouth_surface_skin = face_path / \"mouth_surface.yskin\"",

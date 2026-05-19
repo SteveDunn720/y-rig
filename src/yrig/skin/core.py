@@ -22,6 +22,7 @@ from maya.api.OpenMaya import (
 )
 from maya.api.OpenMayaAnim import MFnSkinCluster
 
+from yrig.name import natural_sort_key
 from yrig.transform.utils import get_shape
 
 
@@ -329,7 +330,9 @@ def set_skin_weights(
         cmds.skinCluster(resolved_skin_cluster, query=True, influence=True) or []  # type: ignore
     )
     # Add missing influences to the skinCluster
-    influences_to_add: list[str] = sorted(all_influences_in_data - existing_influences)
+    influences_to_add: list[str] = sorted(
+        all_influences_in_data - existing_influences, key=natural_sort_key
+    )
     if influences_to_add:
         cmds.skinCluster(
             resolved_skin_cluster, edit=True, addInfluence=influences_to_add, weight=0.0

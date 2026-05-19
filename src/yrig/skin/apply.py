@@ -5,7 +5,7 @@ from typing import Any, Callable, Sequence
 from maya import cmds
 
 from yrig.build.progress import progress_step
-from yrig.name import get_short_name
+from yrig.name import get_short_name, natural_sort_key
 from yrig.skin.core import get_skin_clusters, skin_geometry
 from yrig.skin.ng import apply_ng_skin_weights, get_influences_from_ng_skin_weights
 from yrig.skin.serialize import apply_skin_weight_data, skin_weight_data_from_file
@@ -25,7 +25,7 @@ def skin_and_apply_weights(filepath: Path, geometry: str) -> str:
     missing_influences = set(influence_names) - set(valid_influences)
     if missing_influences:
         log.warning(
-            f"[{geometry}] Missing {len(missing_influences)} influence(s) that were defined in its skin file : {sorted(missing_influences)}"
+            f"[{geometry}] Missing {len(missing_influences)} influence(s) that were defined in its skin file : {sorted(missing_influences, key=natural_sort_key)}"
         )
     if not valid_influences:
         raise RuntimeError(
@@ -52,7 +52,7 @@ def skin_and_apply_ng_weights(filepath: Path, mesh: str) -> str:
     missing_influences = set(influence_names) - set(valid_influences)
     if missing_influences:
         log.warning(
-            f"[{mesh}] Missing {len(missing_influences)} influence(s) that were defined in its skin file : {sorted(missing_influences)}"
+            f"[{mesh}] Missing {len(missing_influences)} influence(s) that were defined in its skin file : {sorted(missing_influences, key=natural_sort_key)}"
         )
 
     # Only bind to joints specified in the skin file for final build

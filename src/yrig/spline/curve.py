@@ -4,11 +4,12 @@ from maya import cmds
 from maya.api.OpenMaya import MDagPath, MFnNurbsCurve, MPoint, MSelectionList, MSpace
 
 from yrig.maya_api.enum import Axis
-from yrig.maya_api.node import MotionPathNode
+from yrig.maya_api.node import MotionPathNode, MultiplyPointByMatrixNode
 from yrig.name import get_short_name
 from yrig.spline import generate_knots
 from yrig.spline.math import collapse_periodic_cv_list, create_periodic_cv_list
-from yrig.transform import create_transform, get_shape, get_shapes, matrix_constraint
+from yrig.transform import create_transform, get_shape, get_shapes
+from yrig.transform.matrix import localize_world_matrix
 from yrig.transform.utils import set_position
 
 
@@ -19,39 +20,24 @@ def bound_curve_from_transforms(
     degree: int = 3,
     knots: Sequence[float] | None = None,
     periodic: bool = False,
-    create_pins: bool = True,
     hide: bool = False,
 ) -> str:
     """
     Create a NURBS curve whose CVs are driven by the given transforms.
 
-    CV control points are connected to each transform's ``.translate`` so the
-    curve follows them in real time. When *create_pins* is True, intermediate
-    pin nodes are created under a ``{curve_name}_grp`` group and
-    translation-constrained to the source transforms; otherwise the CVs connect
-    to the source transforms directly.
-
     Args:
         transforms: Ordered transform names, one per CV.
         name: Name for the created curve transform.
-        parent: Optional parent for the curve and its pin group.
+        parent: Optional parent for the curve.
         degree: Curve degree (default ``3``, cubic).
         knots: Custom knot vector. Auto-generated when ``None``. First and last
             values are stripped before passing to Maya.
         periodic: Create a closed loop by wrapping the first *degree* CVs.
-        create_pins: Create intermediate pin transforms instead of connecting
-            CVs to the source transforms directly.
 
     Returns:
         The name of the created curve transform node.
     """
     curve_transform_name = name
-    curve_group: str | None
-    if create_pins:
-        curve_group = create_transform(name=f"{curve_transform_name}_grp", parent=parent)
-    else:
-        curve_group = None
-
     full_knots = (
         knots
         if knots is not None
@@ -59,44 +45,28 @@ def bound_curve_from_transforms(
     )
     maya_knots: Sequence[float] = full_knots[1:-1]
     extended_cvs = create_periodic_cv_list(transforms, degree) if periodic else transforms
+    cv_positions: list[tuple[float, float, float]] = [  # type: ignore
+        cmds.xform(cv, query=True, worldSpace=True, translation=True) for cv in extended_cvs
+    ]
     curve_transform: str = cmds.curve(
         name=curve_transform_name,
-        point=[  # type: ignore
-            cmds.xform(cv, query=True, worldSpace=True, translation=True) for cv in extended_cvs
-        ],
+        point=cv_positions,
         periodic=periodic,
         knot=list(maya_knots),
         degree=degree,
     )
+    if parent is not None:
+        cmds.parent(curve_transform, parent, relative=True)
     curve_shape = get_shapes(curve_transform)[0]
     cmds.rename(curve_shape, f"{curve_transform_name}Shape")
-
-    if curve_group is not None:
-        cmds.parent(curve_transform, curve_group, relative=True)
-
     if hide:
-        if curve_group is not None:
-            cmds.hide(curve_group)
-        else:
-            cmds.hide(curve_transform)
-
-    extended_cv_mapping: dict[str, str] = {}
-    if create_pins:
-        for index, transform in enumerate(transforms):
-            cv = create_transform(name=f"{curve_transform}_cv{index}", parent=curve_group)
-            matrix_constraint(
-                transform, cv, rotate=False, scale=False, shear=False, keep_offset=False
-            )
-            if transform not in extended_cv_mapping:
-                extended_cv_mapping[transform] = cv
-    else:
-        extended_cv_mapping = {transform: transform for transform in extended_cvs}
+        cmds.hide(curve_transform)
 
     for index, transform in enumerate(extended_cvs):
-        cmds.connectAttr(
-            f"{extended_cv_mapping[transform]}.translate",
-            f"{curve_transform}.controlPoints[{index}]",
-        )
+        localize = localize_world_matrix(transform, curve_transform)
+        translation = MultiplyPointByMatrixNode(f"{curve_transform}_cv{index}_position")
+        translation.input_matrix.connect_from(localize.matrix_sum)
+        translation.output.connect_to(f"{curve_transform}.controlPoints[{index}]")
     return curve_transform
 
 
@@ -122,7 +92,9 @@ def get_curve_cvs(curve: str, world_space: bool = True) -> list[MPoint]:
     sel.add(shape)
     dag_path: MDagPath = sel.getDagPath(0)
     curve_fn = MFnNurbsCurve(dag_path)
-    return curve_fn.cvPositions(MSpace.kWorld if world_space else MSpace.kObject)
+    return list(
+        MPoint(cv) for cv in curve_fn.cvPositions(MSpace.kWorld if world_space else MSpace.kObject)
+    )
 
 
 def create_transforms_at_curve_cvs(

@@ -5,7 +5,7 @@ from maya import cmds
 from maya.api.OpenMaya import MDagPath, MFnNurbsSurface, MMatrix, MPoint, MSelectionList, MSpace
 
 from yrig.math import remap
-from yrig.maya_api.attribute import MatrixAttribute
+from yrig.maya_api.attribute import ClosestPointOnSurfaceResultAttribute, MatrixAttribute
 from yrig.maya_api.enum import Axis
 from yrig.maya_api.node import (
     ClosestPointOnSurfaceNode,
@@ -229,6 +229,23 @@ def uv_pin_multi(
     return uv_pin_node
 
 
+def closest_point_on_surface_reader(
+    transform: str, surface: str
+) -> ClosestPointOnSurfaceResultAttribute:
+    transform_name = get_short_name(transform)
+    shape = get_shape(surface)
+    if shape is None:
+        raise ValueError(f"{surface} has no valid shape")
+    closest_point_node = ClosestPointOnSurfaceNode(f"{transform_name}_closestPoint")
+    closest_point_node.input_surface.connect_from(f"{shape}.worldSpace[0]")
+
+    world_driver_pos = MultiplyPointByMatrixNode(f"{transform_name}_world_pos")
+    world_driver_pos.input_matrix.connect_from(f"{transform}.worldMatrix[0]")
+    closest_point_node.in_position.connect_from(world_driver_pos.output)
+
+    return closest_point_node.result
+
+
 def surface_slide_constraint(
     surface: str,
     driver_transform: str,
@@ -251,20 +268,14 @@ def surface_slide_constraint(
             for the normal constraint. Defaults to (0, 1, 0) (Y-axis).
     """
 
-    driver_name = get_short_name(driver_transform)
     slider_name = get_short_name(slider_transform)
-    closest_point_node = ClosestPointOnSurfaceNode(f"{driver_name}_closestPoint")
+    closest_point_reader = closest_point_on_surface_reader(driver_transform, surface)
     shape = get_shape(surface)
     if shape is None:
         raise ValueError(f"{surface} has no valid shape")
-    closest_point_node.input_surface.connect_from(f"{shape}.worldSpace[0]")
-
-    world_driver_pos = MultiplyPointByMatrixNode(f"{driver_name}_world_pos")
-    world_driver_pos.input_matrix.connect_from(f"{driver_transform}.worldMatrix[0]")
-    closest_point_node.in_position.connect_from(world_driver_pos.output)
 
     local_slider_pos = MultiplyPointByMatrixNode(f"{slider_name}_local_pos")
-    local_slider_pos.input_point.connect_from(closest_point_node.result.position)
+    local_slider_pos.input_point.connect_from(closest_point_reader.position)
     local_slider_pos.input_matrix.connect_from(f"{slider_transform}.parentInverseMatrix[0]")
     local_slider_pos.output.connect_to(f"{slider_transform}.translate")
 

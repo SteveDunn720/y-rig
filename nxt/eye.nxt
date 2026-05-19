@@ -85,8 +85,8 @@
         "/look_component/build": {
             "code": [
                 "from yrig.component.eye.aim import Look",
-                "",
-                "parent_list = ${parent_list}",
+                "scope = yrig.build.context.get_build_scope()",
+                "parent_list = ${parent_list} if scope != yrig.build.scope.BuildScope.FACE else []",
                 "look_rig = Look(",
                 "    parent = \"${component_group}\",",
                 "    part=\"${name}\",",

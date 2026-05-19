@@ -99,11 +99,11 @@ class Look:
             direction="z",
             dimensions=(3, 1, 1),
         )
-
-        create_space_switch(
-            target_transform=self.main_ctrl.offset,
-            parents=self.parent_list,
-            target_control=self.main_ctrl.transform,
-        )
+        if self.parent_list:
+            create_space_switch(
+                target_transform=self.main_ctrl.offset,
+                parents=self.parent_list,
+                target_control=self.main_ctrl.transform,
+            )
 
         cmds.delete(mid_guide)

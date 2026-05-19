@@ -9,6 +9,7 @@ from yrig.maya_api.attribute import BooleanAttribute
 from yrig.maya_api.enum import RotateOrder
 from yrig.maya_api.node import MultiplyNode
 from yrig.skin.split import tag_for_weight_split
+from yrig.spline import generate_knots
 from yrig.spline.curve import bound_curve_from_transforms, pin_to_curve_with_motion_path
 from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform
@@ -96,7 +97,7 @@ class BeanMouthLipSpline:
         orient: bool = True,
     ):
         degree = 3
-        knots = [(i - degree) for i in range(len(cvs) + degree + 1)]
+        knots = generate_knots(len(cvs), degree, clamped=False)
         self.curve = bound_curve_from_transforms(
             cvs,
             name=name,

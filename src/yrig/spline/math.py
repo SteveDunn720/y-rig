@@ -11,19 +11,17 @@ CV = TypeVar("CV")
 T = TypeVar("T")
 
 
-def generate_knots(count: int, degree: int = 3, periodic: bool = False) -> list[float]:
+def generate_knots(
+    count: int, degree: int = 3, periodic: bool = False, clamped: bool = True
+) -> list[float]:
     """Generate a default knot vector for a B-spline with the given CV count and degree.
-
-    For **open (clamped)** curves the first and last ``degree`` knot values
-    are repeated so that the curve interpolates its end CVs.  For
-    **periodic** curves the knots are uniformly spaced from ``0`` to
-    ``count + degree``.
 
     Args:
         count: total number of UNIQUE points (periodic duplicate points shouldn't be counted).
         degree: The curve degree.  Defaults to ``3`` (cubic).
         periodic: If ``True`` the returned knot vector will be suitable for
             a periodic (closed) curve.  Defaults to ``False``.
+        clamped: If ``True`` the returned knot vector will have clamped endpoints (if not periodic).
 
     Returns:
         list: A list of knot values. (aka knot vector)
@@ -31,10 +29,13 @@ def generate_knots(count: int, degree: int = 3, periodic: bool = False) -> list[
 
     if periodic:
         knots = [(i - degree) for i in range(count + 2 * degree + 1)]
-    else:
+        return [float(knot) for knot in knots]
+    if clamped:
         clamp_start = [0] * degree
         clamp_end = [count - degree] * degree
         knots = clamp_start + [i for i in range(count - degree + 1)] + clamp_end
+    else:
+        knots = [(i - degree) for i in range(count + degree + 1)]
 
     return [float(knot) for knot in knots]
 
@@ -102,7 +103,7 @@ def collapse_periodic_cv_list(cvs: Sequence[T], degree: int) -> list[T]:
 
 
 def deboor_setup(
-    cvs: Sequence[CV],
+    cv_count: int,
     t: float,
     degree: int = 3,
     knots: Sequence[float] | None = None,
@@ -141,16 +142,16 @@ def deboor_setup(
     """
 
     order = degree + 1  # Our functions often use order instead of degree
-    if len(cvs) <= degree:
+    if cv_count <= degree:
         raise ValueError(f"Curves of degree {degree} require at least {degree + 1} CVs.")
 
-    knots = knots or generate_knots(len(cvs), degree)  # Defaults to even knot distribution
-    if len(knots) != len(cvs) + order:
+    knots = knots or generate_knots(cv_count, degree)  # Defaults to even knot distribution
+    if len(knots) != cv_count + order:
         raise ValueError(
             "Not enough knots provided. Curves with %s cvs must have a knot vector of length %s. "
             "Received a knot vector of length %s: %s. "
             "Total knot count must equal len(cvs) + degree + 1."
-            % (len(cvs), len(cvs) + order, len(knots), knots)
+            % (cv_count, cv_count + order, len(knots), knots)
         )
 
     # Determine if curve is periodic
@@ -287,7 +288,7 @@ def point_on_spline_weights(
     """
 
     new_knots, segment, mapped_t, periodic = deboor_setup(
-        cvs=cvs, t=t, degree=degree, knots=knots, normalize=normalize
+        cv_count=len(cvs), t=t, degree=degree, knots=knots, normalize=normalize
     )
 
     # Convert cvs into hash-able indices
@@ -449,7 +450,7 @@ def tangent_on_spline_weights(
     """
 
     new_knots, segment, t, periodic = deboor_setup(
-        cvs=cvs, t=t, degree=degree, knots=knots, normalize=normalize
+        cv_count=len(cvs), t=t, degree=degree, knots=knots, normalize=normalize
     )
 
     # Convert cvs into hash-able indices

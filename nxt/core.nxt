@@ -29,7 +29,10 @@
                     "type": "raw",
                     "value": "${name}_${side}_root"
                 },
-                "control_parent": {},
+                "control_parent": {
+                    "type": "raw",
+                    "value": "${component_group}"
+                },
                 "joint_parent": {},
                 "name": {},
                 "parent": {},

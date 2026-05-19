@@ -6,10 +6,6 @@
     "solo": false,
     "meta_data": {
         "positions": {
-            "/eye_component": [
-                -693.7090375074679,
-                611.6873276618954
-            ],
             "/eye_def": [
                 -694.9069891928125,
                 671.3286967044602
@@ -23,6 +19,9 @@
     "nodes": {
         "/eye_component": {
             "instance": "/component",
+            "child_order": [
+                "build"
+            ],
             "attrs": {
                 "joint_parent": {
                     "value": "face_jnt"
@@ -37,19 +36,16 @@
                 "parent": {
                     "value": "face_grp"
                 }
-            },
+            }
+        },
+        "/eye_component/build": {
             "code": [
-                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
-                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
-                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
-                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")",
-                "",
                 "from yrig.component.eye.eye import Eye",
                 "",
                 "eye = Eye(",
                 "    part=\"${name}\",",
                 "    side=\"${side}\",",
-                "    parent=group,",
+                "    parent=\"${component_group}\",",
                 "    control_parent=\"${control_parent}\",",
                 "    parent_jnt=\"${joint_parent}\",",
                 "    control_size=1,",
@@ -62,6 +58,9 @@
         "/eye_def": {},
         "/look_component": {
             "instance": "/component",
+            "child_order": [
+                "build"
+            ],
             "attrs": {
                 "joint_parent": {
                     "value": "face_jnt"
@@ -78,31 +77,23 @@
                     "value": "face_grp"
                 },
                 "parent_list": {
-                    "type": "raw",
-                    "value": "[\n            \"neck_M0_head_ctl\",\n            \"spine_M0_chest_ctl\",\n            \"body_M0_ctl\",\n            \"local_M0_ctl\",\n        ],\n)"
+                    "type": "list",
+                    "value": "[\"neck_M0_head_ctl\", \"spine_M0_chest_ctl\", \"body_M0_ctl\", \"local_M0_ctl\",]"
                 }
-            },
+            }
+        },
+        "/look_component/build": {
             "code": [
-                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
-                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
-                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
-                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")",
+                "from yrig.component.eye.aim import Look",
                 "",
-                "from yrig.component.eye.aim import Look ",
-                "",
+                "parent_list = ${parent_list}",
                 "look_rig = Look(",
-                "    parent = group,",
+                "    parent = \"${component_group}\",",
                 "    part=\"${name}\",",
                 "    side=\"${side}\",",
                 "    control_parent=\"${control_parent}\",",
-                "    parent_list= [",
-                "            \"neck_M0_head_ctl\",",
-                "            \"spine_M0_chest_ctl\",",
-                "            \"body_M0_ctl\",",
-                "            \"local_M0_ctl\",",
-                "        ],",
+                "    parent_list=parent_list,",
                 ")",
-                "",
                 "look_rig.build()"
             ]
         }

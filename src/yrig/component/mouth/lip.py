@@ -144,6 +144,7 @@ class Lip:
         self.guides = guides
         side_string = "upper" if upper else "lower"
         self.name = f"{side_string}_lip"
+        self.group = create_transform(self.name, parent=parent)
         reference_space = str(control_parent)
         self.lip_move = create_transform(f"{self.name}_move", parent=reference_space)
         self.slider = create_transform(f"{self.name}_slide", parent=str(control_parent))
@@ -236,7 +237,7 @@ class Lip:
         self.left_main_spline = BeanMouthLipSpline(
             f"{self.name}_L_main_spline",
             [control.offset for control in left_lip_cvs],
-            parent=parent,
+            parent=self.group,
             joint_parent=self.main_joint,
             surface=mouth_surface,
             orient=False,
@@ -244,7 +245,7 @@ class Lip:
         self.right_main_spline = BeanMouthLipSpline(
             f"{self.name}_R_main_spline",
             [control.offset for control in right_lip_cvs],
-            parent=parent,
+            parent=self.group,
             joint_parent=self.main_joint,
             surface=mouth_surface,
             orient=False,
@@ -258,14 +259,14 @@ class Lip:
         self.left_sub_spline = BeanMouthLipSpline(
             f"{self.name}_L_sub_spline",
             [control.transform for control in left_lip_cvs],
-            parent=parent,
+            parent=self.group,
             joint_parent=self.sub_joint,
             surface=mouth_surface,
         )
         self.right_sub_spline = BeanMouthLipSpline(
             f"{self.name}_R_sub_spline",
             [control.transform for control in right_lip_cvs],
-            parent=parent,
+            parent=self.group,
             joint_parent=self.sub_joint,
             surface=mouth_surface,
         )

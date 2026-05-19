@@ -9,6 +9,7 @@ from yrig.surface import surface_slide_constraint
 from yrig.transform import create_transform, matrix_constraint
 from yrig.transform.matrix import local_constraint
 
+from .cheek import CheekInterpolate, CheekInterpolateGuides
 from .corner import MouthCorner
 from .lip import Lip, LipGuides
 
@@ -16,18 +17,19 @@ from .lip import Lip, LipGuides
 @dataclass
 class MouthGuides:
     mouth: str
+    mouth_surface: str
     jaw: str
     left_corner: str
     right_corner: str
     upper_lip: LipGuides
     lower_lip: LipGuides
+    cheek_interpolate: CheekInterpolateGuides
 
 
 class Mouth:
     def __init__(
         self,
         guides: MouthGuides,
-        mouth_surface: str,
         parent: str,
         control_parent: Control | str,
         joint_parent: str,
@@ -35,7 +37,7 @@ class Mouth:
     ):
         self.guides = guides
 
-        duplicated_mouth_surface = cmds.duplicate(mouth_surface)[0]
+        duplicated_mouth_surface = cmds.duplicate(self.guides.mouth_surface)[0]
         cmds.parent(duplicated_mouth_surface, parent)
         self.mouth_surface = cmds.rename(duplicated_mouth_surface, "mouth_surface")
         cmds.hide(self.mouth_surface)
@@ -117,6 +119,16 @@ class Mouth:
             right_corner=self.right_corner,
             parent=parent,
             joint_parent=joint_parent,
+            control_parent=self.mouth_slide,
+            control_size=control_size,
+        )
+
+        self.cheek_interpolate = CheekInterpolate(
+            guides=self.guides.cheek_interpolate,
+            mouth_surface=self.mouth_surface,
+            upper_lip=self.upper_lip,
+            lower_lip=self.lower_lip,
+            parent=parent,
             control_parent=self.mouth_slide,
             control_size=control_size,
         )

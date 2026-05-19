@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from yrig.component.mouth.lip import Lip
 from yrig.control import Control
 from yrig.maya_api.attribute import BooleanAttribute
-from yrig.spline.curve import create_transforms_at_curve_cvs
+from yrig.spline.curve import bound_curve_from_transforms, create_transforms_at_curve_cvs
 from yrig.surface import uv_pin_multi
 
 
@@ -28,4 +28,7 @@ class CheekInterpolate:
         self.cv_transforms = create_transforms_at_curve_cvs(
             curve=self.guides.max_curve, parent=parent
         )
-        uv_pin_multi("cheek_max_interpolate_uvPin", mouth_surface, self.cv_transforms)
+        self.uv_pin = uv_pin_multi("cheek_max_interpolate_uvPin", mouth_surface, self.cv_transforms)
+        bound_curve_from_transforms(
+            self.cv_transforms, "cheek_max_interpolate_curve", periodic=True, parent=parent
+        )

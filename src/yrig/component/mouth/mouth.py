@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from maya import cmds
 
@@ -14,16 +14,24 @@ from .corner import MouthCorner
 from .lip import Lip, LipGuides
 
 
+def _default_lip_guides(side: str) -> LipGuides:
+    return LipGuides(
+        lip_mid_left=f"{side}_lip_mid_L",
+        lip_mid=f"{side}_lip_mid_M",
+        lip_mid_right=f"{side}_lip_mid_R",
+    )
+
+
 @dataclass
 class MouthGuides:
-    mouth: str
-    mouth_surface: str
-    jaw: str
-    left_corner: str
-    right_corner: str
-    upper_lip: LipGuides
-    lower_lip: LipGuides
-    cheek_interpolate: CheekInterpolateGuides
+    mouth: str = "mouth_M"
+    mouth_surface: str = "face_surface"
+    jaw: str = "jaw_M"
+    left_corner: str = "mouth_corner_L"
+    right_corner: str = "mouth_corner_R"
+    upper_lip: LipGuides = field(default_factory=lambda: _default_lip_guides(side="upper"))
+    lower_lip: LipGuides = field(default_factory=lambda: _default_lip_guides(side="lower"))
+    cheek_interpolate: CheekInterpolateGuides = field(default_factory=CheekInterpolateGuides)
 
 
 class Mouth:

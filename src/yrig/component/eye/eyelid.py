@@ -251,10 +251,10 @@ class Eyelid:
 
         # shared logic to check how close our two drivers are
 
-        pma_calc = PlusMinusAverageNode(name=f"{Upper_driver}_{Lower_driver}_PMA")
+        pma_calc = PlusMinusAverageNode(name=f"{Upper_driver}_{Lower_driver}_{self.side}_PMA")
         pma_calc.operation.set(2)
 
-        condition = ConditionNode(name=f"{Upper_driver}_{Lower_driver}_COND")
+        condition = ConditionNode(name=f"{Upper_driver}_{Lower_driver}_{self.side}_COND")
         condition.operation.set(2)
         condition.color_if_false.set((0, 0, 0))
 
@@ -264,13 +264,13 @@ class Eyelid:
         # cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.colorIfTrueR")
         # cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.firstTerm")
 
-        rot_md = MultiplyDivideNode(name=f"{Upper_driver}_{Lower_driver}_MD")
+        rot_md = MultiplyDivideNode(name=f"{Upper_driver}_{Lower_driver}_{self.side}_MD")
 
         for ctrl in ctrl_list:
             cmds.addAttr(ctrl, longName="push", at="double", dv=push, k=True)  # type:ignore
             cmds.addAttr(ctrl, longName="rot_mult_DEV", at="double", dv=rot_mult, k=True)  # type:ignore
-            mult_matrix = MultMatrixNode(name=f"{ctrl}_MM")
-            dec_matrix = DecomposeMatrixNode(name=f"{ctrl}_DM")
+            mult_matrix = MultMatrixNode(name=f"{ctrl}_{self.side}_MM")
+            dec_matrix = DecomposeMatrixNode(name=f"{ctrl}_{self.side}_DM")
 
             # Connect world matrix → multMatrix
             mult_matrix.matrix_in[0].connect_from(f"{ctrl}.worldMatrix[0]")
@@ -297,7 +297,7 @@ class Eyelid:
             # -------------------------
             # push multiplyDivide
             # -------------------------
-            push_mult = MultiplyDivideNode(name=f"{ctrl}_MD")
+            push_mult = MultiplyDivideNode(name=f"{ctrl}_{self.side}_MD")
 
             push_mult.input2.x.set(0.5 if ctrl == ctrl_list[0] else -0.5)
             push_mult.operation.set(1)  # assuming multiply
@@ -307,7 +307,7 @@ class Eyelid:
             # -------------------------
             # PlusMinusAverageNode driver
             # -------------------------
-            pma_drive = PlusMinusAverageNode(name=f"{ctrl}_PMA")
+            pma_drive = PlusMinusAverageNode(name=f"{ctrl}_{self.side}_PMA")
             pma_drive.operation.set(2)
 
             dec_matrix.output_translate.y.connect_to(pma_drive.input_1d[0])
@@ -377,7 +377,7 @@ class Eyelid:
         #######
 
         self.look_offset = create_transform(
-            name=f"{self.side}_look_offset",
+            name=f"look_offset_{self.side}",
             parent=self.main_ctrl,
             transform=self.guides["center_piv"],
         )
@@ -388,7 +388,7 @@ class Eyelid:
         twist_grps = []
         for i, side in enumerate(["upper", "lower"]):
             sub_transform_grp = create_transform(
-                name=f"{self.side}_{side}_sub_blink_offset_matrix_drivers",
+                name=f"{side}_sub_blink_offset_matrix_drivers_{self.side}",
                 parent=self.look_offset,
                 transform=self.guides["center_piv"],
             )
@@ -453,7 +453,7 @@ class Eyelid:
                 )
 
                 SDK_grp = create_transform(
-                    name=f"{sub_blink}_{side}_blink_SDK",
+                    name=f"{sub_blink}_{side}_blink_{self.side}_SDK",
                     parent=blink_control.offset,
                     transform=new_matrix,
                 )
@@ -467,13 +467,13 @@ class Eyelid:
                 # setting up blink driver groups
 
                 driver_offset: str = create_transform(
-                    name=f"{sub_blink}_{side}_blink_offset",
+                    name=f"{sub_blink}_{side}_blink_offset_{self.side}",
                     parent=twist_grps[i],
                     transform=self.guides["center_piv"],
                 )
 
                 driver_driven: str = create_transform(
-                    name=f"{sub_blink}_{side}_blink_driven",
+                    name=f"{sub_blink}_{side}_blink_driven_{self.side}",
                     parent=driver_offset,
                     transform=self.guides["center_piv"],
                 )
@@ -481,7 +481,7 @@ class Eyelid:
                 driven_grps_list.append(driver_driven)
 
                 driver_driver: str = create_transform(
-                    name=f"{sub_blink}_{side}_blink_driver",
+                    name=f"{sub_blink}_{side}_blink_driver_{self.side}",
                     parent=driver_driven,
                     transform=self.guides["center_piv"],
                 )
@@ -530,7 +530,7 @@ class Eyelid:
 
                 ##### Adding x translate control funtionality to the controls
 
-                x_md = MultiplyDivideNode(name=f"{sub_blink}_{side}_{self.side}_L")
+                x_md = MultiplyDivideNode(name=f"{sub_blink}_{side}_{self.side}_MD")
 
                 x_md.input1.x.connect_from(
                     f"{self.main_eyelid_controls[f'{side}_{sub_blink}'].blink_transform}.translateX"

@@ -1,4 +1,4 @@
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right
 from itertools import chain
 from typing import Iterable, Sequence, TypeVar
 
@@ -102,6 +102,31 @@ def collapse_periodic_cv_list(cvs: Sequence[T], degree: int) -> list[T]:
     return list(cvs[start:end])
 
 
+def find_span(
+    t: float,
+    knots: Sequence[float],
+    degree: int = 3,
+) -> int:
+    """Find the knot span index containing t.
+
+    Returns span i such that:
+        knots[i] <= t < knots[i + 1]
+    """
+    domain_start = knots[degree]
+    domain_end = knots[-degree - 1]
+
+    first_span = degree
+    last_span = len(knots) - degree - 2
+
+    if t <= domain_start:
+        return first_span
+
+    if t >= domain_end:
+        return last_span
+
+    return bisect_right(knots, t) - 1
+
+
 def deboor_setup(
     cv_count: int,
     t: float,
@@ -168,15 +193,7 @@ def deboor_setup(
     if periodic:
         t = ((t - domain_start) % domain_range) + domain_start  # Wrap t into valid domain
 
-    # Find knot span (segment)
-    segment = None
-    for i in range(len(knots) - 1):
-        if knots[i] <= t < knots[i + 1]:
-            segment = i
-            break
-    if segment is None:
-        # If t == last knot, use the last valid span
-        segment = len(knots) - order - 1
+    segment = find_span(t, knots, degree)
     return (list(knots), segment, t, periodic)
 
 

@@ -134,8 +134,10 @@ class Mouth:
         self.cheek_interpolate = CheekInterpolate(
             guides=self.guides.cheek_interpolate,
             mouth_surface=self.mouth_surface,
-            upper_lip=self.upper_lip,
-            lower_lip=self.lower_lip,
+            upper_left_lip_spline=self.upper_lip.left_main_spline,
+            upper_right_lip_spline=self.upper_lip.right_main_spline,
+            lower_left_lip_spline=self.lower_lip.left_main_spline,
+            lower_right_lip_spline=self.lower_lip.right_main_spline,
             parent=parent,
             control_parent=self.mouth_slide,
             control_size=control_size,

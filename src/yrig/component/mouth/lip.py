@@ -1,17 +1,18 @@
 from dataclasses import dataclass
+from itertools import chain
 from typing import Sequence
 
 from maya import cmds
 
 from yrig.control import Control, create_control
 from yrig.joint import create_joint
-from yrig.maya_api.attribute import BooleanAttribute
+from yrig.maya_api.attribute import BooleanAttribute, ClosestPointOnSurfaceResultAttribute
 from yrig.maya_api.enum import RotateOrder
 from yrig.maya_api.node import MultiplyNode
 from yrig.skin.split import tag_for_weight_split
 from yrig.spline import generate_knots
 from yrig.spline.curve import bound_curve_from_transforms, pin_to_curve_with_motion_path
-from yrig.surface import surface_slide_constraint
+from yrig.surface import closest_point_on_surface_reader, surface_slide_constraint
 from yrig.transform import create_transform
 from yrig.transform.utils import distance_reader
 
@@ -85,7 +86,7 @@ class LipMidpoint:
         )
 
 
-class BeanMouthLipSpline:
+class LipSpline:
     def __init__(
         self,
         name: str,
@@ -106,12 +107,16 @@ class BeanMouthLipSpline:
             knots=knots,
         )
         self.joints: list[str] = []
-        for i in range(segments):
+        self.count = segments
+        self.closest_points: list[ClosestPointOnSurfaceResultAttribute] = []
+        for i in range(self.count):
             segment_name = f"{self.curve}_seg{i}"
             curve_pin = create_transform(f"{segment_name}_curve_pin", parent=parent)
             pin_to_curve_with_motion_path(
-                self.curve, curve_pin, parameter=(i + 0.5) / segments, orient=orient
+                self.curve, curve_pin, parameter=(i + 0.5) / self.count, orient=orient
             )
+            closest_point_reader = closest_point_on_surface_reader(curve_pin, surface)
+            self.closest_points.append(closest_point_reader)
             if not orient:
                 cmds.normalConstraint(
                     surface,
@@ -231,11 +236,11 @@ class Lip:
 
         full_lip_cvs = left_corner_cvs + lip_cvs + right_corner_cvs
         left_lip_cvs = left_corner_cvs + lip_cvs
-        right_lip_cvs = lip_cvs + right_corner_cvs
+        right_lip_cvs = right_corner_cvs + lip_cvs[::-1]
 
         self.main_joint = create_joint(name=f"{self.name}_main", parent=joint_parent)
 
-        self.left_main_spline = BeanMouthLipSpline(
+        self.left_main_spline = LipSpline(
             f"{self.name}_L_main_spline",
             [control.offset for control in left_lip_cvs],
             parent=self.group,
@@ -243,7 +248,7 @@ class Lip:
             surface=mouth_surface,
             orient=False,
         )
-        self.right_main_spline = BeanMouthLipSpline(
+        self.right_main_spline = LipSpline(
             f"{self.name}_R_main_spline",
             [control.offset for control in right_lip_cvs],
             parent=self.group,
@@ -252,19 +257,20 @@ class Lip:
             orient=False,
         )
         tag_for_weight_split(
-            self.main_joint, self.left_main_spline.joints + self.right_main_spline.joints
+            self.main_joint,
+            chain(self.left_main_spline.joints, reversed(self.right_main_spline.joints)),
         )
 
         self.sub_joint = create_joint(name=f"{self.name}_sub", parent=joint_parent)
 
-        self.left_sub_spline = BeanMouthLipSpline(
+        self.left_sub_spline = LipSpline(
             f"{self.name}_L_sub_spline",
             [control.transform for control in left_lip_cvs],
             parent=self.group,
             joint_parent=self.sub_joint,
             surface=mouth_surface,
         )
-        self.right_sub_spline = BeanMouthLipSpline(
+        self.right_sub_spline = LipSpline(
             f"{self.name}_R_sub_spline",
             [control.transform for control in right_lip_cvs],
             parent=self.group,
@@ -272,5 +278,6 @@ class Lip:
             surface=mouth_surface,
         )
         tag_for_weight_split(
-            self.sub_joint, self.left_sub_spline.joints + self.right_sub_spline.joints
+            self.sub_joint,
+            chain(self.left_sub_spline.joints, reversed(self.right_sub_spline.joints)),
         )

@@ -1,13 +1,17 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from yrig.component.mouth.lip import Lip
 from yrig.control import Control
-from yrig.maya_api.attribute import BooleanAttribute
-from yrig.spline import generate_knots
-from yrig.spline.curve import bound_curve_from_transforms
-from yrig.surface import uv_pin_multi
+from yrig.joint import create_joint
+from yrig.maya_api.attribute import BooleanAttribute, UvPinCoordinateAttribute
+from yrig.maya_api.node import BlendColorsNode, UvPinNode
+from yrig.spline import generate_knots, get_point_on_spline, resample
+from yrig.structs.transform import Vector3
+from yrig.surface import uv_pin, uv_pin_multi
 from yrig.transform import create_transform
+from yrig.transform.utils import get_position, set_position
+
+from .lip import LipSpline
 
 
 @dataclass
@@ -34,11 +38,65 @@ class CheekInterpolateGuides:
     )
 
 
-class CheekInterpolateSpline:
-    def __init__(self, name: str, cvs: Sequence[str], parent: str):
-        self.curve = bound_curve_from_transforms(
-            cvs, f"{name}_curve", knots=generate_knots(len(cvs), clamped=False), parent=parent
+class CheekInterpolateMax:
+    def __init__(
+        self,
+        name: str,
+        cvs: Sequence[str],
+        parent: str,
+        surface: str,
+        uv_pin_node: UvPinNode,
+        segments: int = 6,
+    ):
+        cv_positions: list[Vector3] = []
+
+        for transform in cvs:
+            transform_position = get_position(transform)
+            cv_positions.append(
+                Vector3(transform_position.x, transform_position.y, transform_position.z)
+            )
+        knots = generate_knots(len(cvs), clamped=False)
+        parameters = resample(
+            cv_positions, number_of_points=segments, knots=knots, normalize_parameter=False
         )
+
+        self.pinned_transforms: list[str] = []
+        self.pinned_uv_attrs: list[UvPinCoordinateAttribute] = []
+        for index, parameter in enumerate(parameters):
+            position = get_point_on_spline(
+                cv_positions=cv_positions, t=parameter, knots=knots, normalize_parameter=False
+            )
+            transform = create_joint(f"{name}_seg{index}", parent=parent)
+            set_position(transform, (position.x, position.y, position.z))
+            uv_pin_node, index = uv_pin(surface, transform, uv_pin_node=uv_pin_node)
+            self.pinned_transforms.append(transform)
+            self.pinned_uv_attrs.append(uv_pin_node.coordinate[index])
+
+
+class CheekInterpolateMid:
+    def __init__(
+        self,
+        name: str,
+        parent: str,
+        surface: str,
+        uv_pin_node: UvPinNode,
+        max: CheekInterpolateMax,
+        lip_spline: LipSpline,
+        blend: float = 0.5,
+    ):
+        for index, (max_point, lip_point) in enumerate(
+            zip(max.pinned_uv_attrs, lip_spline.closest_points)
+        ):
+            segment_name = f"{name}_seg{index}"
+            transform = create_joint(segment_name, parent=parent)
+            _, index = uv_pin(surface, transform, uv_pin_node=uv_pin_node)
+            blend_node = BlendColorsNode(f"{segment_name}_blend")
+            blend_node.color1.r.connect_from(lip_point.parameter_u)
+            blend_node.color1.g.connect_from(lip_point.parameter_v)
+            blend_node.color2.r.set(max_point.u.get())
+            blend_node.color2.g.set(max_point.v.get())
+            uv_pin_node.coordinate[index].u.connect_from(blend_node.output.r)
+            uv_pin_node.coordinate[index].v.connect_from(blend_node.output.g)
 
 
 def _create_cv_transforms(name_format: str, cv_guides: Sequence[str], parent: str) -> list[str]:
@@ -54,8 +112,10 @@ class CheekInterpolate:
         self,
         guides: CheekInterpolateGuides,
         mouth_surface: str,
-        upper_lip: Lip,
-        lower_lip: Lip,
+        upper_left_lip_spline: LipSpline,
+        upper_right_lip_spline: LipSpline,
+        lower_left_lip_spline: LipSpline,
+        lower_right_lip_spline: LipSpline,
         parent: str,
         control_parent: Control | str,
         control_size: float = 1,
@@ -111,47 +171,103 @@ class CheekInterpolate:
         )
 
         self.max_upper_left_full_cvs = (
-            [self.max_upper_right_cvs[0]]
-            + [self.max_upper_mid_cv]
-            + self.max_upper_left_cvs
+            [self.max_lower_left_cvs[-1]]
             + [self.max_left_corner_cv]
-            + [self.max_lower_left_cvs[-1]]
+            + self.max_upper_left_cvs
+            + [self.max_upper_mid_cv]
+            + [self.max_upper_right_cvs[0]]
         )
         self.max_upper_right_full_cvs = (
-            [self.max_upper_left_cvs[0]]
-            + [self.max_upper_mid_cv]
-            + self.max_upper_right_cvs
+            [self.max_lower_right_cvs[-1]]
             + [self.max_right_corner_cv]
-            + [self.max_lower_right_cvs[-1]]
+            + self.max_upper_right_cvs
+            + [self.max_upper_mid_cv]
+            + [self.max_upper_left_cvs[0]]
         )
 
         self.max_lower_left_full_cvs = (
-            [self.max_lower_right_cvs[0]]
-            + [self.max_lower_mid_cv]
-            + self.max_lower_left_cvs
+            [self.max_upper_left_cvs[-1]]
             + [self.max_left_corner_cv]
-            + [self.max_upper_left_cvs[-1]]
+            + self.max_lower_left_cvs
+            + [self.max_lower_mid_cv]
+            + [self.max_lower_right_cvs[0]]
         )
         self.max_lower_right_full_cvs = (
-            [self.max_lower_left_cvs[0]]
-            + [self.max_lower_mid_cv]
-            + self.max_lower_right_cvs
+            [self.max_upper_right_cvs[-1]]
             + [self.max_right_corner_cv]
-            + [self.max_upper_right_cvs[-1]]
+            + self.max_lower_right_cvs
+            + [self.max_lower_mid_cv]
+            + [self.max_lower_left_cvs[0]]
         )
 
-        self.upper_left_max_spline = CheekInterpolateSpline(
-            name=f"{cheek_max_name}_upper_L", cvs=self.max_upper_left_full_cvs, parent=self.group
-        )
-        self.upper_right_max_spline = CheekInterpolateSpline(
-            name=f"{cheek_max_name}_upper_R", cvs=self.max_upper_right_full_cvs, parent=self.group
-        )
-        self.lower_left_max_spline = CheekInterpolateSpline(
-            name=f"{cheek_max_name}_lower_L", cvs=self.max_lower_left_full_cvs, parent=self.group
-        )
-        self.lower_right_max_spline = CheekInterpolateSpline(
-            name=f"{cheek_max_name}_lower_R", cvs=self.max_lower_right_full_cvs, parent=self.group
+        self.uv_pin = uv_pin_multi(
+            "cheek_interpolate_uvPin", mouth_surface, self.cv_transforms, keep_offset=True
         )
 
-        cheek_max_name = "cheek_max_interpolate"
-        self.uv_pin = uv_pin_multi(f"{cheek_max_name}_uvPin", mouth_surface, self.cv_transforms)
+        cheek_max_name = "cheek_interpolate_max"
+        self.upper_left_max = CheekInterpolateMax(
+            name=f"{cheek_max_name}_upper_L",
+            cvs=self.max_upper_left_full_cvs,
+            parent=self.group,
+            surface=mouth_surface,
+            uv_pin_node=self.uv_pin,
+            segments=upper_left_lip_spline.count,
+        )
+        self.upper_right_max = CheekInterpolateMax(
+            name=f"{cheek_max_name}_upper_R",
+            cvs=self.max_upper_right_full_cvs,
+            parent=self.group,
+            surface=mouth_surface,
+            uv_pin_node=self.uv_pin,
+            segments=upper_right_lip_spline.count,
+        )
+        self.lower_left_max = CheekInterpolateMax(
+            name=f"{cheek_max_name}_lower_L",
+            cvs=self.max_lower_left_full_cvs,
+            parent=self.group,
+            surface=mouth_surface,
+            uv_pin_node=self.uv_pin,
+            segments=lower_left_lip_spline.count,
+        )
+        self.lower_right_max = CheekInterpolateMax(
+            name=f"{cheek_max_name}_lower_R",
+            cvs=self.max_lower_right_full_cvs,
+            parent=self.group,
+            surface=mouth_surface,
+            uv_pin_node=self.uv_pin,
+            segments=lower_right_lip_spline.count,
+        )
+
+        cheek_mid_name = "cheek_interpolate_mid"
+        self.upper_left_mid = CheekInterpolateMid(
+            name=f"{cheek_mid_name}_upper_L",
+            parent=self.group,
+            surface=mouth_surface,
+            uv_pin_node=self.uv_pin,
+            max=self.upper_left_max,
+            lip_spline=upper_left_lip_spline,
+        )
+        self.upper_right_mid = CheekInterpolateMid(
+            name=f"{cheek_mid_name}_upper_R",
+            parent=self.group,
+            surface=mouth_surface,
+            uv_pin_node=self.uv_pin,
+            max=self.upper_right_max,
+            lip_spline=upper_right_lip_spline,
+        )
+        self.lower_left_mid = CheekInterpolateMid(
+            name=f"{cheek_mid_name}_lower_L",
+            parent=self.group,
+            surface=mouth_surface,
+            uv_pin_node=self.uv_pin,
+            max=self.lower_left_max,
+            lip_spline=lower_left_lip_spline,
+        )
+        self.lower_right_mid = CheekInterpolateMid(
+            name=f"{cheek_mid_name}_lower_R",
+            parent=self.group,
+            surface=mouth_surface,
+            uv_pin_node=self.uv_pin,
+            max=self.lower_right_max,
+            lip_spline=lower_right_lip_spline,
+        )

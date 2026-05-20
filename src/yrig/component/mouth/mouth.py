@@ -139,6 +139,7 @@ class Mouth:
             lower_left_lip_spline=self.lower_lip.left_main_spline,
             lower_right_lip_spline=self.lower_lip.right_main_spline,
             parent=parent,
+            joint_parent=joint_parent,
             control_parent=self.mouth_slide,
             control_size=control_size,
         )

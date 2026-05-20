@@ -236,7 +236,7 @@ class Lip:
 
         full_lip_cvs = left_corner_cvs + lip_cvs + right_corner_cvs
         left_lip_cvs = left_corner_cvs + lip_cvs
-        right_lip_cvs = right_corner_cvs + lip_cvs[::-1]
+        right_lip_cvs = right_corner_cvs[::-1] + lip_cvs[::-1]
 
         self.main_joint = create_joint(name=f"{self.name}_main", parent=joint_parent)
 

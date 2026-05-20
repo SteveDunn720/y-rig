@@ -1,10 +1,12 @@
 from dataclasses import dataclass
+from itertools import chain
 from typing import Sequence
 
 from yrig.control import Control
 from yrig.joint import create_joint
 from yrig.maya_api.attribute import BooleanAttribute, UvPinCoordinateAttribute
 from yrig.maya_api.node import BlendColorsNode, UvPinNode
+from yrig.skin.split import tag_for_weight_split
 from yrig.spline import generate_knots, get_point_on_spline, resample
 from yrig.structs.transform import Vector3
 from yrig.surface import uv_pin, uv_pin_multi
@@ -66,7 +68,7 @@ class CheekInterpolateMax:
             position = get_point_on_spline(
                 cv_positions=cv_positions, t=parameter, knots=knots, normalize_parameter=False
             )
-            transform = create_joint(f"{name}_seg{index}", parent=parent)
+            transform = create_transform(f"{name}_seg{index}", parent=parent)
             set_position(transform, (position.x, position.y, position.z))
             uv_pin_node, index = uv_pin(surface, transform, uv_pin_node=uv_pin_node)
             self.pinned_transforms.append(transform)
@@ -78,23 +80,27 @@ class CheekInterpolateMid:
         self,
         name: str,
         parent: str,
+        joint_parent: str,
         surface: str,
         uv_pin_node: UvPinNode,
         max: CheekInterpolateMax,
         lip_spline: LipSpline,
         blend: float = 0.5,
     ):
+        self.joints: list[str] = []
         for index, (max_point, lip_point) in enumerate(
             zip(max.pinned_uv_attrs, lip_spline.closest_points)
         ):
             segment_name = f"{name}_seg{index}"
-            transform = create_joint(segment_name, parent=parent)
-            _, index = uv_pin(surface, transform, uv_pin_node=uv_pin_node)
+            joint = create_joint(segment_name, parent=joint_parent)
+            self.joints.append(joint)
+            _, index = uv_pin(surface, joint, uv_pin_node=uv_pin_node)
             blend_node = BlendColorsNode(f"{segment_name}_blend")
             blend_node.color1.r.connect_from(lip_point.parameter_u)
             blend_node.color1.g.connect_from(lip_point.parameter_v)
             blend_node.color2.r.set(max_point.u.get())
             blend_node.color2.g.set(max_point.v.get())
+            blend_node.blender.set(blend)
             uv_pin_node.coordinate[index].u.connect_from(blend_node.output.r)
             uv_pin_node.coordinate[index].v.connect_from(blend_node.output.g)
 
@@ -118,8 +124,10 @@ class CheekInterpolate:
         lower_right_lip_spline: LipSpline,
         parent: str,
         control_parent: Control | str,
+        joint_parent: str,
         control_size: float = 1,
         sub_control_vis_attr: BooleanAttribute | None = None,
+        tag_for_split: bool = True,
     ):
         self.guides = guides
         self.name = "cheek_interpolate"
@@ -238,10 +246,15 @@ class CheekInterpolate:
             segments=lower_right_lip_spline.count,
         )
 
+        self.cheek_interpolate_mid_joint = create_joint(
+            name="cheek_interpolate_mid", parent=joint_parent
+        )
+
         cheek_mid_name = "cheek_interpolate_mid"
         self.upper_left_mid = CheekInterpolateMid(
             name=f"{cheek_mid_name}_upper_L",
             parent=self.group,
+            joint_parent=self.cheek_interpolate_mid_joint,
             surface=mouth_surface,
             uv_pin_node=self.uv_pin,
             max=self.upper_left_max,
@@ -250,6 +263,7 @@ class CheekInterpolate:
         self.upper_right_mid = CheekInterpolateMid(
             name=f"{cheek_mid_name}_upper_R",
             parent=self.group,
+            joint_parent=self.cheek_interpolate_mid_joint,
             surface=mouth_surface,
             uv_pin_node=self.uv_pin,
             max=self.upper_right_max,
@@ -258,6 +272,7 @@ class CheekInterpolate:
         self.lower_left_mid = CheekInterpolateMid(
             name=f"{cheek_mid_name}_lower_L",
             parent=self.group,
+            joint_parent=self.cheek_interpolate_mid_joint,
             surface=mouth_surface,
             uv_pin_node=self.uv_pin,
             max=self.lower_left_max,
@@ -266,8 +281,20 @@ class CheekInterpolate:
         self.lower_right_mid = CheekInterpolateMid(
             name=f"{cheek_mid_name}_lower_R",
             parent=self.group,
+            joint_parent=self.cheek_interpolate_mid_joint,
             surface=mouth_surface,
             uv_pin_node=self.uv_pin,
             max=self.lower_right_max,
             lip_spline=lower_right_lip_spline,
         )
+
+        if tag_for_split:
+            tag_for_weight_split(
+                self.cheek_interpolate_mid_joint,
+                chain(
+                    self.upper_left_mid.joints,
+                    reversed(self.upper_right_mid.joints),
+                    self.lower_right_mid.joints,
+                    reversed(self.lower_left_mid.joints),
+                ),
+            )

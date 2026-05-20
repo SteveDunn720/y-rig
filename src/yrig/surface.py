@@ -109,7 +109,7 @@ def uv_pin(
     tangent_axis: Axis | Direction = Axis.X,
     uv_pin_node: UvPinNode | None = None,
     keep_offset: bool = False,
-) -> UvPinNode:
+) -> tuple[UvPinNode, int]:
     """
     Create a uvPin node that pins an object to a given surface at specified UV coordinates.
 
@@ -167,7 +167,7 @@ def uv_pin(
     localize_matrix = multiply_matrices(f"{pin_name}_localize", matrices)
 
     drive_transform_with_matrix(localize_matrix.matrix_sum, object_to_pin, scale=False, shear=False)
-    return uv_pin_node
+    return uv_pin_node, index
 
 
 def uv_pin_multi(

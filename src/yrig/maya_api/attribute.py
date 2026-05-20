@@ -488,14 +488,14 @@ class AimMatrixAxisAttribute(Attribute):
         self.target_matrix = MatrixAttribute(f"{attr_path}.{axis_name}TargetMatrix")
 
 
-class UvAttribute(Attribute[tuple[float, float]]):
+class UvPinCoordinateAttribute(Attribute[tuple[float, float]]):
     """A Maya attribute of the type UV"""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-        self.x = ScalarAttribute(f"{attr_path}U")
-        self.y = ScalarAttribute(f"{attr_path}V")
+        self.u = ScalarAttribute(f"{attr_path}.coordinateU")
+        self.v = ScalarAttribute(f"{attr_path}.coordinateV")
 
     def get(self) -> tuple[float, float]:
         """Get the value of this attribute."""
@@ -508,12 +508,12 @@ class UvAttribute(Attribute[tuple[float, float]]):
         cmds.setAttr(self.attr_path, *value)  # type: ignore
 
 
-class IndexableUvAttribute(IndexableAttribute[UvAttribute]):
+class IndexableUvPinCoordinateAttribute(IndexableAttribute[UvPinCoordinateAttribute]):
     """A Maya attribute that supports indexing UV elements with bracket notation."""
 
-    def __getitem__(self, index: int) -> UvAttribute:
+    def __getitem__(self, index: int) -> UvPinCoordinateAttribute:
         """Return the indexed attribute path: attr.input[0], attr.input[1], etc."""
-        return UvAttribute(attr_path=f"{self.attr_path}[{index}]")
+        return UvPinCoordinateAttribute(attr_path=f"{self.attr_path}[{index}]")
 
 
 class ClosestPointOnSurfaceResultAttribute(Attribute):

@@ -12,7 +12,7 @@ from yrig.maya_api.attribute import (
     IndexableBlendMatrixTargetAttribute,
     IndexableMatrixAttribute,
     IndexableScalarAttribute,
-    IndexableUvAttribute,
+    IndexableUvPinCoordinateAttribute,
     IndexableVector2Attribute,
     IndexableVector3Attribute,
     IndexableWtMatrixAttribute,
@@ -31,6 +31,7 @@ from yrig.maya_api.attribute import (
     UnsignedAxisAttribute,
     UvPinNormalOverrideAttribute,
     UvPinRelativeSpaceModeAttribute,
+    Vector2Attribute,
     Vector3Attribute,
     Vector4Attribute,
 )
@@ -628,9 +629,9 @@ class PlusMinusAverageNode(Node):
         self.input_3d = IndexableVector3Attribute(f"{self.name}.input3D")
         self.input_2d = IndexableVector2Attribute(f"{self.name}.input3D")
         self.input_1d = IndexableScalarAttribute(f"{self.name}.input1D")
-        self.output_3d = IndexableVector3Attribute(f"{self.name}.output3D")
-        self.output_2d = IndexableVector2Attribute(f"{self.name}.output2D")
-        self.output_1d = IndexableScalarAttribute(f"{self.name}.output1D")
+        self.output_3d = Vector3Attribute(f"{self.name}.output3D")
+        self.output_2d = Vector2Attribute(f"{self.name}.output2D")
+        self.output_1d = ScalarAttribute(f"{self.name}.output1D")
         self.operation = PlusMinusAverageOperationAttribute(f"{self.name}.operation")
 
 
@@ -712,7 +713,7 @@ class UvPinNode(Node):
         self.normal_override = UvPinNormalOverrideAttribute(f"{self.name}.normalOverride")
         self.relative_space_mode = UvPinRelativeSpaceModeAttribute(f"{self.name}.relativeSpaceMode")
         self.relative_space_matrix = MatrixAttribute(f"{self.name}.relativeSpaceMatrix")
-        self.coordinate = IndexableUvAttribute(f"{self.name}.coordinate")
+        self.coordinate = IndexableUvPinCoordinateAttribute(f"{self.name}.coordinate")
 
         self.output_matrix = IndexableMatrixAttribute(f"{self.name}.outputMatrix")
         self.output_translate = IndexableVector3Attribute(f"{self.name}.outputMatrix")

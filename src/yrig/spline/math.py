@@ -133,7 +133,8 @@ def deboor_setup(
     degree: int = 3,
     knots: Sequence[float] | None = None,
     normalize: bool = False,
-) -> tuple[list[float], int, float, bool]:
+    wrap_parameter: bool = False,
+) -> tuple[list[float], int, float]:
     # Algorithm and code originally from Cole O'Brien. Modified to support periodic splines.
     # https://coleobrien.medium.com/matrix-splines-in-maya-ec17f3b3741
     # https://gist.github.com/obriencole11/354e6db8a55738cb479523f15f1fd367
@@ -179,9 +180,6 @@ def deboor_setup(
             % (cv_count, cv_count + order, len(knots), knots)
         )
 
-    # Determine if curve is periodic
-    periodic: bool = is_periodic_knot_vector(knots=knots, degree=degree)
-
     # Optional normalization of t
     domain_start = knots[degree]
     domain_end = knots[-degree - 1]
@@ -190,11 +188,11 @@ def deboor_setup(
     if normalize:
         t = (t * domain_range) + domain_start
 
-    if periodic:
+    if wrap_parameter:
         t = ((t - domain_start) % domain_range) + domain_start  # Wrap t into valid domain
 
     segment = find_span(t, knots, degree)
-    return (list(knots), segment, t, periodic)
+    return (list(knots), segment, t)
 
 
 def deboor_weights(
@@ -304,7 +302,7 @@ def point_on_spline_weights(
         list: A list of control point, weight pairs.
     """
 
-    new_knots, segment, mapped_t, periodic = deboor_setup(
+    new_knots, segment, mapped_t = deboor_setup(
         cv_count=len(cvs), t=t, degree=degree, knots=knots, normalize=normalize
     )
 
@@ -466,7 +464,7 @@ def tangent_on_spline_weights(
         contribution at *t*.
     """
 
-    new_knots, segment, t, periodic = deboor_setup(
+    new_knots, segment, t = deboor_setup(
         cv_count=len(cvs), t=t, degree=degree, knots=knots, normalize=normalize
     )
 

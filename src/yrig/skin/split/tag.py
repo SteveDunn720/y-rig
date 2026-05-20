@@ -1,4 +1,4 @@
-from typing import Self, Sequence
+from typing import Iterable, Self
 
 from maya import cmds
 
@@ -70,15 +70,14 @@ class WeightSplitTag:
 
 
 def tag_for_weight_split(
-    influence: str, split_influences: Sequence[str], degree: int = 2, periodic: bool = False
+    influence: str, split_influences: Iterable[str], degree: int = 2, periodic: bool = False
 ) -> WeightSplitTag:
     """Create a tag connected to an influence joint with metadata attributes describing how its weights should be split.
     This data can later be read back with `get_weight_split_data` to drive an automated weight-split operation.
 
     Args:
         influence: The influence joint node that will be tagged.
-        split_influences: An ordered sequence of joint/transform names that the influence's
-            weights should be redistributed across.
+        split_influences: The joint/transform names that the influence's weights should be redistributed across.
         degree: Degree of the spline used for spatial weight interpolation. Defaults to 2.
         periodic: If ``True``, the generated spline curve will be periodic. Defaults to ``False``.
     """

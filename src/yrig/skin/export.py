@@ -9,6 +9,7 @@ from yrig.skin.core import get_skinned_shapes
 from yrig.skin.ng import write_ng_skin_weights
 from yrig.skin.serialize import export_skin_weights
 from yrig.transform.utils import get_shape
+from yrig.name import get_short_name
 from yrig.util import promt_user_for_directory
 
 
@@ -17,12 +18,12 @@ def _resolve_export_directory(directory: Path | None = None) -> Path:
         return directory
     if (asset_root := get_asset_root()) is not None:
         return asset_root / "data" / "skin"
-    raise RuntimeError(
-        "Unable to resolve skin export directory. Provide a directory or set asset root."
-    )
-    # add in the until function to prompt user to select directory if asset root is not set, or just default to current workspace
-    return promt_user_for_directory()
-
+    resolved_directory = promt_user_for_directory()
+    if resolved_directory is None:
+        raise RuntimeError(
+            "Unable to resolve skin export directory. Provide a directory or set asset root."
+        )
+    return resolved_directory
 
 def _get_selected_skin_shapes() -> list[str]:
     selected_nodes = cmds.ls(selection=True, long=True) or []
@@ -54,10 +55,10 @@ def _get_selected_skin_shapes() -> list[str]:
 
 
 def _shape_to_export_name(shape: str) -> str:
-    parent = cmds.listRelatives(shape, parent=True, fullPath=True) or []
+    parent = cmds.listRelatives(shape, parent=True) or []
     if parent:
-        return cmds.ls(parent[0], shortNames=True)[0]
-    return cmds.ls(shape, shortNames=True)[0]
+        return get_short_name(parent[0])
+    return shape
 
 
 def _export_weights_for_shape(
@@ -96,8 +97,10 @@ def export_skin_weights_for_shape(
     export_directory = _resolve_export_directory(directory)
     export_directory.mkdir(parents=True, exist_ok=True)
 
+    use_ng_resolved = use_ng and cmds.nodeType(shape) == "mesh"
+
     exported_path = _export_weights_for_shape(
-        shape=shape, directory=export_directory, use_ng=use_ng, force=force
+        shape=shape, directory=export_directory, use_ng=use_ng_resolved, force=force
     )
     if exported_path is None:
         raise RuntimeError(f"Export aborted for shape {shape}")
@@ -149,7 +152,7 @@ def batch_export_skin_weights(
     export_directory = _resolve_export_directory(directory)
     export_directory.mkdir(parents=True, exist_ok=True)
 
-    shapes = _get_selected_skin_shapes() if selected_only else list(get_skinned_shapes().values())
+    shapes = _get_selected_skin_shapes() if selected_only else get_skinned_shapes().values()
     if not shapes:
         raise RuntimeError(
             "No selected skinned geometry found for export."

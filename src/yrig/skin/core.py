@@ -294,6 +294,7 @@ def get_skin_weights(geometry: str, skin_cluster: str | None = None) -> dict[int
 
     return weights_dict
 
+
 def get_skinned_shapes() -> dict[str, str]:
     """
     Return all shapes in the scene bound to skinClusters.
@@ -318,6 +319,7 @@ def get_skinned_shapes() -> dict[str, str]:
                 continue
             skin_shapes[skin_cluster] = shape
     return skin_shapes
+
 
 def set_skin_weights(
     shape: str,

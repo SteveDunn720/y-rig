@@ -5,11 +5,11 @@ from pathlib import Path
 import maya.cmds as cmds
 
 from yrig.build.context import get_asset_root
+from yrig.name import get_short_name
 from yrig.skin.core import get_skinned_shapes
 from yrig.skin.ng import write_ng_skin_weights
 from yrig.skin.serialize import export_skin_weights
 from yrig.transform.utils import get_shape
-from yrig.name import get_short_name
 from yrig.util import promt_user_for_directory
 
 

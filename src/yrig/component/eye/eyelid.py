@@ -236,25 +236,25 @@ class Eyelid:
 
     def soft_colide(
         self,
-        Upper_driver: str,
-        Lower_driver: str,
-        Upper_driven: str,
-        Lower_driven: str,
+        upper_driver: str,
+        lower_driver: str,
+        upper_driven: str,
+        lower_driven: str,
         parent: str,
         push: float = 0.5,
         rot_mult: float = -50,
     ) -> None:
 
-        ctrl_list = [Lower_driver, Upper_driver]
+        ctrl_list = [lower_driver, upper_driver]
 
         out_matrix = []
 
         # shared logic to check how close our two drivers are
 
-        pma_calc = PlusMinusAverageNode(name=f"{Upper_driver}_{Lower_driver}_PMA")
+        pma_calc = PlusMinusAverageNode(name=f"{upper_driver}_{lower_driver}_PMA")
         pma_calc.operation.set(2)
 
-        condition = ConditionNode(name=f"{Upper_driver}_{Lower_driver}_COND")
+        condition = ConditionNode(name=f"{upper_driver}_{lower_driver}_COND")
         condition.operation.set(2)
         condition.color_if_false.set((0, 0, 0))
 
@@ -264,7 +264,7 @@ class Eyelid:
         # cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.colorIfTrueR")
         # cmds.connectAttr(f"{pma_calc}.output1D", f"{condition}.firstTerm")
 
-        rot_md = MultiplyDivideNode(name=f"{Upper_driver}_{Lower_driver}_MD")
+        rot_md = MultiplyDivideNode(name=f"{upper_driver}_{lower_driver}_MD")
 
         for ctrl in ctrl_list:
             cmds.addAttr(ctrl, longName="push", at="double", dv=push, k=True)  # type:ignore
@@ -283,12 +283,12 @@ class Eyelid:
             if ctrl == ctrl_list[0]:
                 dec_matrix.output_translate.y.connect_to(pma_calc.input_1d[0])
                 cmds.connectAttr(f"{ctrl}.rot_mult_DEV", f"{rot_md.input2.x}")
-                cmds.connectAttr(f"{rot_md.output.x}", f"{Lower_driven}.rotateX")
+                cmds.connectAttr(f"{rot_md.output.x}", f"{lower_driven}.rotateX")
 
             else:
                 dec_matrix.output_translate.y.connect_to(pma_calc.input_1d[1])
                 cmds.connectAttr(f"{ctrl}.rot_mult_DEV", f"{rot_md.input2.y}")
-                cmds.connectAttr(f"{rot_md.output.y}", f"{Upper_driven}.rotateX")
+                cmds.connectAttr(f"{rot_md.output.y}", f"{upper_driven}.rotateX")
 
             out_matrix.append(dec_matrix)
 
@@ -452,7 +452,7 @@ class Eyelid:
                     direction="z",
                 )
 
-                SDK_grp = create_transform(
+                sdk_grp = create_transform(
                     name=f"{sub_blink}_{side}_blink_SDK",
                     parent=blink_control.offset,
                     transform=new_matrix,
@@ -462,7 +462,7 @@ class Eyelid:
 
                 cmds.parent(
                     blink_control.transform,
-                    SDK_grp,
+                    sdk_grp,
                 )
                 # setting up blink driver groups
 
@@ -520,7 +520,7 @@ class Eyelid:
                     blink_top=blink_control.offset,
                     blink_transform=blink_control.transform,
                     eyelid_transform=eyelid_control.transform,
-                    blink_offset=SDK_grp,
+                    blink_offset=sdk_grp,
                     eyelid_top=eyelid_control.offset,
                     driver_top=driver_offset,
                     driver_driven=driver_driven,
@@ -539,10 +539,10 @@ class Eyelid:
                 x_md.input2.x.set(-30)
 
             self.soft_colide(
-                Upper_driver=self.main_eyelid_controls[f"upper_{sub_blink}"].blink_transform,
-                Lower_driver=self.main_eyelid_controls[f"lower_{sub_blink}"].blink_transform,
-                Upper_driven=driven_grps_list[0],
-                Lower_driven=driven_grps_list[1],
+                upper_driver=self.main_eyelid_controls[f"upper_{sub_blink}"].blink_transform,
+                lower_driver=self.main_eyelid_controls[f"lower_{sub_blink}"].blink_transform,
+                upper_driven=driven_grps_list[0],
+                lower_driven=driven_grps_list[1],
                 parent=self.main_ctrl,
                 push=0.5,
                 rot_mult=sub_mult[x],
@@ -603,12 +603,12 @@ class Eyelid:
                 direction="z",
                 dimensions=(1, 1, 1 if side == "upper" else -1),
             )
-            twist_MD = MultiplyDivideNode(name=f"{self.side}_{side}_twist_DM")
-            cmds.connectAttr(f"{blink_ctrl.transform}.translateX", f"{twist_MD.input1.x}")
-            cmds.setAttr(f"{twist_MD.input2.x}", 15)  # type:ignore
+            twist_md = MultiplyDivideNode(name=f"{self.side}_{side}_twist_DM")
+            cmds.connectAttr(f"{blink_ctrl.transform}.translateX", f"{twist_md.input1.x}")
+            cmds.setAttr(f"{twist_md.input2.x}", 15)  # type:ignore
 
             self.main_blink_controls.append(blink_ctrl)
-            cmds.connectAttr(f"{twist_MD.output.x}", f"{twist_grps[i]}.rotateY")
+            cmds.connectAttr(f"{twist_md.output.x}", f"{twist_grps[i]}.rotateY")
 
             cmds.connectAttr(
                 f"{blink_ctrl.transform}.translateY",
@@ -620,13 +620,13 @@ class Eyelid:
             ):
                 mod: float = mod_values[i]
                 input_mult = MultiplyDivideNode(name=f"{self.side}_{side}_{sub}_input_MD")
-                addDL_node: SumNode = SumNode(name=f"{self.side}_{side}_{sub}_ADL")
+                sum_node: SumNode = SumNode(name=f"{self.side}_{side}_{sub}_sum")
                 input_mult.input1.x.connect_from(f"{blink_ctrl.transform}.rotateZ")
                 cmds.setAttr(f"{input_mult.input2.x}", 0.03 * mod)  # type:ignore
-                cmds.connectAttr(f"{blink_ctrl.transform}.translateY", f"{addDL_node.input[0]}")
-                cmds.connectAttr(f"{input_mult.output.x}", f"{addDL_node.input[1]}")
+                cmds.connectAttr(f"{blink_ctrl.transform}.translateY", f"{sum_node.input[0]}")
+                cmds.connectAttr(f"{input_mult.output.x}", f"{sum_node.input[1]}")
                 cmds.connectAttr(
-                    f"{addDL_node.output}",
+                    f"{sum_node.output}",
                     f"{self.main_eyelid_controls[f'{side}_{sub}'].blink_offset}.translateY",
                 )
 

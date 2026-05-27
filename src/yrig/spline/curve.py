@@ -1,4 +1,4 @@
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 from maya import cmds
 from maya.api.OpenMaya import MDagPath, MFnNurbsCurve, MPoint, MSelectionList, MSpace
@@ -123,11 +123,10 @@ def create_transforms_at_curve_cvs(
     if shape is None:
         raise RuntimeError(f"{curve} had no shape node!")
 
-    if not create_periodic_duplicate_cvs:
+    if not create_periodic_duplicate_cvs and cmds.getAttr(f"{shape}.form") == 2:
         # Remove duplicated CVs from periodic curves
-        if cmds.getAttr(f"{shape}.form") == 2:  # periodic
-            degree = cmds.getAttr(f"{shape}.degree")
-            curve_cvs = collapse_periodic_cv_list(curve_cvs, degree)
+        degree = cmds.getAttr(f"{shape}.degree")
+        curve_cvs = collapse_periodic_cv_list(curve_cvs, degree)
 
     transforms: list[str] = []
     for index, cv in enumerate(curve_cvs):

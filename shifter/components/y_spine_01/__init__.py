@@ -52,7 +52,6 @@ class Component(component.Main):
             self.negate,
         )
         if self.settings["ctl_world_orient"]:
-            print("World")
             ik_t = datatypes.TransformationMatrix()
             ik_t = transform.setMatrixPosition(ik_t, self.guide.pos["spineBase"])
         else:
@@ -277,7 +276,7 @@ class Component(component.Main):
             ],
             name=self.getName("length_ref"),
             parent=self.root,
-            hide=False if self.WIP else True,
+            hide=not self.WIP,
         )
 
         self.hip_tan_tr = primitive.addTransform(
@@ -437,4 +436,4 @@ class Component(component.Main):
             )
 
         # Run default finalize logic.
-        super(Component, self).finalize()
+        super().finalize()

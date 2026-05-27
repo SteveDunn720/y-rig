@@ -22,9 +22,7 @@ def confirm_overwrite(filepath: Path, force: bool = False) -> bool:
         cancelButton="No",
         dismissString="No",
     )
-    if confirm == "Yes":
-        return True
-    return False
+    return confirm == "Yes":
 
 
 def promt_user_for_directory(message: str = "Select Directory") -> Path:

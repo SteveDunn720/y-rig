@@ -61,7 +61,7 @@ def visualize_weights_on_mesh(
             point_color += influence_colors[transform] * weight
         point_color_tuple: tuple[float, float, float] = tuple(point_color.getColor())
         point_color_rgb = oklab_to_linear_srgb(color=point_color_tuple)
-        point_color = om2.MColor((point_color_rgb))
+        point_color = om2.MColor(point_color_rgb)
         vertex_colors.append(point_color)
         vertex_indices.append(i)
         # fn_mesh.setVertexColor(point_color, i)

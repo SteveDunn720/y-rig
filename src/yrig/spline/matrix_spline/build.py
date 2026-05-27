@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from yrig.joint import create_joint
 from yrig.name import get_short_name

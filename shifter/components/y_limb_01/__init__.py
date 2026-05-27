@@ -547,14 +547,14 @@ class Component(component.Main):
         jdn_lower_twist = self.jd_names[3]
 
         for i in range(self.divisions):
-            div_cns = primitive.addTransform(self.root_ctl, self.getName("div%s_loc" % i))
+            div_cns = primitive.addTransform(self.root_ctl, self.getName(f"div{i}_loc"))
 
             self.div_cns.append(div_cns)
 
             t = transform.getTransform(div_cns)
             tweak_ctl = self.addCtl(
                 div_cns,
-                "tweak%s_ctl" % i,
+                f"tweak{i}_ctl",
                 t,
                 self.color_fk,
                 "square",
@@ -568,7 +568,7 @@ class Component(component.Main):
             tagP = tweak_ctl
             self.tweak_ctl.append(tweak_ctl)
 
-            roll_off = primitive.addTransform(tweak_ctl, self.getName("roll%s_off" % i))
+            roll_off = primitive.addTransform(tweak_ctl, self.getName(f"roll{i}_off"))
 
             self.roll_offset.append(roll_off)
 
@@ -762,10 +762,9 @@ class Component(component.Main):
         self.lower_mid_bendy_npo = primitive.addTransform(
             self.midBendy_ctl, self.getName("lowerMidBendy_npo"), t
         )
-        if self.settings["mirrorMid"]:
-            if self.negate:
-                self.midBendy_npo.rz.set(180)
-                self.midBendy_npo.sz.set(-1)
+        if self.settings["mirrorMid"] and self.negate:
+            self.midBendy_npo.rz.set(180)
+            self.midBendy_npo.sz.set(-1)
         attribute.setKeyableAttributes(self.midBendy_ctl)
 
     def _add_ik_visual_reference(self) -> None:
@@ -1198,12 +1197,7 @@ class Component(component.Main):
         # the controler.. and we wont have this nice bendy + roll
         div_offset = int(self.extra_div / 2)
         for i, div_cns in enumerate(self.div_cns):
-            if i == 0:
-                mulmat_node = applyop.gear_mulmatrix_op(
-                    self.upperTwistChain[i] + ".worldMatrix",
-                    div_cns + ".parentInverseMatrix",
-                )
-            elif i < (self.settings["div0"] + div_offset):
+            if i == 0 or i < (self.settings["div0"] + div_offset):
                 mulmat_node = applyop.gear_mulmatrix_op(
                     self.upperTwistChain[i] + ".worldMatrix",
                     div_cns + ".parentInverseMatrix",

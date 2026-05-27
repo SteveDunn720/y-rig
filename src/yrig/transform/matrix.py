@@ -1,5 +1,6 @@
 import logging
-from typing import Iterable, Sequence, TypeAlias
+from collections.abc import Iterable, Sequence
+from typing import TypeAlias
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (

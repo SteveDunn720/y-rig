@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (

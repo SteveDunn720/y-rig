@@ -150,7 +150,7 @@ class settingsTab(QtWidgets.QDialog, sui.Ui_Form):
     """The Component settings UI"""
 
     def __init__(self, parent=None) -> None:  # noqa: ANN001
-        super(settingsTab, self).__init__(parent)
+        super().__init__(parent)
         self.setupUi(self)
 
 
@@ -162,7 +162,7 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings): 
         # Delete old instances of the componet settings window.
         pyqt.deleteInstances(self, MayaQDockWidget)
 
-        super(componentSettings, self).__init__(parent=parent)
+        super().__init__(parent=parent)
         self.settingsTab = settingsTab()
 
         self.setup_componentSettingWindow()

@@ -53,7 +53,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
         paths_step: PathsStep = self.custom_step("paths")
 
         mgear_rig: Rig = self.rig
-        dev_build = True if mgear_rig.options["mode"] == 1 else False
+        dev_build = mgear_rig.options["mode"] == 1
 
         data_path: Path = paths_step.rig_data_path
         skin_path: Path = data_path / "skin"

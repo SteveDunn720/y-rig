@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from maya import cmds
 from maya.api.OpenMaya import MMatrix
@@ -119,9 +119,12 @@ def add_ctl(  # noqa: ANN201
 
     # create the attributes to handle mirror and symmetrical pose
     attribute.add_mirror_config_channels(ctl)
-    if add_to_control_set:
-        if cmds.objExists(CONTROLS_SET_NAME) and cmds.nodeType(CONTROLS_SET_NAME) == "objectSet":
-            cmds.sets(str(ctl), addElement=CONTROLS_SET_NAME)
+    if (
+        add_to_control_set
+        and cmds.objExists(CONTROLS_SET_NAME)
+        and cmds.nodeType(CONTROLS_SET_NAME) == "objectSet"
+    ):
+        cmds.sets(str(ctl), addElement=CONTROLS_SET_NAME)
 
     # Set the control shapes isHistoricallyInteresting
     # Use cmds for faster shape operations
@@ -137,7 +140,7 @@ def add_ctl(  # noqa: ANN201
     # set controller tag
     if maya_version >= 201650:
         try:
-            oldTag = pm.PyNode(ctl.name() + "_tag")
+            oldTag = pm.PyNode(ctl.name() + "_tag")  # noqa:  N806
             if not oldTag.controllerObject.connections():
                 # NOTE:  The next line is comment out. Because this will
                 # happend alot since core does't clean
@@ -158,7 +161,7 @@ def add_ctl(  # noqa: ANN201
     if component is not None:
         component_node = pm.PyNode(component)
         ni = attribute.get_next_available_index(component_node.compCtl)
-        pm.connectAttr(ctl.message, component_node.attr("compCtl[{}]".format(str(ni))))  # type: ignore
+        pm.connectAttr(ctl.message, component_node.attr(f"compCtl[{str(ni)}]"))  # type: ignore
 
         ctl.addAttr("compRoot", at="message", m=False)
         component_node.message >> ctl.compRoot

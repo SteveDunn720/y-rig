@@ -68,13 +68,11 @@ def _export_weights_for_shape(
     filepath = directory / f"{_shape_to_export_name(shape)}{'.json' if use_ng else '.yskin'}"
 
     if use_ng:
-        write_ng_skin_weights(filepath=filepath, geometry=shape, force=force)
-        return filepath
+        result = write_ng_skin_weights(filepath=filepath, geometry=shape, force=force)
+    else:
+        result = export_skin_weights(filepath=filepath, geometry=shape, force=force)
 
-    if not export_skin_weights(filepath=filepath, geometry=shape, force=force):
-        return None
-
-    return filepath
+    return filepath if result else None
 
 
 def export_skin_weights_for_shape(
@@ -150,9 +148,6 @@ def batch_export_skin_weights(
     Returns:
         A list of paths for files that were written.
     """
-    export_directory = _resolve_export_directory(directory)
-    export_directory.mkdir(parents=True, exist_ok=True)
-
     shapes = _get_selected_skin_shapes() if selected_only else get_skinned_shapes().values()
     if not shapes:
         raise RuntimeError(
@@ -160,6 +155,9 @@ def batch_export_skin_weights(
             if selected_only
             else "No skinned geometry found in the scene to export."
         )
+
+    export_directory = _resolve_export_directory(directory)
+    export_directory.mkdir(parents=True, exist_ok=True)
 
     exported_files: list[Path] = []
     for shape in shapes:

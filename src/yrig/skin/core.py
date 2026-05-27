@@ -322,9 +322,7 @@ def set_skin_weights(
 
     # Ensure all influences in new_weights exist on the skinCluster
     all_influences_in_data: set[str] = set(
-        influence_name
-        for point_weights in weights.values()
-        for influence_name in point_weights
+        influence_name for point_weights in weights.values() for influence_name in point_weights
     )
     existing_influences = set(
         cmds.skinCluster(resolved_skin_cluster, query=True, influence=True) or []  # type: ignore

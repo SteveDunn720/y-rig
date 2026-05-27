@@ -6,13 +6,19 @@ weights across joints using spline-based falloff, ngSkinTools2 integration,
 and debug visualization of per-vertex influences.
 """
 
-from . import apply, core, ng, serialize, split, visualize
+from . import apply, core, export, ng, serialize, split, visualize
 from .apply import (
     skin_and_apply_ng_weights,
     skin_and_apply_weights,
     skin_and_apply_weights_from_directory,
 )
 from .core import skin_geometry
+
+# from .export import (
+#     batch_export_skin_weights,
+#     export_skin_weights_for_selected,
+#     export_skin_weights_for_shape,
+# )
 from .serialize import export_skin_weights, import_skin_weights
 
 __all__ = [
@@ -20,11 +26,15 @@ __all__ = [
     "core",
     "ng",
     "serialize",
+    "export",
     "split",
     "visualize",
     "skin_geometry",
     "export_skin_weights",
     "import_skin_weights",
+    "batch_export_skin_weights",
+    "export_skin_weights_for_selected",
+    "export_skin_weights_for_shape",
     "skin_and_apply_ng_weights",
     "skin_and_apply_weights",
     "skin_and_apply_weights_from_directory",

@@ -13,12 +13,11 @@ from .apply import (
     skin_and_apply_weights_from_directory,
 )
 from .core import skin_geometry
-
-# from .export import (
-#     batch_export_skin_weights,
-#     export_skin_weights_for_selected,
-#     export_skin_weights_for_shape,
-# )
+from .export import (
+    batch_export_skin_weights,
+    export_skin_weights_for_selected,
+    export_skin_weights_for_shape,
+)
 from .serialize import export_skin_weights, import_skin_weights
 
 __all__ = [

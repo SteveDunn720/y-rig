@@ -141,7 +141,9 @@ def apply_ng_skin_weights(weights_file: Path, geometry: str) -> None:
 
 
 @require_ng_skin
-def write_ng_skin_weights(filepath: Path, geometry: str, force: bool = False) -> bool:
+def write_ng_skin_weights(
+    filepath: Path, geometry: str, force: bool = False, auto_init_layers: bool = False
+) -> bool:
     """
     Writes a ngSkinTools JSON file representing the weights of the given geometry.
 
@@ -151,6 +153,11 @@ def write_ng_skin_weights(filepath: Path, geometry: str, force: bool = False) ->
         force: If True, will automatically overwrite any existing file at the filepath specified.
 
     """
+    if not ng.get_layers_enabled(geometry):
+        if auto_init_layers:
+            init_layers(geometry)
+        else:
+            raise RuntimeError(f"{geometry} has not had ngSkinTools layers initialized.")
     if not confirm_overwrite(filepath, force):
         return False
     ng.export_json(target=geometry, file=str(filepath))

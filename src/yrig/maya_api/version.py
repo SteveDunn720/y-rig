@@ -12,7 +12,7 @@ TARGET_API_VERSION = 20242000
 
 
 def current_and_target_compatible(version: int) -> bool:
-    return (MAYA_API_VERSION >= version) and (TARGET_API_VERSION >= version)
+    return (version <= MAYA_API_VERSION) and (version <= TARGET_API_VERSION)
 
 
 def supports_shape_draw_on_top() -> bool:

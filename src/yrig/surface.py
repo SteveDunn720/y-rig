@@ -1,5 +1,5 @@
+from collections.abc import Iterable
 from itertools import zip_longest
-from typing import Iterable
 
 from maya import cmds
 from maya.api.OpenMaya import MDagPath, MFnNurbsSurface, MMatrix, MPoint, MSelectionList, MSpace

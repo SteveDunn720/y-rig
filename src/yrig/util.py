@@ -22,6 +22,4 @@ def confirm_overwrite(filepath: Path, force: bool = False) -> bool:
         cancelButton="No",
         dismissString="No",
     )
-    if confirm == "Yes":
-        return True
-    return False
+    return confirm == "Yes"

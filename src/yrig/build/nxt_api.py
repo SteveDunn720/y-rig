@@ -62,11 +62,11 @@ class ProgressStage(Stage):
                     with progress_step(path):
                         run(runtime_layer, stage=self, rt_node=curr_node)
                 except ExitNode as exit_node:
-                    logger.debug("Exited Node {}: {}".format(path, exit_node), links=[path])  # type: ignore
+                    logger.debug(f"Exited Node {path}: {exit_node}", links=[path])  # type: ignore
                     continue
                 except ExitGraph as exit_graph:
                     exit_graph.runtime_layer = runtime_layer
-                    logger.execinfo("Exited Graph {}: {}".format(layer.real_path, exit_graph))  # type: ignore
+                    logger.execinfo(f"Exited Graph {layer.real_path}: {exit_graph}")  # type: ignore
                     raise
                 finally:
                     runtime_layer.cache_layer.set_node_exit_time(path)

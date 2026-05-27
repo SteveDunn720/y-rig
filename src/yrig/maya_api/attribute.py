@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Iterable, Iterator, Sequence
 from enum import IntEnum
 from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
-    Iterable,
-    Iterator,
     Self,
-    Sequence,
     TypeAlias,
     TypeVar,
 )

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 ################################################################################
 ## Form generated from reading UI file 'settingsUIbzNJeH.ui'
@@ -33,7 +32,7 @@ from Qt.QtWidgets import (
 )
 
 
-class Ui_Form(object):
+class Ui_Form:
     def setupUi(self, Form) -> None:
         if not Form.objectName():
             Form.setObjectName("Form")

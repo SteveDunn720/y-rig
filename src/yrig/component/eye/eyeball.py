@@ -146,12 +146,12 @@ class Eyeball:
         dilation_mult = MultiplyDivideNode(name=f"{circle_type}_dilation_mult_{self.side}_MD")
         cmds.setAttr(f"{dilation_mult.input2.x}", 18)  # type:ignore  # Convert normalized dilation amount into spherical rotation angle
         dilation_mult.input1.x.connect_from(source_attr=dilation_attr)
-        ETQ_node = EulerToQuatNode(
+        etq_node = EulerToQuatNode(
             name=f"{circle_type}_dilation_mult_{self.side}_ETQ",
         )
-        ETQ_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
+        etq_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
         radius_adjust = MultiplyDivideNode(name=f"{circle_type}_radius_adjust_{self.side}_MD")
-        radius_adjust.input1.x.connect_from(ETQ_node.output_quat.x)
+        radius_adjust.input1.x.connect_from(etq_node.output_quat.x)
 
         z_trans_adl = SumNode(name=f"{circle_type}_translateZ_{self.side}_ADL")
 
@@ -160,13 +160,13 @@ class Eyeball:
         z_trans_adl.output.connect_to(f"{obj}.translateZ")
 
         # radius_adjust.output.x.connect_to(f"{obj}.translateZ")
-        ETQ_node.output_quat.w.connect_to(f"{obj}.scaleZ")
+        etq_node.output_quat.w.connect_to(f"{obj}.scaleZ")
         radius_adjust.input2.x.set(eye_radius)
 
         ## offsets
 
-        radius_adjust.input1.y.connect_from(ETQ_node.output_quat.w)
-        radius_adjust.input1.z.connect_from(ETQ_node.output_quat.w)
+        radius_adjust.input1.y.connect_from(etq_node.output_quat.w)
+        radius_adjust.input1.z.connect_from(etq_node.output_quat.w)
         radius_adjust.input2.z.connect_from(scale_x_attr)
         radius_adjust.input2.y.connect_from(scale_y_attr)
         radius_adjust.output.y.connect_to(f"{obj}.scaleY")
@@ -310,7 +310,7 @@ class Eyeball:
 
             cmds.addAttr(circle, longName="dilation_amount", attributeType="double", keyable=True)
 
-            key = True if circle_type in ["iris", "pupil"] else False
+            key = circle_type in ["iris", "pupil"]
 
             cmds.addAttr(
                 self.main_ctrl,

@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence, TypeVar
+from typing import TypeVar
 
 import maya.cmds as cmds
 from maya.api import OpenMaya as om2

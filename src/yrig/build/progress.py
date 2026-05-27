@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
+from collections.abc import Callable, Generator
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar
-from typing import Callable, Generator
 
 _current_progress: ContextVar[ProgressStep | None] = ContextVar("_current_progress", default=None)
 
@@ -100,10 +100,8 @@ class ProgressStep:
         elif self._callback is not None:
             current_step = get_current_progress_step() or self
             name_path = "/".join(s.name for s in current_step.get_ancestors())
-            try:
+            with suppress(Exception):
                 self._callback(self._progress, name_path)
-            except Exception:
-                pass
 
     def update_progress(self, progress: float) -> None:
         if self._children:

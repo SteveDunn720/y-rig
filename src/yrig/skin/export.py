@@ -25,6 +25,7 @@ def _resolve_export_directory(directory: Path | None = None) -> Path:
         )
     return resolved_directory
 
+
 def _get_selected_skin_shapes() -> list[str]:
     selected_nodes = cmds.ls(selection=True, long=True) or []
     if not selected_nodes:

@@ -20,7 +20,7 @@ def _resolve_export_directory(directory: Path | None = None) -> Path:
     raise RuntimeError(
         "Unable to resolve skin export directory. Provide a directory or set asset root."
     )
-    #add in the until function to prompt user to select directory if asset root is not set, or just default to current workspace
+    # add in the until function to prompt user to select directory if asset root is not set, or just default to current workspace
     return promt_user_for_directory()
 
 
@@ -43,9 +43,9 @@ def _get_selected_skin_shapes() -> list[str]:
             continue
 
         if cmds.nodeType(node) == "transform":
-            child_shapes = cmds.listRelatives(
-                node, shapes=True, noIntermediate=True, fullPath=True
-            ) or []
+            child_shapes = (
+                cmds.listRelatives(node, shapes=True, noIntermediate=True, fullPath=True) or []
+            )
             for child_shape in child_shapes:
                 if child_shape in skinned_shapes:
                     selected_shapes.append(child_shape)

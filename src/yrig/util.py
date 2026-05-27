@@ -26,6 +26,7 @@ def confirm_overwrite(filepath: Path, force: bool = False) -> bool:
         return True
     return False
 
+
 def promt_user_for_directory() -> Path:
     """Prompt the user to select a directory and return it as a Path object."""
     result = cmds.fileDialog2(fileMode=3, dialogStyle=2, caption="Select Directory")

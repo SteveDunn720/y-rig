@@ -435,7 +435,7 @@ class Eyeball:
             blendnode2.color2.r.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_offsetZ")
 
             self.dilation_nodes(
-                circle_type=f"{i:02d}",
+                circle_type=f"loop{i:02d}",
                 obj=jnt,
                 eye_radius=eye_radius,
                 dilation_attr=f"{blendnode.output.r}",

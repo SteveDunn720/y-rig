@@ -416,7 +416,7 @@ class Eyelid:
             p2 = get_position(transform=self.lower_guides.locator_list[3].name)
 
             y_offset = (MVector(p2.x, p2.y, p2.z) - MVector(p1.x, p1.y, p1.z)).length() / 10
-            for i, side in enumerate[str](["upper", "lower"]):
+            for i, side in enumerate(["upper", "lower"]):
                 # setting up mods
 
                 up_mod: Literal[1, -1] = 1 if side == "upper" else -1

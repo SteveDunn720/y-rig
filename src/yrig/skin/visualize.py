@@ -54,7 +54,7 @@ def visualize_weights_on_mesh(
     vertex_indices: list[int] = []
 
     # iterate over the points and assign colors
-    for i, point in enumerate(mesh_points):  # type: ignore
+    for i, _point in enumerate(mesh_points):  # type: ignore
         point_color: om2.MColor = om2.MColor([0, 0, 0])
         weights: list[tuple[Any, float]] = weights_per_vertex[i]
         for transform, weight in weights:

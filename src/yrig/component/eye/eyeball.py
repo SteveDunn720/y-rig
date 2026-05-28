@@ -19,8 +19,8 @@ from yrig.transform.utils import get_position
 class Eyeball:
     def __init__(
         self,
+        guides: dict,
         side: str = "L",
-        guides: dict = {},
         control_size: float = 1.0,
         main_ctrl: str = "",
         parent: str = "",
@@ -28,6 +28,8 @@ class Eyeball:
         component_grp: str = "",
         control_grp: str = "",
     ) -> None:
+        if guides is None:
+            guides = {}
         self.side = side
         self.guides = guides
         self.main_ctrl = main_ctrl
@@ -383,7 +385,7 @@ class Eyeball:
 
         self.dilation_joints = []
 
-        for i, loop in enumerate(loops_list):
+        for i, _loop in enumerate(loops_list):
             parent = self.eye_jnt
 
             jnt = create_joint(

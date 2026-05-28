@@ -488,7 +488,7 @@ class Component(component.Main):
         self.upperChainPos = []
         ii = 1.0 / max(self.settings["div0"], 1)
         i = 0.0
-        for p in range(max(self.settings["div0"] + 1, 2)):
+        for _p in range(max(self.settings["div0"] + 1, 2)):
             p_vec = vector.linearlyInterpolate(
                 self.guide.pos[self.root_guide], self.guide.pos[self.mid_guide], blend=i
             )
@@ -508,7 +508,7 @@ class Component(component.Main):
         self.lowerChainPos = []
         ii = 1.0 / max(self.settings["div1"], 1)
         i = 0.0
-        for p in range(max(self.settings["div1"] + 1, 2)):
+        for _p in range(max(self.settings["div1"] + 1, 2)):
             p_vec = vector.linearlyInterpolate(
                 self.guide.pos[self.mid_guide], self.guide.pos[self.end_guide], blend=i
             )

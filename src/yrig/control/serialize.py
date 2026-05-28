@@ -135,15 +135,15 @@ def get_knots(curve_shape: str) -> list[float]:
 
 def get_control_shape_data(curve: str) -> ControlShapeData:
     curves: list[NamedNurbsCurveData] = []
-    for curve in get_shapes(transform=curve):
+    for curve_shape in get_shapes(transform=curve):
         degree: int = cmds.getAttr(curve + ".degree")
         form: int = cmds.getAttr(curve + ".form")
         cv_positions: list[tuple[float, float, float]]
         cv_weights: list[float]
-        cv_positions, cv_weights = get_cv_data(curve_shape=curve)
-        knots: list[float] = get_knots(curve_shape=curve)
+        cv_positions, cv_weights = get_cv_data(curve_shape=curve_shape)
+        knots: list[float] = get_knots(curve_shape=curve_shape)
         curve_data = NurbsCurveData(degree, form, cv_positions, cv_weights, knots)
-        curves.append(NamedNurbsCurveData(curve, curve_data))
+        curves.append(NamedNurbsCurveData(curve_shape, curve_data))
     return ControlShapeData(curves)
 
 

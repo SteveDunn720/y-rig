@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 import maya.cmds as cmds
 from maya.api.OpenMaya import MPoint
 
@@ -15,12 +17,12 @@ class Look:
         control_parent: str = "neck_M0_head_ctl",
         control_size: float = 1.0,
         parent_jnt: str = "face_jnt",
-        parent_list: list[str] = [
+        parent_spaces: Sequence[str] = (
             "neck_M0_head_ctl",
             "spine_M0_chest_ctl",
             "body_M0_ctl",
             "local_M0_ctl",
-        ],
+        ),
     ):
         self.part: str = part
         self.side: str = side
@@ -29,7 +31,7 @@ class Look:
         self.control_size: float = control_size
         self.parent_jnt: str = parent_jnt
         self.guides = ["eye_aim_L", "eye_aim_R"]
-        self.parent_list = parent_list
+        self.parent_list = parent_spaces
 
     def create_midpoint_locator(
         self,

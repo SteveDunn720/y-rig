@@ -232,7 +232,7 @@ def get_weights_of_influence(skin_cluster: str, joint: str) -> dict[int, float]:
         fn_comp: MFnSingleIndexedComponent = MFnSingleIndexedComponent(component)
         indices: list[int] = fn_comp.getElements()
         affected_indices.extend(indices)
-    for index, weight in zip(affected_indices, weights):
+    for index, weight in zip(affected_indices, weights, strict=True):
         index_weights[index] = weight
 
     return index_weights

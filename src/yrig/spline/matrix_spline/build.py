@@ -149,7 +149,7 @@ def matrix_spline_from_transforms(
     if joint_config is not None:
         joints: list[str] = []
         if joint_config.create:
-            for pin, segment_name in zip(pins, segment_names):
+            for pin, segment_name in zip(pins, segment_names, strict=True):
                 joint = create_joint(
                     name=segment_name, transform=pin, parent=joint_config.parent, connect=True
                 )

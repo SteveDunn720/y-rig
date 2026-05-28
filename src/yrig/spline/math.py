@@ -418,7 +418,7 @@ def get_weights_along_spline(
 
     # Reattach CV references to each interpolated weight row
     for weight_row in interpolated_weight_array:
-        result.append(list(zip(cvs, weight_row.tolist())))
+        result.append(list(zip(cvs, weight_row.tolist(), strict=True)))
     return result
 
 

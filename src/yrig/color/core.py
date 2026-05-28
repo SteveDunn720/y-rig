@@ -74,6 +74,6 @@ def blend_colors_by_weight(
         A three-component tuple representing the blended color.
     """
     final_color = (0.0, 0.0, 0.0)
-    for color, weight in zip(colors, weights):
+    for color, weight in zip(colors, weights, strict=True):
         final_color = add_colors(scale_color(color, weight), final_color)
     return final_color

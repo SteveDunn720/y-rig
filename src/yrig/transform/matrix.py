@@ -59,7 +59,9 @@ def is_identity_matrix(
         return matrix.isEquivalent(MMatrix.kIdentity, epsilon)
     return all(
         abs(value - identity) < epsilon
-        for value, identity in zip(matrix, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+        for value, identity in zip(
+            matrix, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], strict=True
+        )
     )
 
 

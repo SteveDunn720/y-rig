@@ -89,7 +89,7 @@ class CheekInterpolateMid:
     ):
         self.joints: list[str] = []
         for index, (max_point, lip_point) in enumerate(
-            zip(max.pinned_uv_attrs, lip_spline.closest_points)
+            zip(max.pinned_uv_attrs, lip_spline.closest_points, strict=True)
         ):
             segment_name = f"{name}_seg{index}"
             joint = create_joint(segment_name, parent=joint_parent)

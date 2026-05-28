@@ -45,15 +45,17 @@ class BlinkControl:
 class Eyelid:
     def __init__(
         self,
-        side: str = "L",
-        guides: dict = {},
+        side: str,
+        guides: dict,
+        main_ctrl: str,
+        parent: str,
+        joint_parent: str,
+        component_grp: str,
+        control_grp: str,
         control_size: float = 1.0,
-        main_ctrl: str = "",
-        parent: str = "",
-        joint_parent: str = "",
-        component_grp: str = "",
-        control_grp: str = "",
     ) -> None:
+        if guides is None:
+            guides = {}
         self.side = side
         self.guides = guides
         self.main_ctrl = main_ctrl
@@ -386,7 +388,7 @@ class Eyelid:
         # Sub Blink Set up // Main Eyelid Set up
         #######
         twist_grps = []
-        for i, side in enumerate(["upper", "lower"]):
+        for side in ("upper", "lower"):
             sub_transform_grp = create_transform(
                 name=f"{self.side}_{side}_sub_blink_offset_matrix_drivers",
                 parent=self.look_offset,

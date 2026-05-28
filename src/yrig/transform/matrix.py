@@ -331,9 +331,6 @@ def drive_transform_with_matrix(
             else:
                 cmds.setAttr(f"{transform}.jointOrient", lock=False)
                 cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0, type="float3")  # type: ignore
-                log.debug(
-                    f"unlocked and reset orient on {transform} to drive it with {matrix_attr}"
-                )
             if lock_joint_orient:
                 cmds.setAttr(f"{transform}.jointOrient", lock=True)
     if rotate:

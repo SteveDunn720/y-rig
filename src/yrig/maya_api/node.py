@@ -183,9 +183,12 @@ class AimMatrixNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
-        self.primary = AimMatrixAxisAttribute(f"{self.name}.primary", "primary")
-        self.secondary = AimMatrixAxisAttribute(f"{self.name}.secondary", "secondary")
+        self.primary = AimMatrixAxisAttribute(f"{self.name}.primary")
+        self.secondary = AimMatrixAxisAttribute(f"{self.name}.secondary")
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+        self.pre_space_matrix = MatrixAttribute(f"{self.name}.preSpaceMatrix")
+        self.post_space_matrix = MatrixAttribute(f"{self.name}.postSpaceMatrix")
 
 
 class AxisFromMatrixNode(Node):

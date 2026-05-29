@@ -477,13 +477,13 @@ class IndexableWtMatrixAttribute(IndexableAttribute[WtMatrixAttribute]):
 class AimMatrixAxisAttribute(Attribute):
     """A Maya attribute of the same compound type as the aimMatrix axes."""
 
-    def __init__(self, attr_path: str, axis_name: str) -> None:
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-        self.input_axis = Vector3Attribute(f"{attr_path}.{axis_name}InputAxis")
-        self.mode = EnumAttribute(f"{attr_path}.{axis_name}Mode")
-        self.target_vector = Vector3Attribute(f"{attr_path}.{axis_name}TargetVector")
-        self.target_matrix = MatrixAttribute(f"{attr_path}.{axis_name}TargetMatrix")
+        self.input_axis = Vector3Attribute(f"{attr_path}InputAxis")
+        self.mode = EnumAttribute(f"{attr_path}Mode")
+        self.target_vector = Vector3Attribute(f"{attr_path}TargetVector")
+        self.target_matrix = MatrixAttribute(f"{attr_path}TargetMatrix")
 
 
 class UvPinCoordinateAttribute(Attribute[tuple[float, float]]):

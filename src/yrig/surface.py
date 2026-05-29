@@ -5,7 +5,10 @@ from maya import cmds
 from maya.api.OpenMaya import MDagPath, MFnNurbsSurface, MMatrix, MPoint, MSelectionList, MSpace
 
 from yrig.math import remap
-from yrig.maya_api.attribute import ClosestPointOnSurfaceResultAttribute, MatrixAttribute
+from yrig.maya_api.attribute import (
+    ClosestPointOnSurfaceResultAttribute,
+    MatrixAttribute,
+)
 from yrig.maya_api.enum import Axis
 from yrig.maya_api.node import (
     ClosestPointOnSurfaceNode,
@@ -14,8 +17,12 @@ from yrig.maya_api.node import (
 )
 from yrig.name import get_short_name
 from yrig.transform import get_shape
-from yrig.transform.matrix import drive_transform_with_matrix, get_world_matrix, multiply_matrices
-from yrig.transform.structs import Direction
+from yrig.transform.matrix import (
+    drive_transform_with_matrix,
+    get_world_matrix,
+    matrix_normal_orient_constraint,
+    multiply_matrices,
+)
 from yrig.transform.utils import get_position
 
 
@@ -65,7 +72,7 @@ def surface_uv_domain(surface: str) -> tuple[tuple[float, float], tuple[float, f
     return (fn_surface.knotDomainInU, fn_surface.knotDomainInV)
 
 
-def _get_surface_shapes(surface: str) -> tuple[str, str, str]:
+def get_surface_shapes(surface: str) -> tuple[str, str, str]:
     """Return (primary_shape, original_shape, shape_output_attr)."""
     shapes: list[str] = cmds.listRelatives(surface, shapes=True, noIntermediate=True) or []
     if not shapes:
@@ -105,10 +112,12 @@ def uv_pin(
     object_to_pin: str,
     uv: tuple[float, float] | None = None,
     normalize: bool = False,
-    normal_axis: Axis | Direction = Axis.Z,
-    tangent_axis: Axis | Direction = Axis.X,
+    normal_axis: Axis = Axis.Z,
+    tangent_axis: Axis = Axis.X,
     uv_pin_node: UvPinNode | None = None,
     keep_offset: bool = False,
+    drive: bool = True,
+    drive_translate: bool = True,
 ) -> tuple[UvPinNode, int]:
     """
     Create a uvPin node that pins an object to a given surface at specified UV coordinates.
@@ -124,11 +133,12 @@ def uv_pin(
         uv_pin_node: When specified the object will be pinned as an additional slot in the given uvPin node.
         keep_offset: When True, the pinned object will be offset to be in
             the same world space placement as before being pinned.
+        drive: When True the pinned objects transforms will be driven by the uvPin.
     Returns:
         The created UVPin node.
     """
 
-    primary_shape, original_shape, shape_output = _get_surface_shapes(surface)
+    primary_shape, original_shape, shape_output = get_surface_shapes(surface)
     pin_name = f"{get_short_name(object_to_pin)}_uvPin"
 
     if uv_pin_node is None:
@@ -156,17 +166,24 @@ def uv_pin(
     resolved_uv = _resolve_uv_for_pin(primary_shape, object_to_pin, uv, normalize)
     uv_pin_node.coordinate[index].set(resolved_uv)
 
-    matrices: list[MatrixAttribute | MMatrix] = []
-    if keep_offset:
-        offset_matrix: MMatrix = (
-            get_world_matrix(object_to_pin) * uv_pin_node.output_matrix[index].get().inverse()
-        )
-        matrices.append(offset_matrix)
-    matrices.append(uv_pin_node.output_matrix[index])
-    matrices.append(MatrixAttribute(f"{object_to_pin}.parentInverseMatrix[0]"))
-    localize_matrix = multiply_matrices(f"{pin_name}_localize", matrices)
+    if drive:
+        matrices: list[MatrixAttribute | MMatrix] = []
+        if keep_offset:
+            offset_matrix: MMatrix = (
+                get_world_matrix(object_to_pin) * uv_pin_node.output_matrix[index].get().inverse()
+            )
+            matrices.append(offset_matrix)
+        matrices.append(uv_pin_node.output_matrix[index])
+        matrices.append(MatrixAttribute(f"{object_to_pin}.parentInverseMatrix[0]"))
+        localize_matrix = multiply_matrices(f"{pin_name}_localize{index}", matrices)
 
-    drive_transform_with_matrix(localize_matrix.matrix_sum, object_to_pin, scale=False, shear=False)
+        drive_transform_with_matrix(
+            localize_matrix.matrix_sum,
+            object_to_pin,
+            translate=drive_translate,
+            scale=False,
+            shear=False,
+        )
     return uv_pin_node, index
 
 
@@ -176,8 +193,8 @@ def uv_pin_multi(
     objects_to_pin: Iterable[str],
     uv_coords: Iterable[tuple[float, float]] | None = None,
     normalize: bool = False,
-    normal_axis: Axis | Direction = Axis.Z,
-    tangent_axis: Axis | Direction = Axis.X,
+    normal_axis: Axis = Axis.Z,
+    tangent_axis: Axis = Axis.X,
     keep_offset: bool = False,
 ) -> UvPinNode:
     """
@@ -205,7 +222,7 @@ def uv_pin_multi(
         The shared UvPinNode with all objects registered as pin slots.
     """
 
-    primary_shape, original_shape, shape_output = _get_surface_shapes(surface)
+    primary_shape, original_shape, shape_output = get_surface_shapes(surface)
     uv_pin_node = UvPinNode(name)
     uv_pin_node.original_geometry.connect_from(f"{original_shape}.{shape_output}")
     uv_pin_node.deformed_geometry.connect_from(f"{primary_shape}.{shape_output}")
@@ -250,8 +267,10 @@ def surface_slide_constraint(
     surface: str,
     driver_transform: str,
     slider_transform: str,
-    normal_axis: tuple[float, float, float] = (0, 0, 1),
-    secondary_axis: tuple[float, float, float] = (0, 1, 0),
+    normal_axis: Axis = Axis.Z,
+    secondary_axis: Axis = Axis.X,
+    twist: bool = True,
+    uv_pin_node: UvPinNode | None = None,
 ) -> None:
     """
     Constrain a slider transform to slide along a surface, driven by another transform.
@@ -274,17 +293,28 @@ def surface_slide_constraint(
     if shape is None:
         raise ValueError(f"{surface} has no valid shape")
 
-    local_slider_pos = MultiplyPointByMatrixNode(f"{slider_name}_local_pos")
-    local_slider_pos.input_point.connect_from(closest_point_reader.position)
-    local_slider_pos.input_matrix.connect_from(f"{slider_transform}.parentInverseMatrix[0]")
-    local_slider_pos.output.connect_to(f"{slider_transform}.translate")
-
-    cmds.normalConstraint(
-        shape,
+    resolved_uv_pin_node, pin_index = uv_pin(
+        surface,
         slider_transform,
-        aimVector=normal_axis,
-        upVector=secondary_axis,
-        worldUpType="objectrotation",
-        worldUpVector=secondary_axis,
-        worldUpObject=driver_transform,
+        normal_axis=normal_axis,
+        tangent_axis=secondary_axis,
+        uv_pin_node=uv_pin_node,
+        drive=not twist,
+    )
+    resolved_uv_pin_node.coordinate[pin_index].u.connect_from(closest_point_reader.parameter_u)
+    resolved_uv_pin_node.coordinate[pin_index].v.connect_from(closest_point_reader.parameter_v)
+
+    if not twist:
+        return
+
+    normal_axis_tuple = normal_axis.to_tuple()
+    secondary_axis_tuple = secondary_axis.to_tuple()
+
+    matrix_normal_orient_constraint(
+        resolved_uv_pin_node.output_matrix[pin_index],
+        twist_transform=driver_transform,
+        driven_transform=slider_transform,
+        normal_axis=normal_axis_tuple,
+        secondary_axis=secondary_axis_tuple,
+        drive_translation=True,
     )

@@ -5,7 +5,8 @@ from maya import cmds
 from yrig.control import Control, ControlShape, create_control
 from yrig.joint import create_joint
 from yrig.maya_api.enum import RotateOrder
-from yrig.surface import surface_slide_constraint
+from yrig.maya_api.node import UvPinNode
+from yrig.surface import get_surface_shapes, surface_slide_constraint
 from yrig.transform import create_transform, matrix_constraint
 from yrig.transform.matrix import local_constraint
 
@@ -108,6 +109,11 @@ class Mouth:
         matrix_constraint(self.jaw_blend_local, self.left_corner.main_control.offset)
         matrix_constraint(self.jaw_blend_local, self.right_corner.main_control.offset)
 
+        mouth_uv_pin = UvPinNode("mouth_surface_uvPin")
+        primary_shape, original_shape, shape_output = get_surface_shapes(self.mouth_surface)
+        mouth_uv_pin.original_geometry.connect_from(f"{original_shape}.{shape_output}")
+        mouth_uv_pin.deformed_geometry.connect_from(f"{primary_shape}.{shape_output}")
+
         self.upper_lip = Lip(
             upper=True,
             guides=guides.upper_lip,
@@ -118,6 +124,7 @@ class Mouth:
             joint_parent=joint_parent,
             control_parent=self.mouth_slide,
             control_size=control_size,
+            uv_pin_node=mouth_uv_pin,
         )
         self.lower_lip = Lip(
             upper=False,
@@ -129,6 +136,7 @@ class Mouth:
             joint_parent=joint_parent,
             control_parent=self.mouth_slide,
             control_size=control_size,
+            uv_pin_node=mouth_uv_pin,
         )
 
         self.cheek_interpolate = CheekInterpolate(

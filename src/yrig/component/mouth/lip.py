@@ -8,11 +8,11 @@ from yrig.control import Control, create_control
 from yrig.joint import create_joint
 from yrig.maya_api.attribute import BooleanAttribute, ClosestPointOnSurfaceResultAttribute
 from yrig.maya_api.enum import RotateOrder
-from yrig.maya_api.node import MultiplyNode
+from yrig.maya_api.node import MultiplyNode, UvPinNode
 from yrig.skin.split import tag_for_weight_split
 from yrig.spline import generate_knots
 from yrig.spline.curve import bound_curve_from_transforms, pin_to_curve_with_motion_path
-from yrig.surface import closest_point_on_surface_reader, surface_slide_constraint
+from yrig.surface import closest_point_on_surface_reader, surface_slide_constraint, uv_pin
 from yrig.transform import create_transform
 from yrig.transform.utils import distance_reader
 
@@ -96,6 +96,7 @@ class LipSpline:
         surface: str,
         segments: int = 6,
         orient: bool = True,
+        uv_pin_node: UvPinNode | None = None,
     ):
         degree = 3
         knots = generate_knots(len(cvs), degree, clamped=False)
@@ -112,23 +113,30 @@ class LipSpline:
         for i in range(self.count):
             segment_name = f"{self.curve}_seg{i}"
             curve_pin = create_transform(f"{segment_name}_curve_pin", parent=parent)
+
             pin_to_curve_with_motion_path(
                 self.curve, curve_pin, parameter=(i + 0.5) / self.count, orient=orient
             )
+
             closest_point_reader = closest_point_on_surface_reader(curve_pin, surface)
             self.closest_points.append(closest_point_reader)
+
             if not orient:
-                cmds.normalConstraint(
-                    surface,
-                    curve_pin,
-                    aimVector=(0, 0, 1),
-                    upVector=(0, 1, 0),
-                    worldUpType="objectrotation",
-                    worldUpVector=(0, 1, 0),
-                    worldUpObject=parent,
+                pin_slide = create_transform(f"{segment_name}_pin_slide", parent=curve_pin)
+                uv_pin_node_resolved, index = uv_pin(
+                    surface, pin_slide, drive_translate=False, uv_pin_node=uv_pin_node
                 )
+                uv_pin_node_resolved.coordinate[index].u.connect_from(
+                    closest_point_reader.parameter_u
+                )
+                uv_pin_node_resolved.coordinate[index].v.connect_from(
+                    closest_point_reader.parameter_v
+                )
+                driver = pin_slide
+            else:
+                driver = curve_pin
             joint = create_joint(
-                name=segment_name, transform=curve_pin, parent=joint_parent, radius=0.5
+                name=segment_name, transform=driver, parent=joint_parent, radius=0.5
             )
             self.joints.append(joint)
 
@@ -146,6 +154,7 @@ class Lip:
         control_parent: Control | str,
         control_size: float = 1,
         sub_control_vis_attr: BooleanAttribute | None = None,
+        uv_pin_node: UvPinNode | None = None,
     ):
         self.guides = guides
         side_string = "upper" if upper else "lower"
@@ -247,6 +256,7 @@ class Lip:
             joint_parent=self.main_joint,
             surface=mouth_surface,
             orient=False,
+            uv_pin_node=uv_pin_node,
         )
         self.right_main_spline = LipSpline(
             f"{self.name}_R_main_spline",
@@ -255,6 +265,7 @@ class Lip:
             joint_parent=self.main_joint,
             surface=mouth_surface,
             orient=False,
+            uv_pin_node=uv_pin_node,
         )
         tag_for_weight_split(
             self.main_joint,

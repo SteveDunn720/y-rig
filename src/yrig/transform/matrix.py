@@ -20,7 +20,10 @@ from maya.api.OpenMaya import (
 from yrig.maya_api import node
 from yrig.maya_api.attribute import MatrixAttribute, Vector3Attribute
 from yrig.maya_api.node import (
+    AimMatrixNode,
     DecomposeMatrixNode,
+    InverseMatrixNode,
+    MultiplyVectorByMatrixNode,
     MultMatrixNode,
 )
 from yrig.name import get_short_name
@@ -460,3 +463,72 @@ def local_constraint(
         shear=shear,
         use_joint_orient=use_joint_orient,
     )
+
+
+def matrix_normal_orient_constraint(
+    matrix: MatrixAttribute,
+    twist_transform: str,
+    driven_transform: str,
+    normal_axis: tuple[float, float, float] = (0, 0, 1),
+    secondary_axis: tuple[float, float, float] = (1, 0, 0),
+    drive_translation: bool = False,
+) -> AimMatrixNode:
+    """
+    Orients a matrix so that one axis is locked to a fixed normal direction while
+    the secondary axis tracks the orientation of a twist transform.
+
+    Args:
+        matrix: The world-space input matrix to be reoriented.
+        twist_transform: Name of the Maya transform whose axial orientation
+            drives the secondary (tangent) axis of matrix.
+        driven_transform: Name of the Maya transform that owns the resulting
+            orientation.  Its ``parentInverseMatrix`` is used to localize the
+            computation, and it acts as the reference space for the aim node's
+            post-space.
+        normal_axis: The axis, expressed in local space, that should remain
+            fixed and un-twisted.
+        secondary_axis: The axis, expressed in local space, used as the
+            up/tangent reference for the aim calculation.  Also defines which
+            axis of ``twist_transform`` is projected into local space.
+
+    Returns:
+        A ``AimMatrixNode`` which calculates the twist-corrected local matrix.
+    """
+
+    localize_matrix = multiply_matrices(
+        f"{driven_transform}_pin_localize",
+        matrices=(matrix, MatrixAttribute(f"{driven_transform}.parentInverseMatrix[0]")),
+    )
+
+    world_matrix_inverse = InverseMatrixNode(f"{driven_transform}_pin_inverse")
+    world_matrix_inverse.input_matrix.connect_from(matrix)
+    twist_localize = multiply_matrices(
+        f"{driven_transform}_twist_localize",
+        matrices=(
+            MatrixAttribute(f"{twist_transform}.worldMatrix[0]"),
+            world_matrix_inverse.output_matrix,
+        ),
+    )
+
+    axis_vector = MultiplyVectorByMatrixNode(f"{twist_transform}_local_axis")
+    axis_vector.input_matrix.connect_from(twist_localize.matrix_sum)
+    axis_vector.input_vector.set(secondary_axis)
+
+    aim_matrix_node = AimMatrixNode(f"{driven_transform}_twist")
+    aim_matrix_node.primary.input_axis.set(normal_axis)
+    aim_matrix_node.primary.target_vector.set(normal_axis)
+    aim_matrix_node.primary.mode.set(1)
+    aim_matrix_node.secondary.input_axis.set(secondary_axis)
+    aim_matrix_node.secondary.target_vector.connect_from(axis_vector.output)
+    aim_matrix_node.secondary.mode.set(2)
+    aim_matrix_node.post_space_matrix.connect_from(localize_matrix.matrix_sum)
+
+    drive_transform_with_matrix(
+        aim_matrix_node.output_matrix,
+        driven_transform,
+        translate=drive_translation,
+        scale=False,
+        shear=False,
+    )
+
+    return aim_matrix_node

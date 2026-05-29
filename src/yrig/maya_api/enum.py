@@ -39,6 +39,21 @@ class Axis(IntEnum):
             case _:
                 raise ValueError(f"{value} is not a valid Axis. It should be x,y,z or -x,-y,-z.")
 
+    def to_tuple(self) -> tuple[int, int, int]:
+        match self:
+            case Axis.X:
+                return (1, 0, 0)
+            case Axis.Y:
+                return (0, 1, 0)
+            case Axis.Z:
+                return (0, 0, 1)
+            case Axis.NEG_X:
+                return (-1, 0, 0)
+            case Axis.NEG_Y:
+                return (0, -1, 0)
+            case Axis.NEG_Z:
+                return (0, 0, -1)
+
 
 class UnsignedAxis(IntEnum):
     X = 0

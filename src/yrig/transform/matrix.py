@@ -19,10 +19,10 @@ from maya.api.OpenMaya import (
 
 from yrig.maya_api import node
 from yrig.maya_api.attribute import MatrixAttribute, Vector3Attribute
+from yrig.maya_api.enum import AimMatrixAxisMode
 from yrig.maya_api.node import (
     AimMatrixNode,
     DecomposeMatrixNode,
-    InverseMatrixNode,
     MultiplyVectorByMatrixNode,
     MultMatrixNode,
 )
@@ -471,7 +471,6 @@ def matrix_normal_orient_constraint(
     driven_transform: str,
     normal_axis: tuple[float, float, float] = (0, 0, 1),
     secondary_axis: tuple[float, float, float] = (1, 0, 0),
-    drive_translation: bool = False,
 ) -> AimMatrixNode:
     """
     Orients a matrix so that one axis is locked to a fixed normal direction while
@@ -494,39 +493,41 @@ def matrix_normal_orient_constraint(
     Returns:
         A ``AimMatrixNode`` which calculates the twist-corrected local matrix.
     """
-
-    localize_matrix = multiply_matrices(
-        f"{driven_transform}_pin_localize",
-        matrices=(matrix, MatrixAttribute(f"{driven_transform}.parentInverseMatrix[0]")),
+    matrix_localize = multiply_matrices(
+        f"{driven_transform}_matrix_localize",
+        matrices=(
+            matrix,
+            MatrixAttribute(f"{driven_transform}.parentInverseMatrix[0]"),
+        ),
     )
-
-    world_matrix_inverse = InverseMatrixNode(f"{driven_transform}_pin_inverse")
-    world_matrix_inverse.input_matrix.connect_from(matrix)
     twist_localize = multiply_matrices(
         f"{driven_transform}_twist_localize",
         matrices=(
             MatrixAttribute(f"{twist_transform}.worldMatrix[0]"),
-            world_matrix_inverse.output_matrix,
+            MatrixAttribute(f"{driven_transform}.parentInverseMatrix[0]"),
         ),
     )
 
-    axis_vector = MultiplyVectorByMatrixNode(f"{twist_transform}_local_axis")
-    axis_vector.input_matrix.connect_from(twist_localize.matrix_sum)
-    axis_vector.input_vector.set(secondary_axis)
+    normal_vector = MultiplyVectorByMatrixNode(f"{twist_transform}_local_normal")
+    normal_vector.input_matrix.connect_from(matrix_localize.matrix_sum)
+    normal_vector.input_vector.set(normal_axis)
+
+    secondary_vector = MultiplyVectorByMatrixNode(f"{twist_transform}_local_secondary")
+    secondary_vector.input_matrix.connect_from(twist_localize.matrix_sum)
+    secondary_vector.input_vector.set(secondary_axis)
 
     aim_matrix_node = AimMatrixNode(f"{driven_transform}_twist")
     aim_matrix_node.primary.input_axis.set(normal_axis)
-    aim_matrix_node.primary.target_vector.set(normal_axis)
-    aim_matrix_node.primary.mode.set(1)
+    aim_matrix_node.primary.target_vector.connect_from(normal_vector.output)
+    aim_matrix_node.primary.mode.set(AimMatrixAxisMode.ALIGN)
     aim_matrix_node.secondary.input_axis.set(secondary_axis)
-    aim_matrix_node.secondary.target_vector.connect_from(axis_vector.output)
-    aim_matrix_node.secondary.mode.set(2)
-    aim_matrix_node.post_space_matrix.connect_from(localize_matrix.matrix_sum)
+    aim_matrix_node.secondary.target_vector.connect_from(secondary_vector.output)
+    aim_matrix_node.secondary.mode.set(AimMatrixAxisMode.ALIGN)
 
     drive_transform_with_matrix(
         aim_matrix_node.output_matrix,
         driven_transform,
-        translate=drive_translation,
+        translate=False,
         scale=False,
         shear=False,
     )

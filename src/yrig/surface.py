@@ -116,7 +116,7 @@ def uv_pin(
     tangent_axis: Axis = Axis.X,
     uv_pin_node: UvPinNode | None = None,
     keep_offset: bool = False,
-    drive: bool = True,
+    drive_rotate: bool = True,
     drive_translate: bool = True,
 ) -> tuple[UvPinNode, int]:
     """
@@ -166,7 +166,7 @@ def uv_pin(
     resolved_uv = _resolve_uv_for_pin(primary_shape, object_to_pin, uv, normalize)
     uv_pin_node.coordinate[index].set(resolved_uv)
 
-    if drive:
+    if drive_rotate or drive_translate:
         matrices: list[MatrixAttribute | MMatrix] = []
         if keep_offset:
             offset_matrix: MMatrix = (
@@ -181,6 +181,7 @@ def uv_pin(
             localize_matrix.matrix_sum,
             object_to_pin,
             translate=drive_translate,
+            rotate=drive_rotate,
             scale=False,
             shear=False,
         )
@@ -299,7 +300,7 @@ def surface_slide_constraint(
         normal_axis=normal_axis,
         tangent_axis=secondary_axis,
         uv_pin_node=uv_pin_node,
-        drive=not twist,
+        drive_rotate=not twist,
     )
     resolved_uv_pin_node.coordinate[pin_index].u.connect_from(closest_point_reader.parameter_u)
     resolved_uv_pin_node.coordinate[pin_index].v.connect_from(closest_point_reader.parameter_v)
@@ -316,5 +317,4 @@ def surface_slide_constraint(
         driven_transform=slider_transform,
         normal_axis=normal_axis_tuple,
         secondary_axis=secondary_axis_tuple,
-        drive_translation=True,
     )

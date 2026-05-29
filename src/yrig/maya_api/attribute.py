@@ -16,6 +16,7 @@ import maya.cmds as cmds
 from maya.api.OpenMaya import MMatrix
 
 from yrig.maya_api.enum import (
+    AimMatrixAxisMode,
     Axis,
     ConditionOperation,
     MotionPathWorldUpType,
@@ -379,6 +380,10 @@ class PlusMinusAverageOperationAttribute(EnumAttribute[PlusMinusAverageOperation
     enum_type = PlusMinusAverageOperation
 
 
+class AimMatrixAxisModeAttribute(EnumAttribute[AimMatrixAxisMode]):
+    enum_type = AimMatrixAxisMode
+
+
 class IndexableAttribute(Attribute, Generic[AttributeType], Iterable[AttributeType]):
     """Base class for array-style Maya attributes supporting indexed access."""
 
@@ -481,7 +486,7 @@ class AimMatrixAxisAttribute(Attribute):
         super().__init__(attr_path)
 
         self.input_axis = Vector3Attribute(f"{attr_path}InputAxis")
-        self.mode = EnumAttribute(f"{attr_path}Mode")
+        self.mode = AimMatrixAxisModeAttribute(f"{attr_path}Mode")
         self.target_vector = Vector3Attribute(f"{attr_path}TargetVector")
         self.target_matrix = MatrixAttribute(f"{attr_path}TargetMatrix")
 

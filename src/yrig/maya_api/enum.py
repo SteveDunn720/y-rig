@@ -101,3 +101,9 @@ class PlusMinusAverageOperation(IntEnum):
     SUM = 1
     SUBTRACT = 2
     AVERAGE = 3
+
+
+class AimMatrixAxisMode(IntEnum):
+    LOCK_AXIS = 0
+    AIM = 1
+    ALIGN = 2

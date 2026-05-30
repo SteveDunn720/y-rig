@@ -206,6 +206,8 @@ class MatrixAttribute(Attribute[MMatrix]):
         """Set the value of this attribute."""
         if isinstance(value, MMatrix):
             cmds.setAttr(self.attr_path, tuple(value), type="matrix")  # type: ignore
+            return
+
         if len(value) != 16:
             raise ValueError(
                 f"{value} is not a valid matrix input, it should be a Sequence of 16 floats or a MMatrix"
@@ -332,7 +334,7 @@ class EnumAttribute(Attribute[EnumType], Generic[EnumType]):
         self.enum_type = enum_type
 
     def get(self) -> EnumType:
-        return self.enum_type(cmds.getAttr(self.attr_path))
+        return self.enum_type(int(cmds.getAttr(self.attr_path)))
 
     def set(self, value: EnumType | int) -> None:
         cmds.setAttr(self.attr_path, int(value))  # type: ignore
@@ -446,7 +448,7 @@ class MessageAttribute(Attribute):
     ) -> list[str]:
         if not cmds.objExists(self.attr_path):
             return []
-        return cmds.listConnections(self.attr_path, source=source, destination=destination)
+        return cmds.listConnections(self.attr_path, source=source, destination=destination) or []
 
     @property
     def source_node(self) -> str | None:

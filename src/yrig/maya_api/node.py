@@ -468,7 +468,6 @@ class MotionPathNode(Node):
         self.bank = BooleanAttribute(f"{self.name}.bank")
         self.bank_limit = ScalarAttribute(f"{self.name}.bankLimit")
         self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
-        self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
 
         self.all_coordinates = Vector3Attribute(f"{self.name}.allCoordinates")
         self.orient_matrix = MatrixAttribute(f"{self.name}.orientMatrix")

@@ -4,8 +4,8 @@ from typing import Self
 from maya import cmds
 
 from yrig.maya_api.attribute import (
+    ArrayAttribute,
     BooleanAttribute,
-    IndexableMessageAttribute,
     IntegerAttribute,
     MessageAttribute,
 )
@@ -17,7 +17,7 @@ class WeightSplitTag:
         self.source_influence = MessageAttribute(f"{node}.source_influence")
         self.degree = IntegerAttribute(f"{node}.degree")
         self.periodic = BooleanAttribute(f"{node}.periodic")
-        self.split_influences = IndexableMessageAttribute(f"{node}.split_influences")
+        self.split_influences = ArrayAttribute(f"{node}.split_influences", MessageAttribute)
 
     @classmethod
     def create(cls, name: str | None) -> Self:

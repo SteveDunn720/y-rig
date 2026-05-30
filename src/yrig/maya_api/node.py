@@ -2,20 +2,15 @@ import maya.cmds as cmds
 
 from yrig.maya_api.attribute import (
     AimMatrixAxisAttribute,
+    ArrayAttribute,
     AxisAttribute,
+    BlendMatrixTargetAttribute,
     BooleanAttribute,
     ClosestPointOnSurfaceResultAttribute,
     ColorAttribute,
     ConditionOperationAttribute,
     EnumAttribute,
     GeometryAttribute,
-    IndexableBlendMatrixTargetAttribute,
-    IndexableMatrixAttribute,
-    IndexableScalarAttribute,
-    IndexableUvPinCoordinateAttribute,
-    IndexableVector2Attribute,
-    IndexableVector3Attribute,
-    IndexableWtMatrixAttribute,
     IntegerAttribute,
     MatrixAttribute,
     MessageAttribute,
@@ -29,11 +24,13 @@ from yrig.maya_api.attribute import (
     ScalarAttribute,
     StringAttribute,
     UnsignedAxisAttribute,
+    UvPinCoordinateAttribute,
     UvPinNormalOverrideAttribute,
     UvPinRelativeSpaceModeAttribute,
     Vector2Attribute,
     Vector3Attribute,
     Vector4Attribute,
+    WtMatrixAttribute,
 )
 from yrig.maya_api.utils import ensure_plugin_loaded
 
@@ -213,7 +210,7 @@ class BlendMatrixNode(Node):
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
         self.post_space_matrix = MatrixAttribute(f"{self.name}.postSpaceMatrix")
         self.pre_space_matrix = MatrixAttribute(f"{self.name}.preSpaceMatrix")
-        self.target = IndexableBlendMatrixTargetAttribute(f"{self.name}.target")
+        self.target = ArrayAttribute(f"{self.name}.target", BlendMatrixTargetAttribute)
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
 
 
@@ -321,9 +318,9 @@ class CurveInfoNode(Node):
     def _setup_attributes(self) -> None:
         self.input_curve = NurbsCurveAttribute(f"{self.name}.inputCurve")
         self.arc_length = ScalarAttribute(f"{self.name}.arcLength")
-        self.control_points = IndexableScalarAttribute(f"{self.name}.controlPoints")
-        self.knots = IndexableScalarAttribute(f"{self.name}.knots")
-        self.weights = IndexableScalarAttribute(f"{self.name}.weights")
+        self.control_points = ArrayAttribute(f"{self.name}.controlPoints", ScalarAttribute)
+        self.knots = ArrayAttribute(f"{self.name}.knots", ScalarAttribute)
+        self.weights = ArrayAttribute(f"{self.name}.weights", ScalarAttribute)
 
 
 class DecomposeMatrixNode(Node):
@@ -485,8 +482,8 @@ class MultiplyNode(Node):
         super().__init__("multiply", name)
 
     def _setup_attributes(self) -> None:
-        self.input: IndexableScalarAttribute = IndexableScalarAttribute(f"{self.name}.input")
-        self.output: ScalarAttribute = ScalarAttribute(f"{self.name}.output")
+        self.input = ArrayAttribute(f"{self.name}.input", ScalarAttribute)
+        self.output = ScalarAttribute(f"{self.name}.output")
 
 
 class MultiplyDivideNode(Node):
@@ -533,7 +530,7 @@ class MultMatrixNode(Node):
         super().__init__("multMatrix", name)
 
     def _setup_attributes(self) -> None:
-        self.matrix_in = IndexableMatrixAttribute(f"{self.name}.matrixIn")
+        self.matrix_in = ArrayAttribute(f"{self.name}.matrixIn", MatrixAttribute)
         self.matrix_sum = MatrixAttribute(f"{self.name}.matrixSum")
 
 
@@ -629,9 +626,9 @@ class PlusMinusAverageNode(Node):
         super().__init__("plusMinusAverage", name)
 
     def _setup_attributes(self) -> None:
-        self.input_3d = IndexableVector3Attribute(f"{self.name}.input3D")
-        self.input_2d = IndexableVector2Attribute(f"{self.name}.input3D")
-        self.input_1d = IndexableScalarAttribute(f"{self.name}.input1D")
+        self.input_3d = ArrayAttribute(f"{self.name}.input3D", Vector3Attribute)
+        self.input_2d = ArrayAttribute(f"{self.name}.input2D", Vector2Attribute)
+        self.input_1d = ArrayAttribute(f"{self.name}.input1D", ScalarAttribute)
         self.output_3d = Vector3Attribute(f"{self.name}.output3D")
         self.output_2d = Vector2Attribute(f"{self.name}.output2D")
         self.output_1d = ScalarAttribute(f"{self.name}.output1D")
@@ -695,8 +692,8 @@ class SumNode(Node):
         super().__init__("sum", name)
 
     def _setup_attributes(self) -> None:
-        self.input: IndexableScalarAttribute = IndexableScalarAttribute(f"{self.name}.input")
-        self.output: ScalarAttribute = ScalarAttribute(f"{self.name}.output")
+        self.input = ArrayAttribute(f"{self.name}.input", ScalarAttribute)
+        self.output = ScalarAttribute(f"{self.name}.output")
 
 
 class UvPinNode(Node):
@@ -716,10 +713,9 @@ class UvPinNode(Node):
         self.normal_override = UvPinNormalOverrideAttribute(f"{self.name}.normalOverride")
         self.relative_space_mode = UvPinRelativeSpaceModeAttribute(f"{self.name}.relativeSpaceMode")
         self.relative_space_matrix = MatrixAttribute(f"{self.name}.relativeSpaceMatrix")
-        self.coordinate = IndexableUvPinCoordinateAttribute(f"{self.name}.coordinate")
-
-        self.output_matrix = IndexableMatrixAttribute(f"{self.name}.outputMatrix")
-        self.output_translate = IndexableVector3Attribute(f"{self.name}.outputMatrix")
+        self.coordinate = ArrayAttribute(f"{self.name}.coordinate", UvPinCoordinateAttribute)
+        self.output_matrix = ArrayAttribute(f"{self.name}.outputMatrix", MatrixAttribute)
+        self.output_translate = ArrayAttribute(f"{self.name}.outputTranslate", Vector3Attribute)
 
 
 class WtAddMatrixNode(Node):
@@ -729,7 +725,5 @@ class WtAddMatrixNode(Node):
         super().__init__("wtAddMatrix", name)
 
     def _setup_attributes(self) -> None:
-        self.weight_matrix: IndexableWtMatrixAttribute = IndexableWtMatrixAttribute(
-            f"{self.name}.wtMatrix"
-        )
-        self.matrix_sum: MatrixAttribute = MatrixAttribute(f"{self.name}.matrixSum")
+        self.weight_matrix = ArrayAttribute(f"{self.name}.wtMatrix", WtMatrixAttribute)
+        self.matrix_sum = MatrixAttribute(f"{self.name}.matrixSum")

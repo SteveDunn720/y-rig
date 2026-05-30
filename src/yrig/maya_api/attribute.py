@@ -14,18 +14,7 @@ from typing import (
 import maya.cmds as cmds
 from maya.api.OpenMaya import MMatrix
 
-from yrig.maya_api.enum import (
-    AimMatrixAxisMode,
-    Axis,
-    ConditionOperation,
-    MotionPathWorldUpType,
-    MultiplyDivideOperation,
-    PlusMinusAverageOperation,
-    RotateOrder,
-    UnsignedAxis,
-    UvPinNormalOverride,
-    UvPinRelativeSpaceMode,
-)
+from yrig.maya_api.enum import AimMatrixAxisMode
 
 if TYPE_CHECKING:
     from yrig.maya_api.node import Node
@@ -334,53 +323,19 @@ class QuatAttribute(Attribute[tuple[float, float, float]]):
 class EnumAttribute(Attribute[EnumType], Generic[EnumType]):
     """A Maya attribute of the enum type."""
 
-    enum_type: type[EnumType]
+    def __init__(
+        self,
+        attr_path: str,
+        enum_type: type[EnumType],
+    ) -> None:
+        super().__init__(attr_path)
+        self.enum_type = enum_type
 
     def get(self) -> EnumType:
         return self.enum_type(cmds.getAttr(self.attr_path))
 
     def set(self, value: EnumType | int) -> None:
         cmds.setAttr(self.attr_path, int(value))  # type: ignore
-
-
-class RotateOrderAttribute(EnumAttribute[RotateOrder]):
-    enum_type = RotateOrder
-
-
-class AxisAttribute(EnumAttribute[Axis]):
-    enum_type = Axis
-
-
-class UnsignedAxisAttribute(EnumAttribute[UnsignedAxis]):
-    enum_type = UnsignedAxis
-
-
-class MotionPathWorldUpTypeAttribute(EnumAttribute[MotionPathWorldUpType]):
-    enum_type = MotionPathWorldUpType
-
-
-class MultiplyDivideOperationAttribute(EnumAttribute[MultiplyDivideOperation]):
-    enum_type = MultiplyDivideOperation
-
-
-class UvPinNormalOverrideAttribute(EnumAttribute[UvPinNormalOverride]):
-    enum_type = UvPinNormalOverride
-
-
-class UvPinRelativeSpaceModeAttribute(EnumAttribute[UvPinRelativeSpaceMode]):
-    enum_type = UvPinRelativeSpaceMode
-
-
-class ConditionOperationAttribute(EnumAttribute[ConditionOperation]):
-    enum_type = ConditionOperation
-
-
-class PlusMinusAverageOperationAttribute(EnumAttribute[PlusMinusAverageOperation]):
-    enum_type = PlusMinusAverageOperation
-
-
-class AimMatrixAxisModeAttribute(EnumAttribute[AimMatrixAxisMode]):
-    enum_type = AimMatrixAxisMode
 
 
 class ArrayAttribute(Attribute, Generic[AttributeType], Iterable[AttributeType]):
@@ -444,7 +399,7 @@ class AimMatrixAxisAttribute(Attribute):
         super().__init__(attr_path)
 
         self.input_axis = Vector3Attribute(f"{attr_path}InputAxis")
-        self.mode = AimMatrixAxisModeAttribute(f"{attr_path}Mode")
+        self.mode = EnumAttribute(f"{attr_path}Mode", AimMatrixAxisMode)
         self.target_vector = Vector3Attribute(f"{attr_path}TargetVector")
         self.target_matrix = MatrixAttribute(f"{attr_path}TargetMatrix")
 

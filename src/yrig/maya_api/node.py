@@ -202,6 +202,19 @@ class AxisFromMatrixNode(Node):
         self.output = Vector3Attribute(f"{self.name}.output")
 
 
+class BlendColorsNode(Node):
+    """Maya blendColors node with enhanced interface."""
+
+    def __init__(self, name: str = "blendColors") -> None:
+        super().__init__("blendColors", name)
+
+    def _setup_attributes(self) -> None:
+        self.color1: ColorAttribute = ColorAttribute(f"{self.name}.color1")
+        self.color2: ColorAttribute = ColorAttribute(f"{self.name}.color2")
+        self.output: ColorAttribute = ColorAttribute(f"{self.name}.output")
+        self.blender = ScalarAttribute(f"{self.name}.blender")
+
+
 class BlendMatrixNode(Node):
     """Maya blendMatrix node with enhanced interface."""
 
@@ -214,19 +227,6 @@ class BlendMatrixNode(Node):
         self.pre_space_matrix = MatrixAttribute(f"{self.name}.preSpaceMatrix")
         self.target = ArrayAttribute(f"{self.name}.target", BlendMatrixTargetAttribute)
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
-
-
-class BlendColorsNode(Node):
-    """Maya blendColors node with enhanced interface."""
-
-    def __init__(self, name: str = "blendColors") -> None:
-        super().__init__("blendColors", name)
-
-    def _setup_attributes(self) -> None:
-        self.color1: ColorAttribute = ColorAttribute(f"{self.name}.color1")
-        self.color2: ColorAttribute = ColorAttribute(f"{self.name}.color2")
-        self.output: ColorAttribute = ColorAttribute(f"{self.name}.output")
-        self.blender = ScalarAttribute(f"{self.name}.blender")
 
 
 class ClampRangeNode(Node):
@@ -545,6 +545,37 @@ class NormalizeNode(Node):
         self.output = Vector3Attribute(f"{self.name}.output")
 
 
+class PickMatrixNode(Node):
+    """Maya pickMatrix node with enhanced interface."""
+
+    def __init__(self, name: str = "pickMatrix") -> None:
+        super().__init__("pickMatrix", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
+        self.use_translate = BooleanAttribute(f"{self.name}.useTranslate")
+        self.use_rotate = BooleanAttribute(f"{self.name}.useRotate")
+        self.use_scale = BooleanAttribute(f"{self.name}.useScale")
+        self.use_shear = BooleanAttribute(f"{self.name}.useShear")
+        self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+
+class PlusMinusAverageNode(Node):
+    """Maya plusMinusAverage node with enhanced interface."""
+
+    def __init__(self, name: str = "plusMinusAverage") -> None:
+        super().__init__("plusMinusAverage", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_3d = ArrayAttribute(f"{self.name}.input3D", Vector3Attribute)
+        self.input_2d = ArrayAttribute(f"{self.name}.input2D", Vector2Attribute)
+        self.input_1d = ArrayAttribute(f"{self.name}.input1D", ScalarAttribute)
+        self.output_3d = Vector3Attribute(f"{self.name}.output3D")
+        self.output_2d = Vector2Attribute(f"{self.name}.output2D")
+        self.output_1d = ScalarAttribute(f"{self.name}.output1D")
+        self.operation = EnumAttribute(f"{self.name}.operation", PlusMinusAverageOperation)
+
+
 class QuatInvertNode(Node):
     """Maya quatInvert node with enhanced interface."""
 
@@ -602,37 +633,6 @@ class QuatToEulerNode(Node):
         self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
         self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder", RotateOrder)
         self.output_rotate = Vector3Attribute(f"{self.name}.outputRotate")
-
-
-class PickMatrixNode(Node):
-    """Maya pickMatrix node with enhanced interface."""
-
-    def __init__(self, name: str = "pickMatrix") -> None:
-        super().__init__("pickMatrix", name)
-
-    def _setup_attributes(self) -> None:
-        self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
-        self.use_translate = BooleanAttribute(f"{self.name}.useTranslate")
-        self.use_rotate = BooleanAttribute(f"{self.name}.useRotate")
-        self.use_scale = BooleanAttribute(f"{self.name}.useScale")
-        self.use_shear = BooleanAttribute(f"{self.name}.useShear")
-        self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
-
-
-class PlusMinusAverageNode(Node):
-    """Maya plusMinusAverage node with enhanced interface."""
-
-    def __init__(self, name: str = "plusMinusAverage") -> None:
-        super().__init__("plusMinusAverage", name)
-
-    def _setup_attributes(self) -> None:
-        self.input_3d = ArrayAttribute(f"{self.name}.input3D", Vector3Attribute)
-        self.input_2d = ArrayAttribute(f"{self.name}.input2D", Vector2Attribute)
-        self.input_1d = ArrayAttribute(f"{self.name}.input1D", ScalarAttribute)
-        self.output_3d = Vector3Attribute(f"{self.name}.output3D")
-        self.output_2d = Vector2Attribute(f"{self.name}.output2D")
-        self.output_1d = ScalarAttribute(f"{self.name}.output1D")
-        self.operation = EnumAttribute(f"{self.name}.operation", PlusMinusAverageOperation)
 
 
 class RemapValueNode(Node):

@@ -275,7 +275,7 @@ class Vector3Attribute(Attribute[tuple[float, float, float]]):
         cmds.setAttr(self.attr_path, *value)  # type: ignore
 
 
-class Vector4Attribute(Attribute[tuple[float, float, float]]):
+class Vector4Attribute(Attribute[tuple[float, float, float, float]]):
     """A Maya attribute of the type double4 (XYZW)"""
 
     def __init__(self, attr_path: str) -> None:
@@ -308,7 +308,7 @@ class ColorAttribute(Attribute[tuple[float, float, float]]):
         cmds.setAttr(self.attr_path, *value)  # type: ignore
 
 
-class QuatAttribute(Attribute[tuple[float, float, float]]):
+class QuatAttribute(Attribute[tuple[float, float, float, float]]):
     """A Maya attribute of the compound Quaternion type (XYZW)"""
 
     def __init__(self, attr_path: str) -> None:

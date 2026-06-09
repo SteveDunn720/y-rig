@@ -136,8 +136,8 @@ def get_knots(curve_shape: str) -> list[float]:
 def get_control_shape_data(curve: str) -> ControlShapeData:
     curves: list[NamedNurbsCurveData] = []
     for curve_shape in get_shapes(transform=curve):
-        degree: int = cmds.getAttr(curve + ".degree")
-        form: int = cmds.getAttr(curve + ".form")
+        degree: int = cmds.getAttr(curve_shape + ".degree")
+        form: int = cmds.getAttr(curve_shape + ".form")
         cv_positions: list[tuple[float, float, float]]
         cv_weights: list[float]
         cv_positions, cv_weights = get_cv_data(curve_shape=curve_shape)
@@ -185,18 +185,41 @@ def create_shape_from_named_curve_data(
 ) -> str:
     curve = named_curve.curve
     positions: list[tuple[float, float, float]] = curve.cv_positions
-    degree: int = curve.degree
-    periodic: bool = curve.form == 2
-    knots: list[float] = curve.knots
-    weights: list[float] = curve.cv_weights
+    degree: int | list = curve.degree
+    # coerce degree from possible list/tuple values (from JSON or Maya quirks)
+    if isinstance(degree, (list, tuple)):
+        degree = int(degree[0])
+    else:
+        degree = int(degree)
+
+    form_val = curve.form
+    if isinstance(form_val, (list, tuple)):
+        form_val = int(form_val[0])
+    else:
+        form_val = int(form_val)
+
+    periodic: bool = form_val == 2
+    knots: list[float] = list(curve.knots)
+    weights: list[float] = list(curve.cv_weights)
     position_weights: list[tuple[float, float, float, float]] = [
         (position[0], position[1], position[2], weights[index])
         for index, position in enumerate(positions)
     ]
     shape_name = named_curve.name
-    child_curve_transform: str = cmds.curve(
-        pointWeight=position_weights, knot=knots, periodic=periodic, degree=degree
-    )
+    try:
+        child_curve_transform: str = cmds.curve(
+            pointWeight=position_weights, knot=knots, periodic=periodic, degree=degree
+        )
+    except Exception:
+        log.error(
+            "Failed to create curve from data: degree=%r (type=%s), knots=%r, periodic=%r, position_weights_len=%d",
+            degree,
+            type(degree),
+            knots if isinstance(knots, (list, tuple)) and len(knots) < 20 else "<long>",
+            periodic,
+            len(position_weights),
+        )
+        raise
     curve_shape_node: str = get_shapes(child_curve_transform)[0]
     if use_name:
         curve_shape_node = cmds.rename(curve_shape_node, shape_name)

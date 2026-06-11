@@ -19,19 +19,72 @@ class NoseTip:
         self.component_grp = component_grp
         self.control_size = control_size
 
-    def build(self) -> None:
+    def build_tip(self) -> None:
 
-        self.tip_ctrl = create_control(
-            name="nose_tip_M",
+        # Bridge
+
+        self.bridge_ctrl = create_control(
+            name=self.guides["bridge"],
             parent=self.main_ctrl,
-            transform=self.guides["tip"],
+            transform=self.guides["bridge"],
             size=self.control_size * 0.5,
             control_shape="circle",
             direction="z",
         )
 
-        self.tip_jnt = create_joint(
-            name="nose_tip_M",
-            transform=self.tip_ctrl.transform,
+        self.bridge_jnt = create_joint(
+            name=self.guides["bridge"],
+            transform=self.guides["bridge"],
             parent=self.joint_parent,
+        )
+
+        # Tip
+
+        self.tip_ctrl = create_control(
+            name=self.guides["tip"],
+            parent=self.bridge_ctrl.transform,
+            transform=self.guides["tip"],
+            size=self.control_size * 0.45,
+            control_shape="circle",
+            direction="z",
+        )
+
+        self.tip_jnt = create_joint(
+            name=self.guides["tip"],
+            transform=self.guides["tip"],
+            parent=self.bridge_jnt,
+        )
+
+        # Left Nostril
+
+        self.left_ctrl = create_control(
+            name=self.guides["nose_L"],
+            parent=self.tip_ctrl.transform,
+            transform=self.guides["nose_L"],
+            size=self.control_size * 0.35,
+            control_shape="circle",
+            direction="z",
+        )
+
+        self.left_jnt = create_joint(
+            name=self.guides["nose_L"],
+            transform=self.guides["nose_L"],
+            parent=self.tip_jnt,
+        )
+
+        # Right Nostril
+
+        self.right_ctrl = create_control(
+            name=self.guides["nose_R"],
+            parent=self.tip_ctrl.transform,
+            transform=self.guides["nose_R"],
+            size=self.control_size * 0.35,
+            control_shape="circle",
+            direction="z",
+        )
+
+        self.right_jnt = create_joint(
+            name=self.guides["nose_R"],
+            transform=self.guides["nose_R"],
+            parent=self.tip_jnt,
         )

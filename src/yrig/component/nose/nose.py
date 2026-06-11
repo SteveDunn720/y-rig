@@ -27,14 +27,23 @@ class Nose:
 
         self.guides = {
             "root": "nose_root_M",
+            "bridge": "nose_bridge_M",
             "tip": "nose_tip_M",
-            "nostril_L": "nose_nostril_L",
-            "nostril_R": "nose_nostril_R",
+            "nose_L": "nose_L",
+            "nose_R": "nose_R",
+            "nostril_center_L": "nostril_center_L",
+            "nostril_back_L": "nostril_back_L",
+            "nostril_front_L": "nostril_front_L",
+            "nostril_bridge_L": "nostril_bridge_L",
+            "nostril_outside_L": "nostril_outside_L",
+            "nostril_center_R": "nostril_center_R",
+            "nostril_back_R": "nostril_back_R",
+            "nostril_front_R": "nostril_front_R",
+            "nostril_bridge_R": "nostril_bridge_R",
+            "nostril_outside_R": "nostril_outside_R",
         }
 
-    # -------------------
     # Structure
-    # -------------------
 
     def setup_structure(self) -> None:
 
@@ -74,9 +83,7 @@ class Nose:
             transform=self.main_ctrl.transform,
         )
 
-    # -------------------
     # Build
-    # -------------------
 
     def build(self) -> None:
 
@@ -93,7 +100,7 @@ class Nose:
             control_size=self.control_size,
         )
 
-        self.tip.build()
+        self.tip.build_tip()
 
         self.nostril_l = Nostril(
             side="L",

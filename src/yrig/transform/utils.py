@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
@@ -401,9 +402,11 @@ def create_space_switch(
     # Create condition nodes
     # ------------------------------------------------------------------
 
-    weight_aliases = cmds.parentConstraint(parent_constraint, query=True, weightAliasList=True)
+    weight_aliases: list[str] = cmds.parentConstraint(
+        parent_constraint, query=True, weightAliasList=True
+    )  # type: ignore
 
-    for index, (parent, weight_attr) in enumerate(zip(parents, weight_aliases)):  # type:ignore
+    for index, (parent, weight_attr) in enumerate(zip(parents, weight_aliases, strict=True)):
         condition = ConditionNode(name=f"{target_transform}_{parent}_spaceSwitch_COND")
 
         # Equal operation

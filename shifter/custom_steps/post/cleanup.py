@@ -47,7 +47,7 @@ class CustomShifterStep(cstp.customShifterMainStep):
             None: None
         """
         mgear_rig: Rig = self.rig
-        dev_build = True if mgear_rig.options["mode"] == 1 else False
+        dev_build = mgear_rig.options["mode"] == 1
         if not dev_build:
             # Hide Joints
             cmds.setAttr(f"{mgear_rig.model}.jnt_vis", False)  # type: ignore

@@ -19,8 +19,8 @@ from yrig.transform.utils import get_position
 class Eyeball:
     def __init__(
         self,
+        guides: dict,
         side: str = "L",
-        guides: dict = {},
         control_size: float = 1.0,
         main_ctrl: str = "",
         parent: str = "",
@@ -28,6 +28,8 @@ class Eyeball:
         component_grp: str = "",
         control_grp: str = "",
     ) -> None:
+        if guides is None:
+            guides = {}
         self.side = side
         self.guides = guides
         self.main_ctrl = main_ctrl
@@ -146,12 +148,12 @@ class Eyeball:
         dilation_mult = MultiplyDivideNode(name=f"{circle_type}_dilation_mult_{self.side}_MD")
         cmds.setAttr(f"{dilation_mult.input2.x}", 18)  # type:ignore  # Convert normalized dilation amount into spherical rotation angle
         dilation_mult.input1.x.connect_from(source_attr=dilation_attr)
-        ETQ_node = EulerToQuatNode(
+        etq_node = EulerToQuatNode(
             name=f"{circle_type}_dilation_mult_{self.side}_ETQ",
         )
-        ETQ_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
+        etq_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
         radius_adjust = MultiplyDivideNode(name=f"{circle_type}_radius_adjust_{self.side}_MD")
-        radius_adjust.input1.x.connect_from(ETQ_node.output_quat.x)
+        radius_adjust.input1.x.connect_from(etq_node.output_quat.x)
 
         z_trans_adl = SumNode(name=f"{circle_type}_translateZ_{self.side}_ADL")
 
@@ -160,13 +162,13 @@ class Eyeball:
         z_trans_adl.output.connect_to(f"{obj}.translateZ")
 
         # radius_adjust.output.x.connect_to(f"{obj}.translateZ")
-        ETQ_node.output_quat.w.connect_to(f"{obj}.scaleZ")
+        etq_node.output_quat.w.connect_to(f"{obj}.scaleZ")
         radius_adjust.input2.x.set(eye_radius)
 
         ## offsets
 
-        radius_adjust.input1.y.connect_from(ETQ_node.output_quat.w)
-        radius_adjust.input1.z.connect_from(ETQ_node.output_quat.w)
+        radius_adjust.input1.y.connect_from(etq_node.output_quat.w)
+        radius_adjust.input1.z.connect_from(etq_node.output_quat.w)
         radius_adjust.input2.z.connect_from(scale_x_attr)
         radius_adjust.input2.y.connect_from(scale_y_attr)
         radius_adjust.output.y.connect_to(f"{obj}.scaleY")
@@ -310,7 +312,7 @@ class Eyeball:
 
             cmds.addAttr(circle, longName="dilation_amount", attributeType="double", keyable=True)
 
-            key = True if circle_type in ["iris", "pupil"] else False
+            key = circle_type in ["iris", "pupil"]
 
             cmds.addAttr(
                 self.main_ctrl,
@@ -383,7 +385,7 @@ class Eyeball:
 
         self.dilation_joints = []
 
-        for i, loop in enumerate(loops_list):
+        for i, _loop in enumerate(loops_list):
             parent = self.eye_jnt
 
             jnt = create_joint(
@@ -433,7 +435,7 @@ class Eyeball:
             blendnode2.color2.r.connect_from(source_attr=f"{self.main_ctrl}.{blend[1]}_offsetZ")
 
             self.dilation_nodes(
-                circle_type=f"{i:02d}",
+                circle_type=f"loop{i:02d}",
                 obj=jnt,
                 eye_radius=eye_radius,
                 dilation_attr=f"{blendnode.output.r}",

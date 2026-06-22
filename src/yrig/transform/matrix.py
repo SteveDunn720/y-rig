@@ -1,5 +1,6 @@
 import logging
-from typing import Iterable, Sequence, TypeAlias
+from collections.abc import Iterable, Sequence
+from typing import TypeAlias
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
@@ -18,8 +19,11 @@ from maya.api.OpenMaya import (
 
 from yrig.maya_api import node
 from yrig.maya_api.attribute import MatrixAttribute, Vector3Attribute
+from yrig.maya_api.enum import AimMatrixAxisMode
 from yrig.maya_api.node import (
+    AimMatrixNode,
     DecomposeMatrixNode,
+    MultiplyVectorByMatrixNode,
     MultMatrixNode,
 )
 from yrig.name import get_short_name
@@ -58,7 +62,9 @@ def is_identity_matrix(
         return matrix.isEquivalent(MMatrix.kIdentity, epsilon)
     return all(
         abs(value - identity) < epsilon
-        for value, identity in zip(matrix, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+        for value, identity in zip(
+            matrix, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], strict=True
+        )
     )
 
 
@@ -328,9 +334,6 @@ def drive_transform_with_matrix(
             else:
                 cmds.setAttr(f"{transform}.jointOrient", lock=False)
                 cmds.setAttr(f"{transform}.jointOrient", 0, 0, 0, type="float3")  # type: ignore
-                log.debug(
-                    f"unlocked and reset orient on {transform} to drive it with {matrix_attr}"
-                )
             if lock_joint_orient:
                 cmds.setAttr(f"{transform}.jointOrient", lock=True)
     if rotate:
@@ -460,3 +463,73 @@ def local_constraint(
         shear=shear,
         use_joint_orient=use_joint_orient,
     )
+
+
+def matrix_normal_orient_constraint(
+    matrix: MatrixAttribute,
+    twist_transform: str,
+    driven_transform: str,
+    normal_axis: tuple[float, float, float] = (0, 0, 1),
+    secondary_axis: tuple[float, float, float] = (1, 0, 0),
+) -> AimMatrixNode:
+    """
+    Orients a matrix so that one axis is locked to a fixed normal direction while
+    the secondary axis tracks the orientation of a twist transform.
+
+    Args:
+        matrix: The world-space input matrix to be reoriented.
+        twist_transform: Name of the Maya transform whose axial orientation
+            drives the secondary (tangent) axis of matrix.
+        driven_transform: Name of the Maya transform that owns the resulting
+            orientation.  Its ``parentInverseMatrix`` is used to localize the
+            computation, and it acts as the reference space for the aim node's
+            post-space.
+        normal_axis: The axis, expressed in local space, that should remain
+            fixed and un-twisted.
+        secondary_axis: The axis, expressed in local space, used as the
+            up/tangent reference for the aim calculation.  Also defines which
+            axis of ``twist_transform`` is projected into local space.
+
+    Returns:
+        A ``AimMatrixNode`` which calculates the twist-corrected local matrix.
+    """
+    matrix_localize = multiply_matrices(
+        f"{driven_transform}_matrix_localize",
+        matrices=(
+            matrix,
+            MatrixAttribute(f"{driven_transform}.parentInverseMatrix[0]"),
+        ),
+    )
+    twist_localize = multiply_matrices(
+        f"{driven_transform}_twist_localize",
+        matrices=(
+            MatrixAttribute(f"{twist_transform}.worldMatrix[0]"),
+            MatrixAttribute(f"{driven_transform}.parentInverseMatrix[0]"),
+        ),
+    )
+
+    normal_vector = MultiplyVectorByMatrixNode(f"{twist_transform}_local_normal")
+    normal_vector.input_matrix.connect_from(matrix_localize.matrix_sum)
+    normal_vector.input_vector.set(normal_axis)
+
+    secondary_vector = MultiplyVectorByMatrixNode(f"{twist_transform}_local_secondary")
+    secondary_vector.input_matrix.connect_from(twist_localize.matrix_sum)
+    secondary_vector.input_vector.set(secondary_axis)
+
+    aim_matrix_node = AimMatrixNode(f"{driven_transform}_twist")
+    aim_matrix_node.primary.input_axis.set(normal_axis)
+    aim_matrix_node.primary.target_vector.connect_from(normal_vector.output)
+    aim_matrix_node.primary.mode.set(AimMatrixAxisMode.ALIGN)
+    aim_matrix_node.secondary.input_axis.set(secondary_axis)
+    aim_matrix_node.secondary.target_vector.connect_from(secondary_vector.output)
+    aim_matrix_node.secondary.mode.set(AimMatrixAxisMode.ALIGN)
+
+    drive_transform_with_matrix(
+        aim_matrix_node.output_matrix,
+        driven_transform,
+        translate=False,
+        scale=False,
+        shear=False,
+    )
+
+    return aim_matrix_node

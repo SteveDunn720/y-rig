@@ -150,7 +150,7 @@ def face_color_from_texture(mesh: str, anti_alias: bool = True) -> None:
         v: float = 0
         uv_list: list[tuple[float, float]] = []
         num_face_verts: int = 0
-        for index, vert_index in enumerate(face_vertices):
+        for index, _vert_index in enumerate(face_vertices):
             vert_u, vert_v = fn_mesh.getPolygonUV(face_index, index)
             u += vert_u
             v += vert_v
@@ -176,7 +176,7 @@ def face_color_from_texture(mesh: str, anti_alias: bool = True) -> None:
     for face_index, uv_indices in face_uv_indices.items():
         colors = [sampled_colors[i] for i in uv_indices]
         # Average RGB
-        avg_color = tuple(sum(channel) / len(colors) for channel in zip(*colors))
+        avg_color = tuple(sum(channel) / len(colors) for channel in zip(*colors, strict=False))
 
         linear_color = linear_srgb_to_rec2020(srgb_to_linear_color(avg_color))
 

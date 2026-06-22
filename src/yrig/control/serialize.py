@@ -58,7 +58,7 @@ class NurbsCurveData:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict) -> "NurbsCurveData":
+    def from_dict(cls, data: dict) -> NurbsCurveData:
         return cls(
             degree=data["degree"],
             form=data["form"],
@@ -82,7 +82,7 @@ class ControlShapeData:
         return {curve.name: curve.curve.to_dict() for curve in self.curves}
 
     @classmethod
-    def from_dict(cls, data: dict) -> "ControlShapeData":
+    def from_dict(cls, data: dict) -> ControlShapeData:
         return cls(
             curves=[
                 NamedNurbsCurveData(name, NurbsCurveData.from_dict(curve_data))
@@ -135,15 +135,15 @@ def get_knots(curve_shape: str) -> list[float]:
 
 def get_control_shape_data(curve: str) -> ControlShapeData:
     curves: list[NamedNurbsCurveData] = []
-    for curve in get_shapes(transform=curve):
+    for curve_shape in get_shapes(transform=curve):
         degree: int = cmds.getAttr(curve + ".degree")
         form: int = cmds.getAttr(curve + ".form")
         cv_positions: list[tuple[float, float, float]]
         cv_weights: list[float]
-        cv_positions, cv_weights = get_cv_data(curve_shape=curve)
-        knots: list[float] = get_knots(curve_shape=curve)
+        cv_positions, cv_weights = get_cv_data(curve_shape=curve_shape)
+        knots: list[float] = get_knots(curve_shape=curve_shape)
         curve_data = NurbsCurveData(degree, form, cv_positions, cv_weights, knots)
-        curves.append(NamedNurbsCurveData(curve, curve_data))
+        curves.append(NamedNurbsCurveData(curve_shape, curve_data))
     return ControlShapeData(curves)
 
 
@@ -174,7 +174,7 @@ def control_shape_data_from_library(curve_shape: ControlShape | str) -> ControlS
                 f"You must write out the file {file_path} before reading."
             )
 
-        with open(file_path, "r") as json_file:
+        with open(file_path) as json_file:
             json_data = json_file.read()
             _control_shape_data_cache[curve_shape] = control_shape_data_from_json(json_data)
     return _control_shape_data_cache[curve_shape]
@@ -186,7 +186,7 @@ def create_shape_from_named_curve_data(
     curve = named_curve.curve
     positions: list[tuple[float, float, float]] = curve.cv_positions
     degree: int = curve.degree
-    periodic: bool = True if curve.form == 2 else False
+    periodic: bool = curve.form == 2
     knots: list[float] = curve.knots
     weights: list[float] = curve.cv_weights
     position_weights: list[tuple[float, float, float, float]] = [
@@ -415,7 +415,7 @@ def apply_control_shapes_file(filepath: Path) -> None:
 
     existing_controls: set[str] = set(get_tagged_controls())
     control_dict: dict[str, dict]
-    with open(filepath, "r") as json_file:
+    with open(filepath) as json_file:
         json_data = json_file.read()
         control_dict = json.loads(json_data)
     for control, control_shape_data_dict in control_dict.items():

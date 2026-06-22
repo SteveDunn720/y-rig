@@ -2,38 +2,37 @@ import maya.cmds as cmds
 
 from yrig.maya_api.attribute import (
     AimMatrixAxisAttribute,
-    AxisAttribute,
+    ArrayAttribute,
+    BlendMatrixTargetAttribute,
     BooleanAttribute,
     ClosestPointOnSurfaceResultAttribute,
     ColorAttribute,
-    ConditionOperationAttribute,
     EnumAttribute,
     GeometryAttribute,
-    IndexableBlendMatrixTargetAttribute,
-    IndexableMatrixAttribute,
-    IndexableScalarAttribute,
-    IndexableUvPinCoordinateAttribute,
-    IndexableVector2Attribute,
-    IndexableVector3Attribute,
-    IndexableWtMatrixAttribute,
     IntegerAttribute,
     MatrixAttribute,
     MessageAttribute,
-    MotionPathWorldUpTypeAttribute,
-    MultiplyDivideOperationAttribute,
     NurbsCurveAttribute,
     NurbsSurfaceAttribute,
-    PlusMinusAverageOperationAttribute,
     QuatAttribute,
-    RotateOrderAttribute,
     ScalarAttribute,
     StringAttribute,
-    UnsignedAxisAttribute,
-    UvPinNormalOverrideAttribute,
-    UvPinRelativeSpaceModeAttribute,
+    UvPinCoordinateAttribute,
     Vector2Attribute,
     Vector3Attribute,
     Vector4Attribute,
+    WtMatrixAttribute,
+)
+from yrig.maya_api.enum import (
+    Axis,
+    ConditionOperation,
+    MotionPathWorldUpType,
+    MultiplyDivideOperation,
+    PlusMinusAverageOperation,
+    RotateOrder,
+    UnsignedAxis,
+    UvPinNormalOverride,
+    UvPinRelativeSpaceMode,
 )
 from yrig.maya_api.utils import ensure_plugin_loaded
 
@@ -183,9 +182,12 @@ class AimMatrixNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
-        self.primary = AimMatrixAxisAttribute(f"{self.name}.primary", "primary")
-        self.secondary = AimMatrixAxisAttribute(f"{self.name}.secondary", "secondary")
+        self.primary = AimMatrixAxisAttribute(f"{self.name}.primary")
+        self.secondary = AimMatrixAxisAttribute(f"{self.name}.secondary")
         self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+        self.pre_space_matrix = MatrixAttribute(f"{self.name}.preSpaceMatrix")
+        self.post_space_matrix = MatrixAttribute(f"{self.name}.postSpaceMatrix")
 
 
 class AxisFromMatrixNode(Node):
@@ -196,22 +198,8 @@ class AxisFromMatrixNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input = MatrixAttribute(f"{self.name}.input")
-        self.axis = AxisAttribute(f"{self.name}.axis")
+        self.axis = EnumAttribute(f"{self.name}.axis", Axis)
         self.output = Vector3Attribute(f"{self.name}.output")
-
-
-class BlendMatrixNode(Node):
-    """Maya blendMatrix node with enhanced interface."""
-
-    def __init__(self, name: str = "blendMatrix") -> None:
-        super().__init__("blendMatrix", name)
-
-    def _setup_attributes(self) -> None:
-        self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
-        self.post_space_matrix = MatrixAttribute(f"{self.name}.postSpaceMatrix")
-        self.pre_space_matrix = MatrixAttribute(f"{self.name}.preSpaceMatrix")
-        self.target = IndexableBlendMatrixTargetAttribute(f"{self.name}.target")
-        self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
 
 
 class BlendColorsNode(Node):
@@ -225,6 +213,20 @@ class BlendColorsNode(Node):
         self.color2: ColorAttribute = ColorAttribute(f"{self.name}.color2")
         self.output: ColorAttribute = ColorAttribute(f"{self.name}.output")
         self.blender = ScalarAttribute(f"{self.name}.blender")
+
+
+class BlendMatrixNode(Node):
+    """Maya blendMatrix node with enhanced interface."""
+
+    def __init__(self, name: str = "blendMatrix") -> None:
+        super().__init__("blendMatrix", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
+        self.post_space_matrix = MatrixAttribute(f"{self.name}.postSpaceMatrix")
+        self.pre_space_matrix = MatrixAttribute(f"{self.name}.preSpaceMatrix")
+        self.target = ArrayAttribute(f"{self.name}.target", BlendMatrixTargetAttribute)
+        self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
 
 
 class ClampRangeNode(Node):
@@ -260,7 +262,7 @@ class ComposeMatrixNode(Node):
 
     def _setup_attributes(self) -> None:
 
-        self.input_rotate_order = RotateOrderAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder", RotateOrder)
         self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
         self.input_rotate = Vector3Attribute(f"{self.name}.inputRotate")
         self.input_scale = Vector3Attribute(f"{self.name}.inputScale")
@@ -276,13 +278,11 @@ class ConditionNode(Node):
         super().__init__("condition", name)
 
     def _setup_attributes(self) -> None:
-        self.first_term: ScalarAttribute = ScalarAttribute(f"{self.name}.firstTerm")
-        self.second_term: ScalarAttribute = ScalarAttribute(f"{self.name}.secondTerm")
-        self.color_if_true: ColorAttribute = ColorAttribute(f"{self.name}.colorIfTrue")
-        self.color_if_false: ColorAttribute = ColorAttribute(f"{self.name}.colorIfFalse")
-        self.operation: ConditionOperationAttribute = ConditionOperationAttribute(
-            f"{self.name}.operation"
-        )
+        self.first_term = ScalarAttribute(f"{self.name}.firstTerm")
+        self.second_term = ScalarAttribute(f"{self.name}.secondTerm")
+        self.color_if_true = ColorAttribute(f"{self.name}.colorIfTrue")
+        self.color_if_false = ColorAttribute(f"{self.name}.colorIfFalse")
+        self.operation = EnumAttribute(f"{self.name}.operation", ConditionOperation)
         self.out_color: ColorAttribute = ColorAttribute(f"{self.name}.outColor")
 
 
@@ -318,9 +318,9 @@ class CurveInfoNode(Node):
     def _setup_attributes(self) -> None:
         self.input_curve = NurbsCurveAttribute(f"{self.name}.inputCurve")
         self.arc_length = ScalarAttribute(f"{self.name}.arcLength")
-        self.control_points = IndexableScalarAttribute(f"{self.name}.controlPoints")
-        self.knots = IndexableScalarAttribute(f"{self.name}.knots")
-        self.weights = IndexableScalarAttribute(f"{self.name}.weights")
+        self.control_points = ArrayAttribute(f"{self.name}.controlPoints", ScalarAttribute)
+        self.knots = ArrayAttribute(f"{self.name}.knots", ScalarAttribute)
+        self.weights = ArrayAttribute(f"{self.name}.weights", ScalarAttribute)
 
 
 class DecomposeMatrixNode(Node):
@@ -331,7 +331,7 @@ class DecomposeMatrixNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
-        self.input_rotate_order = RotateOrderAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder", RotateOrder)
         self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
         self.output_rotate = Vector3Attribute(f"{self.name}.outputRotate")
         self.output_scale = Vector3Attribute(f"{self.name}.outputScale")
@@ -373,7 +373,7 @@ class EulerToQuatNode(Node):
 
     def _setup_attributes(self) -> None:
         self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
-        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder", RotateOrder)
         self.input_rotate = Vector3Attribute(f"{self.name}.inputRotate")
 
 
@@ -447,19 +447,19 @@ class MotionPathNode(Node):
     def _setup_attributes(self) -> None:
 
         self.geometry_path = NurbsCurveAttribute(f"{self.name}.geometryPath")
-        self.rotate_order = RotateOrderAttribute(f"{self.name}.rotateOrder")
+        self.rotate_order = EnumAttribute(f"{self.name}.rotateOrder", RotateOrder)
 
         self.u_value = ScalarAttribute(f"{self.name}.uValue")
         self.fraction_mode = BooleanAttribute(f"{self.name}.fractionMode")
 
         self.follow = BooleanAttribute(f"{self.name}.follow")
-        self.world_up_type = MotionPathWorldUpTypeAttribute(f"{self.name}.worldUpType")
+        self.world_up_type = EnumAttribute(f"{self.name}.worldUpType", MotionPathWorldUpType)
         self.world_up_vector = Vector3Attribute(f"{self.name}.worldUpVector")
         self.world_up_matrix = MatrixAttribute(f"{self.name}.worldUpMatrix")
         self.inverse_up = BooleanAttribute(f"{self.name}.inverseUp")
         self.inverse_front = BooleanAttribute(f"{self.name}.inverseFront")
-        self.front_axis = UnsignedAxisAttribute(f"{self.name}.frontAxis")
-        self.up_axis = UnsignedAxisAttribute(f"{self.name}.upAxis")
+        self.front_axis = EnumAttribute(f"{self.name}.frontAxis", UnsignedAxis)
+        self.up_axis = EnumAttribute(f"{self.name}.upAxis", UnsignedAxis)
 
         self.front_twist = ScalarAttribute(f"{self.name}.frontTwist")
         self.up_twist = ScalarAttribute(f"{self.name}.upTwist")
@@ -467,7 +467,6 @@ class MotionPathNode(Node):
 
         self.bank = BooleanAttribute(f"{self.name}.bank")
         self.bank_limit = ScalarAttribute(f"{self.name}.bankLimit")
-        self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
         self.bank_scale = ScalarAttribute(f"{self.name}.bankScale")
 
         self.all_coordinates = Vector3Attribute(f"{self.name}.allCoordinates")
@@ -482,8 +481,8 @@ class MultiplyNode(Node):
         super().__init__("multiply", name)
 
     def _setup_attributes(self) -> None:
-        self.input: IndexableScalarAttribute = IndexableScalarAttribute(f"{self.name}.input")
-        self.output: ScalarAttribute = ScalarAttribute(f"{self.name}.output")
+        self.input = ArrayAttribute(f"{self.name}.input", ScalarAttribute)
+        self.output = ScalarAttribute(f"{self.name}.output")
 
 
 class MultiplyDivideNode(Node):
@@ -495,7 +494,7 @@ class MultiplyDivideNode(Node):
     def _setup_attributes(self) -> None:
         self.input1 = Vector3Attribute(f"{self.name}.input1")
         self.input2 = Vector3Attribute(f"{self.name}.input2")
-        self.operation = MultiplyDivideOperationAttribute(f"{self.name}.operation")
+        self.operation = EnumAttribute(f"{self.name}.operation", MultiplyDivideOperation)
         self.output = Vector3Attribute(f"{self.name}.output")
 
 
@@ -530,7 +529,7 @@ class MultMatrixNode(Node):
         super().__init__("multMatrix", name)
 
     def _setup_attributes(self) -> None:
-        self.matrix_in = IndexableMatrixAttribute(f"{self.name}.matrixIn")
+        self.matrix_in = ArrayAttribute(f"{self.name}.matrixIn", MatrixAttribute)
         self.matrix_sum = MatrixAttribute(f"{self.name}.matrixSum")
 
 
@@ -543,6 +542,37 @@ class NormalizeNode(Node):
     def _setup_attributes(self) -> None:
         self.input = Vector3Attribute(f"{self.name}.input")
         self.output = Vector3Attribute(f"{self.name}.output")
+
+
+class PickMatrixNode(Node):
+    """Maya pickMatrix node with enhanced interface."""
+
+    def __init__(self, name: str = "pickMatrix") -> None:
+        super().__init__("pickMatrix", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
+        self.use_translate = BooleanAttribute(f"{self.name}.useTranslate")
+        self.use_rotate = BooleanAttribute(f"{self.name}.useRotate")
+        self.use_scale = BooleanAttribute(f"{self.name}.useScale")
+        self.use_shear = BooleanAttribute(f"{self.name}.useShear")
+        self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
+
+
+class PlusMinusAverageNode(Node):
+    """Maya plusMinusAverage node with enhanced interface."""
+
+    def __init__(self, name: str = "plusMinusAverage") -> None:
+        super().__init__("plusMinusAverage", name)
+
+    def _setup_attributes(self) -> None:
+        self.input_3d = ArrayAttribute(f"{self.name}.input3D", Vector3Attribute)
+        self.input_2d = ArrayAttribute(f"{self.name}.input2D", Vector2Attribute)
+        self.input_1d = ArrayAttribute(f"{self.name}.input1D", ScalarAttribute)
+        self.output_3d = Vector3Attribute(f"{self.name}.output3D")
+        self.output_2d = Vector2Attribute(f"{self.name}.output2D")
+        self.output_1d = ScalarAttribute(f"{self.name}.output1D")
+        self.operation = EnumAttribute(f"{self.name}.operation", PlusMinusAverageOperation)
 
 
 class QuatInvertNode(Node):
@@ -600,39 +630,8 @@ class QuatToEulerNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
-        self.input_rotate_order = RotateOrderAttribute(f"{self.name}.inputRotateOrder")
+        self.input_rotate_order = EnumAttribute(f"{self.name}.inputRotateOrder", RotateOrder)
         self.output_rotate = Vector3Attribute(f"{self.name}.outputRotate")
-
-
-class PickMatrixNode(Node):
-    """Maya pickMatrix node with enhanced interface."""
-
-    def __init__(self, name: str = "pickMatrix") -> None:
-        super().__init__("pickMatrix", name)
-
-    def _setup_attributes(self) -> None:
-        self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
-        self.use_translate = BooleanAttribute(f"{self.name}.useTranslate")
-        self.use_rotate = BooleanAttribute(f"{self.name}.useRotate")
-        self.use_scale = BooleanAttribute(f"{self.name}.useScale")
-        self.use_shear = BooleanAttribute(f"{self.name}.useShear")
-        self.output_matrix = MatrixAttribute(f"{self.name}.outputMatrix")
-
-
-class PlusMinusAverageNode(Node):
-    """Maya plusMinusAverage node with enhanced interface."""
-
-    def __init__(self, name: str = "plusMinusAverage") -> None:
-        super().__init__("plusMinusAverage", name)
-
-    def _setup_attributes(self) -> None:
-        self.input_3d = IndexableVector3Attribute(f"{self.name}.input3D")
-        self.input_2d = IndexableVector2Attribute(f"{self.name}.input3D")
-        self.input_1d = IndexableScalarAttribute(f"{self.name}.input1D")
-        self.output_3d = Vector3Attribute(f"{self.name}.output3D")
-        self.output_2d = Vector2Attribute(f"{self.name}.output2D")
-        self.output_1d = ScalarAttribute(f"{self.name}.output1D")
-        self.operation = PlusMinusAverageOperationAttribute(f"{self.name}.operation")
 
 
 class RemapValueNode(Node):
@@ -692,8 +691,8 @@ class SumNode(Node):
         super().__init__("sum", name)
 
     def _setup_attributes(self) -> None:
-        self.input: IndexableScalarAttribute = IndexableScalarAttribute(f"{self.name}.input")
-        self.output: ScalarAttribute = ScalarAttribute(f"{self.name}.output")
+        self.input = ArrayAttribute(f"{self.name}.input", ScalarAttribute)
+        self.output = ScalarAttribute(f"{self.name}.output")
 
 
 class UvPinNode(Node):
@@ -706,17 +705,18 @@ class UvPinNode(Node):
         self.original_geometry = GeometryAttribute(f"{self.name}.originalGeometry")
         self.deformed_geometry = GeometryAttribute(f"{self.name}.deformedGeometry")
 
-        self.normal_axis = AxisAttribute(f"{self.name}.normalAxis")
-        self.tangent_axis = AxisAttribute(f"{self.name}.tangentAxis")
+        self.normal_axis = EnumAttribute(f"{self.name}.normalAxis", Axis)
+        self.tangent_axis = EnumAttribute(f"{self.name}.tangentAxis", Axis)
         self.uv_set_name = StringAttribute(f"{self.name}.uvSetName")
         self.normalized_isoparms = BooleanAttribute(f"{self.name}.normalizedIsoParms")
-        self.normal_override = UvPinNormalOverrideAttribute(f"{self.name}.normalOverride")
-        self.relative_space_mode = UvPinRelativeSpaceModeAttribute(f"{self.name}.relativeSpaceMode")
+        self.normal_override = EnumAttribute(f"{self.name}.normalOverride", UvPinNormalOverride)
+        self.relative_space_mode = EnumAttribute(
+            f"{self.name}.relativeSpaceMode", UvPinRelativeSpaceMode
+        )
         self.relative_space_matrix = MatrixAttribute(f"{self.name}.relativeSpaceMatrix")
-        self.coordinate = IndexableUvPinCoordinateAttribute(f"{self.name}.coordinate")
-
-        self.output_matrix = IndexableMatrixAttribute(f"{self.name}.outputMatrix")
-        self.output_translate = IndexableVector3Attribute(f"{self.name}.outputMatrix")
+        self.coordinate = ArrayAttribute(f"{self.name}.coordinate", UvPinCoordinateAttribute)
+        self.output_matrix = ArrayAttribute(f"{self.name}.outputMatrix", MatrixAttribute)
+        self.output_translate = ArrayAttribute(f"{self.name}.outputTranslate", Vector3Attribute)
 
 
 class WtAddMatrixNode(Node):
@@ -726,7 +726,5 @@ class WtAddMatrixNode(Node):
         super().__init__("wtAddMatrix", name)
 
     def _setup_attributes(self) -> None:
-        self.weight_matrix: IndexableWtMatrixAttribute = IndexableWtMatrixAttribute(
-            f"{self.name}.wtMatrix"
-        )
-        self.matrix_sum: MatrixAttribute = MatrixAttribute(f"{self.name}.matrixSum")
+        self.weight_matrix = ArrayAttribute(f"{self.name}.wtMatrix", WtMatrixAttribute)
+        self.matrix_sum = MatrixAttribute(f"{self.name}.matrixSum")

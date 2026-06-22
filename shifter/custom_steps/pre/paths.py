@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 
 import mgear.shifter.custom_step as cstp
+
 from yrig.build.context import get_asset_root
 
 log = logging.getLogger(__name__)

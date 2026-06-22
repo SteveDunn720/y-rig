@@ -6,15 +6,17 @@ from yrig.transform.utils import match_location
 class Socket:
     def __init__(
         self,
-        side: str = "L",
-        guides: dict = {},
+        guides: dict,
+        side: str,
+        main_ctrl: str,
+        parent: str,
+        joint_parent: str,
+        component_grp: str,
+        control_grp: str,
         control_size: float = 1.0,
-        main_ctrl: str = "",
-        parent: str = "",
-        joint_parent: str = "",
-        component_grp: str = "",
-        control_grp: str = "",
     ) -> None:
+        if guides is None:
+            guides = {}
         self.side = side
         self.guides = guides
         self.main_ctrl = main_ctrl

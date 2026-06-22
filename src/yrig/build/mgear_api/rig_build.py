@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from yrig.build.context import temp_asset_root, temp_build_scope
 from yrig.build.mgear_api.log import (

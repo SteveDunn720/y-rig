@@ -1,4 +1,4 @@
-import maya.cmds as cmds
+"""import maya.cmds as cmds
 from maya import mel
 
 
@@ -10,3 +10,4 @@ def import_poseInterpolator(path: str) -> None:
         cmds.parent(pi, "RIG")  # type:ignore
     except Exception as e:
         cmds.warning(e)  # type:ignore
+"""

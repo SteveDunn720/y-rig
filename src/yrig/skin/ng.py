@@ -1,10 +1,13 @@
 import json
 import logging
+from collections.abc import Callable
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 import maya.cmds as cmds
+
+from yrig.util import confirm_overwrite
 
 log = logging.getLogger(__name__)
 
@@ -138,7 +141,9 @@ def apply_ng_skin_weights(weights_file: Path, geometry: str) -> None:
 
 
 @require_ng_skin
-def write_ng_skin_weights(filepath: Path, geometry: str, force: bool = False) -> None:
+def write_ng_skin_weights(
+    filepath: Path, geometry: str, force: bool = False, auto_init_layers: bool = False
+) -> bool:
     """
     Writes a ngSkinTools JSON file representing the weights of the given geometry.
 
@@ -148,27 +153,16 @@ def write_ng_skin_weights(filepath: Path, geometry: str, force: bool = False) ->
         force: If True, will automatically overwrite any existing file at the filepath specified.
 
     """
-
-    # If the file exists, only write it if force = True, or after asking for confirmation.
-    if filepath.exists():
-        if force:
-            pass
+    if not ng.get_layers_enabled(geometry):
+        if auto_init_layers:
+            init_layers(geometry)
         else:
-            confirm: str = cmds.confirmDialog(
-                title="File Overwrite",
-                message=f"{filepath} already exists and will be overwritten, are you sure you want to write the file?",
-                button=["Yes", "No"],
-                defaultButton="Yes",
-                cancelButton="No",
-                dismissString="No",
-            )
-            if confirm == "Yes":
-                pass
-            else:
-                return
-
+            raise RuntimeError(f"{geometry} has not had ngSkinTools layers initialized.")
+    if not confirm_overwrite(filepath, force):
+        return False
     ng.export_json(target=geometry, file=str(filepath))
-    return
+    log.info(f"The skin weights for {geometry} were written to {filepath}")
+    return True
 
 
 def get_influences_from_ng_skin_weights(

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Iterator
 
 from maya import cmds
 from maya.api.OpenMaya import MMatrix
@@ -52,7 +52,7 @@ def collect_controls() -> Iterator[list[Control]]:
             parent_bucket.extend(bucket)
 
 
-def _register_control(ctrl: "Control") -> None:
+def _register_control(ctrl: Control) -> None:
     bucket = _control_collection.get()
     if bucket is not None:
         bucket.append(ctrl)

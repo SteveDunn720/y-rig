@@ -25,12 +25,12 @@ def add_joint(  # noqa: ANN201
     obj: str | MMatrix,
     name: str,
     parent: str | None,
-    UniScale: bool = False,
-    segComp: bool = False,
+    uni_scale: bool = False,
+    seg_comp: bool = False,
     rot_off: tuple[float, float, float] | None = None,
     leaf_joint: bool = False,
     data_contracts=None,  # noqa: ANN001
-    preBind_relative=None,  # noqa: ANN001
+    preBind_relative=None,  # noqa: ANN001, N803
     neutral_rot=True,  # noqa: ANN001
 ):
     """Add joint as child of the active joint or under driver object.
@@ -65,11 +65,11 @@ def add_joint(  # noqa: ANN201
 
     # force SSC override
     if USE_SEGMENT_SCALE_COMPENSATE:
-        segComp = True
+        seg_comp = True
 
     if not rot_off:
         rot_off = (0, 0, 0)
-    customName = name
+    custom_name = name
 
     if SEPARATE_JOINT_STRUCTURE:
         rule_name = name
@@ -81,7 +81,7 @@ def add_joint(  # noqa: ANN201
             t = transform.getTransform(obj)
         parent = ROOT_JOINT_PARENT if parent is None else parent
         parent_node = pm.PyNode(parent)
-        jnt = primitive.addJoint(parent_node, customName or rule_name, t)
+        jnt = primitive.addJoint(parent_node, custom_name or rule_name, t)
         keep_off = False
 
         # check if already have connections
@@ -141,15 +141,15 @@ def add_joint(  # noqa: ANN201
                 # if unifor scale is False by default. It can be forced
                 # using uniScale arg or set from the ui
                 if FORCE_UNI_SCALE:
-                    UniScale = True
-                if UniScale:
+                    uni_scale = True
+                if uni_scale:
                     attribute.disconnect_inputs(jnt, ["scale"])
                     pm.connectAttr(cns_m.scaleZ, jnt.sx)  # type: ignore
                     pm.connectAttr(cns_m.scaleZ, jnt.sy)  # type: ignore
                     pm.connectAttr(cns_m.scaleZ, jnt.sz)  # type: ignore
 
                 # leaf joint
-                if leaf_joint and not UniScale:
+                if leaf_joint and not uni_scale:
                     leaf_jnt = primitive.addJoint(jnt, "leaf_" + jnt.name(), t)
                     leaf_jnt.attr("radius").set(1.5)
                     leaf_jnt.attr("overrideEnabled").set(1)
@@ -177,7 +177,7 @@ def add_joint(  # noqa: ANN201
             # Segment scale compensate on/Off
             # TODO: before was always off to avoid issues with the
             # global scale. Confirm there is no conflicts
-            jnt.setAttr("segmentScaleCompensate", segComp)
+            jnt.setAttr("segmentScaleCompensate", seg_comp)
 
             if not keep_off and neutral_rot:
                 # setting the joint orient compensation in order to
@@ -208,7 +208,7 @@ def add_joint(  # noqa: ANN201
     else:
         jnt = primitive.addJoint(
             obj,
-            customName,
+            custom_name,
             transform.getTransform(obj),
         )
         pm.connectAttr(JOINT_VIS_ATTR, jnt.attr("visibility"))  # type: ignore

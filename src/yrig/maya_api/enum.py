@@ -1,16 +1,10 @@
 from enum import IntEnum
 
 
-class RotateOrder(IntEnum):
-    XYZ = 0
-    YZX = 1
-    ZXY = 2
-    XZY = 3
-    YXZ = 4
-    ZYX = 5
-
-    def __str__(self) -> str:
-        return self.name
+class AimMatrixAxisMode(IntEnum):
+    LOCK_AXIS = 0
+    AIM = 1
+    ALIGN = 2
 
 
 class Axis(IntEnum):
@@ -39,11 +33,41 @@ class Axis(IntEnum):
             case _:
                 raise ValueError(f"{value} is not a valid Axis. It should be x,y,z or -x,-y,-z.")
 
+    def to_tuple(self) -> tuple[int, int, int]:
+        match self:
+            case Axis.X:
+                return (1, 0, 0)
+            case Axis.Y:
+                return (0, 1, 0)
+            case Axis.Z:
+                return (0, 0, 1)
+            case Axis.NEG_X:
+                return (-1, 0, 0)
+            case Axis.NEG_Y:
+                return (0, -1, 0)
+            case Axis.NEG_Z:
+                return (0, 0, -1)
 
-class UnsignedAxis(IntEnum):
-    X = 0
-    Y = 1
-    Z = 2
+
+class ConditionOperation(IntEnum):
+    EQUAL = 0
+    NOT_EQUAL = 1
+    GREATER_THAN = 2
+    GREATER_OR_EQUAL = 3
+    LESS_THAN = 4
+    LESS_OR_EQUAL = 5
+
+
+class RotateOrder(IntEnum):
+    XYZ = 0
+    YZX = 1
+    ZXY = 2
+    XZY = 3
+    YXZ = 4
+    ZYX = 5
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class MotionPathWorldUpType(IntEnum):
@@ -61,6 +85,19 @@ class MultiplyDivideOperation(IntEnum):
     POWER = 3
 
 
+class PlusMinusAverageOperation(IntEnum):
+    NO_OPERATION = 0
+    SUM = 1
+    SUBTRACT = 2
+    AVERAGE = 3
+
+
+class UnsignedAxis(IntEnum):
+    X = 0
+    Y = 1
+    Z = 2
+
+
 class UvPinNormalOverride(IntEnum):
     AUTO = 0
     RAIL_CURVE = 1
@@ -70,19 +107,3 @@ class UvPinRelativeSpaceMode(IntEnum):
     WORLD = 0
     LOCAL = 1
     CUSTOM = 2
-
-
-class ConditionOperation(IntEnum):
-    EQUAL = 0
-    NOT_EQUAL = 1
-    GREATER_THAN = 2
-    GREATER_OR_EQUAL = 3
-    LESS_THAN = 4
-    LESS_OR_EQUAL = 5
-
-
-class PlusMinusAverageOperation(IntEnum):
-    NO_OPERATION = 0
-    SUM = 1
-    SUBTRACT = 2
-    AVERAGE = 3

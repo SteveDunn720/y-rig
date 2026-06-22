@@ -1,6 +1,7 @@
 from bisect import bisect_left, bisect_right
+from collections.abc import Iterable, Sequence
 from itertools import chain
-from typing import Iterable, Sequence, TypeVar
+from typing import TypeVar
 
 import numpy as np
 
@@ -174,10 +175,9 @@ def deboor_setup(
     knots = knots or generate_knots(cv_count, degree)  # Defaults to even knot distribution
     if len(knots) != cv_count + order:
         raise ValueError(
-            "Not enough knots provided. Curves with %s cvs must have a knot vector of length %s. "
-            "Received a knot vector of length %s: %s. "
+            f"Not enough knots provided. Curves with {cv_count} cvs must have a knot vector of length {cv_count + order}. "
+            f"Received a knot vector of length {len(knots)}: {knots}. "
             "Total knot count must equal len(cvs) + degree + 1."
-            % (cv_count, cv_count + order, len(knots), knots)
         )
 
     # Optional normalization of t
@@ -257,11 +257,11 @@ def deboor_weights(
                     weights[cv] = weight * (1 - alpha)
 
             cv_bases[j] = weights
-    finalBases = cv_bases[degree]
+    final_bases = cv_bases[degree]
 
     # Multiply each CV's basis function by its weight
     # see: https://en.wikipedia.org/wiki/Non-uniform_rational_B-spline#General_form_of_a_NURBS_curve
-    numerator = {i: finalBases[i] * cv_weights[i] for i in finalBases}
+    numerator = {i: final_bases[i] * cv_weights[i] for i in final_bases}
 
     # Sum all of the weights to normalize them such that they all total to 1
     denominator: float = sum(numerator.values())
@@ -418,7 +418,7 @@ def get_weights_along_spline(
 
     # Reattach CV references to each interpolated weight row
     for weight_row in interpolated_weight_array:
-        result.append(list(zip(cvs, weight_row.tolist())))
+        result.append(list(zip(cvs, weight_row.tolist(), strict=True)))
     return result
 
 

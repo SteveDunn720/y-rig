@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
@@ -56,7 +56,7 @@ class MatrixSpline:
 
         cv_matrices: list[str] = []
         cv_position_attrs: list[tuple[str, str, str]] = []
-        for index, cv_transform in enumerate(cv_transforms):
+        for _index, cv_transform in enumerate(cv_transforms):
             # Remove scale and shear from matrix since they will interfere with the
             # linear interpolation of the basis vectors (causing flipping)
             pick_matrix = node.PickMatrixNode(name=f"{cv_transform}_pick_matrix")

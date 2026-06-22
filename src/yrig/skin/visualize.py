@@ -54,14 +54,14 @@ def visualize_weights_on_mesh(
     vertex_indices: list[int] = []
 
     # iterate over the points and assign colors
-    for i, point in enumerate(mesh_points):  # type: ignore
+    for i, _point in enumerate(mesh_points):  # type: ignore
         point_color: om2.MColor = om2.MColor([0, 0, 0])
         weights: list[tuple[Any, float]] = weights_per_vertex[i]
         for transform, weight in weights:
             point_color += influence_colors[transform] * weight
         point_color_tuple: tuple[float, float, float] = tuple(point_color.getColor())
         point_color_rgb = oklab_to_linear_srgb(color=point_color_tuple)
-        point_color = om2.MColor((point_color_rgb))
+        point_color = om2.MColor(point_color_rgb)
         vertex_colors.append(point_color)
         vertex_indices.append(i)
         # fn_mesh.setVertexColor(point_color, i)

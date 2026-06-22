@@ -1,5 +1,5 @@
 import logging
-from typing import Iterable
+from collections.abc import Iterable
 
 from yrig.build.progress import progress_step, progress_update
 from yrig.skin.core import (

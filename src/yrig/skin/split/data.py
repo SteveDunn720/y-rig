@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence, TypeVar
+from typing import TypeVar
 
 import maya.cmds as cmds
 from maya.api import OpenMaya as om2
@@ -122,7 +123,7 @@ def get_mesh_spline_weights(
 
     # iterate over the points and get the closest parameter
     parameters: list[float] = []
-    for i, point in enumerate(mesh_points):  # type: ignore
+    for _i, point in enumerate(mesh_points):  # type: ignore
         parameter: float = fn_curve.closestPoint(point, space=om2.MSpace.kObject)[1]
         parameters.append(parameter)
 
@@ -172,7 +173,7 @@ def get_mesh_surface_weights(
 
     # iterate over the points and get the closest parameter
     parameters: list[float] = []
-    for i, point in enumerate(mesh_points):  # type: ignore
+    for _i, point in enumerate(mesh_points):  # type: ignore
         uv: tuple[float, float] = fn_surface.getParamAtPoint(point, space=om2.MSpace.kWorld)
         parameter = uv[1]
         new_parameter = remap(

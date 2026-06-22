@@ -1,8 +1,8 @@
 import logging
+from collections.abc import Callable, Generator, Iterator, Sequence
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from contextvars import Token
 from io import TextIOBase
-from typing import Callable, Generator, Iterator, Sequence
 
 from yrig.build.mgear_api.step import BuildStep
 from yrig.build.progress import ProgressStep, _current_progress

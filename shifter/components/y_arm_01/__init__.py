@@ -78,3 +78,4 @@ class Component(LimbComponent):
         Each segment (upper arm / forearm) is tagged independently.
         """
         super().finalize()
+        # test commit

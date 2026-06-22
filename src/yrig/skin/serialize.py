@@ -43,7 +43,7 @@ def skin_weight_data_from_json(json_str: str) -> SkinWeightData:
 def skin_weight_data_from_file(filepath: Path) -> SkinWeightData:
     if not filepath.exists():
         raise FileNotFoundError
-    with open(filepath, "r") as file:
+    with open(filepath) as file:
         serialized = file.read()
     return skin_weight_data_from_json(serialized)
 

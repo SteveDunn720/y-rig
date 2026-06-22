@@ -129,13 +129,12 @@ class Component(component.Main):
         Uses the jnt_pos indices recorded during addObjects to look up
         the actual joints from self.jointList (populated by jointStructure).
         """
-        if self.settings["weight_split_tag"]:
-            if len(self.split_jnt_indices) > 1:
-                segment_joints = [self.jointList[index].name() for index in self.split_jnt_indices]
-                tag_for_weight_split(
-                    influence=segment_joints[0],
-                    split_influences=segment_joints,
-                    degree=self.settings["weight_split_degree"],
-                )
+        if self.settings["weight_split_tag"] and len(self.split_jnt_indices) > 1:
+            segment_joints = [self.jointList[index].name() for index in self.split_jnt_indices]
+            tag_for_weight_split(
+                influence=segment_joints[0],
+                split_influences=segment_joints,
+                degree=self.settings["weight_split_degree"],
+            )
 
         super().finalize()

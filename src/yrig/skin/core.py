@@ -1,4 +1,4 @@
-from typing import Iterable
+from collections.abc import Iterable
 
 import maya.cmds as cmds
 from maya.api.OpenMaya import (
@@ -232,7 +232,7 @@ def get_weights_of_influence(skin_cluster: str, joint: str) -> dict[int, float]:
         fn_comp: MFnSingleIndexedComponent = MFnSingleIndexedComponent(component)
         indices: list[int] = fn_comp.getElements()
         affected_indices.extend(indices)
-    for index, weight in zip(affected_indices, weights):
+    for index, weight in zip(affected_indices, weights, strict=True):
         index_weights[index] = weight
 
     return index_weights
@@ -295,6 +295,32 @@ def get_skin_weights(geometry: str, skin_cluster: str | None = None) -> dict[int
     return weights_dict
 
 
+def get_skinned_shapes() -> dict[str, str]:
+    """
+    Return all shapes in the scene bound to skinClusters.
+
+    Args:
+        shapes: When True, return shape nodes instead of transforms.
+        intermediate: When True, include intermediate shapes.
+
+    Returns:
+       Dictionary of skin cluster -> skinned shape.
+    """
+    skin_shapes: dict[str, str] = {}
+
+    skin_clusters = cmds.ls(type="skinCluster") or []
+
+    for skin_cluster in skin_clusters:
+        geometry: list[str] = (
+            cmds.skinCluster(skin_cluster, query=True, geometry=True) or []
+        )  # type : ignore
+        for shape in geometry:
+            if cmds.getAttr(f"{shape}.intermediateObject"):
+                continue
+            skin_shapes[skin_cluster] = shape
+    return skin_shapes
+
+
 def set_skin_weights(
     shape: str,
     weights: dict[int, dict[str, float]],
@@ -322,9 +348,7 @@ def set_skin_weights(
 
     # Ensure all influences in new_weights exist on the skinCluster
     all_influences_in_data: set[str] = set(
-        influence_name
-        for point_weights in weights.values()
-        for influence_name in point_weights.keys()
+        influence_name for point_weights in weights.values() for influence_name in point_weights
     )
     existing_influences = set(
         cmds.skinCluster(resolved_skin_cluster, query=True, influence=True) or []  # type: ignore

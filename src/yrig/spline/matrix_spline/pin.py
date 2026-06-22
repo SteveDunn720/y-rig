@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import maya.cmds as cmds
 
@@ -404,7 +404,7 @@ def pin_transforms_to_matrix_spline(
             u_end=u_end,
         )
 
-    for transform, parameter in zip(pinned_transforms, segment_parameters):
+    for transform, parameter in zip(pinned_transforms, segment_parameters, strict=True):
         pin_to_matrix_spline(
             matrix_spline=matrix_spline,
             pinned_transform=transform,

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
-import maya.cmds as cmds
 import maya.api.OpenMaya as om
+import maya.cmds as cmds
 
 
 @dataclass
@@ -46,7 +45,7 @@ class GuideCurve:
         self,
         curve: str,
         resample_amount: int = -1,
-        output_names: Optional[list[str]] = None,
+        output_names: list[str] | None = None,
         ignore_handles: bool = True,
         align_normals: bool = False,
     ):

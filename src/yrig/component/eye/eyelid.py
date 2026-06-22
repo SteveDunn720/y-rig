@@ -455,7 +455,7 @@ class Eyelid:
                 )
 
                 sdk_grp = create_transform(
-                    name=f"{sub_blink}_{side}_blink_SDK",
+                    name=f"{sub_blink}_{side}_blink_{self.side}_SDK",
                     parent=blink_control.offset,
                     transform=new_matrix,
                 )

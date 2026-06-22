@@ -66,10 +66,13 @@ class Nose:
 
     def create_controls(self) -> None:
 
+        # print(self.guides["root"])
+        # print(cmds.objExists(self.guides["root"]))
+
         self.main_ctrl = create_control(
             name="nose_M",
             parent=self.control_grp,
-            transform=self.guides["root"],
+            transform=self.guides["bridge"],
             size=self.control_size,
             control_shape="round_square",
             direction="z",
@@ -78,7 +81,7 @@ class Nose:
     def create_joints(self) -> None:
 
         self.main_jnt = create_joint(
-            name="nose_root_M",
+            name="root",
             parent=self.parent_jnt,
             transform=self.main_ctrl.transform,
         )

@@ -1,5 +1,6 @@
 from yrig.control import create_control
 from yrig.joint import create_joint
+import maya.cmds as cmds
 
 
 class NoseTip:
@@ -34,7 +35,7 @@ class NoseTip:
 
         self.bridge_jnt = create_joint(
             name=self.guides["bridge"],
-            transform=self.guides["bridge"],
+            transform=self.bridge_ctrl,
             parent=self.joint_parent,
         )
 
@@ -51,7 +52,7 @@ class NoseTip:
 
         self.tip_jnt = create_joint(
             name=self.guides["tip"],
-            transform=self.guides["tip"],
+            transform=self.tip_ctrl,
             parent=self.bridge_jnt,
         )
 
@@ -68,7 +69,7 @@ class NoseTip:
 
         self.left_jnt = create_joint(
             name=self.guides["nose_L"],
-            transform=self.guides["nose_L"],
+            transform=self.left_ctrl,
             parent=self.tip_jnt,
         )
 
@@ -85,6 +86,6 @@ class NoseTip:
 
         self.right_jnt = create_joint(
             name=self.guides["nose_R"],
-            transform=self.guides["nose_R"],
+            transform=self.right_ctrl,
             parent=self.tip_jnt,
         )

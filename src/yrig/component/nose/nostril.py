@@ -43,7 +43,7 @@ class Nostril:
 
         self.center_jnt = create_joint(
             name=f"nostril_center_{self.side}",
-            transform=self.guides[f"nostril_center_{self.side}"],
+            transform=self.center_ctrl,
             parent=self.joint_parent,
         )
 
@@ -89,7 +89,7 @@ class Nostril:
 
         self.back_jnt = create_joint(
             name=f"nostril_back_{self.side}",
-            transform=self.guides[f"nostril_back_{self.side}"],
+            transform=self.back_ctrl,
             parent=self.back_jnt_offset,
         )
 
@@ -130,7 +130,7 @@ class Nostril:
 
         self.front_jnt = create_joint(
             name=f"nostril_front_{self.side}",
-            transform=self.guides[f"nostril_front_{self.side}"],
+            transform=self.front_ctrl,
             parent=self.front_jnt_offset,
         )
 
@@ -171,7 +171,7 @@ class Nostril:
 
         self.bridge_jnt = create_joint(
             name=f"nostril_bridge_{self.side}",
-            transform=self.guides[f"nostril_bridge_{self.side}"],
+            transform=self.bridge_ctrl,
             parent=self.bridge_jnt_offset,
         )
 
@@ -188,6 +188,13 @@ class Nostril:
         # =====================================================
         # OUTSIDE
         # =====================================================
+
+        # print("OUTSIDE GUIDE:", guide)
+        # print("EXISTS:", cmds.objExists(guide))
+        # print(cmds.ls("*outside*"))
+        # for key, value in self.guides.items():
+        #     if "nostril" in key:
+        #         print(value, cmds.objExists(value))
 
         self.outside_offset = create_transform(
             name=f"nostril_outside_{self.side}_offset",
@@ -212,7 +219,7 @@ class Nostril:
 
         self.outside_jnt = create_joint(
             name=f"nostril_outside_{self.side}",
-            transform=self.guides[f"nostril_outside_{self.side}"],
+            transform=self.outside_ctrl,
             parent=self.outside_jnt_offset,
         )
 

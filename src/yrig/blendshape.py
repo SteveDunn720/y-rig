@@ -1,6 +1,6 @@
-import maya.cmds as cmds
-
 import os
+
+import maya.cmds as cmds
 
 
 def read_blendshape(

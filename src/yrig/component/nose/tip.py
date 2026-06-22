@@ -1,6 +1,5 @@
 from yrig.control import create_control
 from yrig.joint import create_joint
-import maya.cmds as cmds
 
 
 class NoseTip:

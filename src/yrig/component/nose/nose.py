@@ -124,3 +124,9 @@ class Nose:
         )
 
         self.nostril_r.build()
+
+        cmds.parent("nostril_center_R_jnt", "nose_R_jnt")
+        cmds.parent("nostril_center_L_jnt", "nose_L_jnt")
+
+        cmds.parent("nostril_center_L_npo", "nose_tip_M_ctl")
+        cmds.parent("nostril_center_R_npo", "nose_tip_M_ctl")

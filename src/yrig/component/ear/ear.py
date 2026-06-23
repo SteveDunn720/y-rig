@@ -22,9 +22,7 @@ class Nose:
         self.control_size = control_size
         self.parent_jnt = parent_jnt
 
-        self.guides = {
-
-        }
+        self.guides = {}
 
     def setup_structure(self) -> None:
 

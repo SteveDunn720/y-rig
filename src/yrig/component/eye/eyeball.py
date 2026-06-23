@@ -179,6 +179,7 @@ class Eyeball:
         cmds.connectAttr(offset_x_attr, f"{obj}.translateX")
 
     def build_eyeball(self) -> None:
+        eye_radius: float = self.get_nurbs_surface_radius(self.guides["eye_diam"])
         cmds.addAttr(
             self.main_ctrl,
             longName="dilation_controls",
@@ -187,15 +188,14 @@ class Eyeball:
             keyable=True,
         )
 
-        eye_radius: float = self.get_nurbs_surface_radius(self.guides["eye_diam"])
-
         self.eye_ctrl = create_control(
             name=f"eye_{self.side}",
             parent=self.main_ctrl,
             transform=self.guides["center_piv"],
             control_shape="circle",
             direction="z",
-            size=eye_radius / 2,
+            size=eye_radius / 4,
+            position_offset=(0, 0, eye_radius),
         )
         self.eye_jnt = create_joint(
             transform=self.eye_ctrl.transform, name=f"eye_{self.side}", parent=self.joint_parent

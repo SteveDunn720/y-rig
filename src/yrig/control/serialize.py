@@ -186,7 +186,6 @@ def create_shape_from_named_curve_data(
     curve = named_curve.curve
     positions: list[tuple[float, float, float]] = curve.cv_positions
     degree: int | list = curve.degree
-    # coerce degree from possible list/tuple values (from JSON or Maya quirks)
     if isinstance(degree, (list, tuple)):
         degree = int(degree[0])
     else:

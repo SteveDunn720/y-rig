@@ -14,6 +14,9 @@
     },
     "nodes": {
         "/eye_component": {
+            "child_order": [
+                "build"
+            ],
             "code": [
                 "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
                 "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
@@ -41,7 +44,6 @@
         "/nose_component": {
             "instance": "/component",
             "child_order": [
-                "node",
                 "node"
             ],
             "attrs": {
@@ -66,8 +68,6 @@
         "/nose_component/node": {
             "code": [
                 "from yrig.component.nose.nose import Nose",
-                "",
-                "print(\"BUILDING NOSE\")",
                 "",
                 "nose = Nose(",
                 "    part=\"${name}\",",

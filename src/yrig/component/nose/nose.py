@@ -25,7 +25,7 @@ class Nose:
         self.control_size = control_size
         self.parent_jnt = parent_jnt
 
-        self.guides = {
+        self.guides: dict[str, str] = {
             "root": "nose_root_M",
             "bridge": "nose_bridge_M",
             "tip": "nose_tip_M",
@@ -108,8 +108,8 @@ class Nose:
         self.nostril_l = Nostril(
             side="L",
             guides=self.guides,
-            main_ctrl=self.main_ctrl.transform,
-            joint_parent=self.main_jnt,
+            main_ctrl=self.tip.tip_ctrl.transform,
+            joint_parent=self.tip.left_jnt,
             control_size=self.control_size,
         )
 
@@ -118,15 +118,15 @@ class Nose:
         self.nostril_r = Nostril(
             side="R",
             guides=self.guides,
-            main_ctrl=self.main_ctrl.transform,
-            joint_parent=self.main_jnt,
+            main_ctrl=self.tip.tip_ctrl.transform,
+            joint_parent=self.tip.right_jnt,
             control_size=self.control_size,
         )
 
         self.nostril_r.build()
 
-        cmds.parent("nostril_center_R_jnt", "nose_R_jnt")
-        cmds.parent("nostril_center_L_jnt", "nose_L_jnt")
+        # cmds.parent("nostril_center_R_jnt", "nose_R_jnt")
+        # cmds.parent("nostril_center_L_jnt", "nose_L_jnt")
 
-        cmds.parent("nostril_center_L_npo", "nose_tip_M_ctl")
-        cmds.parent("nostril_center_R_npo", "nose_tip_M_ctl")
+        # cmds.parent("nostril_center_L_npo", "nose_tip_M_ctl")
+        # cmds.parent("nostril_center_R_npo", "nose_tip_M_ctl")

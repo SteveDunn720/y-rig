@@ -1,0 +1,73 @@
+import maya.cmds as cmds
+
+from yrig.control import create_control
+from yrig.joint import create_joint
+from yrig.transform import create_transform
+
+
+class Nose:
+    def __init__(
+        self,
+        part: str = "ear",
+        side: str = "M",
+        parent: str = "face_grp",
+        control_parent: str = "neck_M0_head_ctl",
+        control_size: float = 1.0,
+        parent_jnt: str = "face_jnt",
+    ):
+        self.part = part
+        self.side = side
+        self.parent = parent
+        self.control_parent = control_parent
+        self.control_size = control_size
+        self.parent_jnt = parent_jnt
+
+        self.guides = {
+
+        }
+
+    def setup_structure(self) -> None:
+
+        self.main_grp = create_transform(
+            name=f"nose_{self.side}",
+            parent=self.parent,
+        )
+
+        self.component_grp = create_transform(
+            name=f"nose_component_{self.side}",
+            parent=self.main_grp,
+        )
+
+        cmds.hide(self.component_grp)
+
+        self.control_grp = create_transform(
+            name=f"nose_control_{self.side}",
+            parent=self.main_grp,
+        )
+
+    def create_controls(self) -> None:
+
+        # print(self.guides["root"])
+        # print(cmds.objExists(self.guides["root"]))
+
+        self.main_ctrl = create_control(
+            name="nose_M",
+            parent=self.control_grp,
+            transform=self.guides["bridge"],
+            size=self.control_size,
+            control_shape="round_square",
+            direction="z",
+        )
+
+    def create_joints(self) -> None:
+
+        self.main_jnt = create_joint(
+            name="root",
+            parent=self.parent_jnt,
+            transform=self.main_ctrl.transform,
+        )
+
+    # Build
+
+    def build(self) -> None:
+        pass

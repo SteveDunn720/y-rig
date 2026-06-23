@@ -4,6 +4,8 @@ from yrig.control import create_control
 from yrig.joint import create_joint
 from yrig.transform import create_transform
 
+from .full_ear import FullEar
+
 
 class Nose:
     def __init__(
@@ -22,7 +24,7 @@ class Nose:
         self.control_size = control_size
         self.parent_jnt = parent_jnt
 
-        self.guides = {}
+        self.guides = {"ear_main_R": "ear_R", "ear_main_L": "ear_L"}
 
     def setup_structure(self) -> None:
 
@@ -68,4 +70,31 @@ class Nose:
     # Build
 
     def build(self) -> None:
-        pass
+        self.setup_structure()
+        self.create_controls()
+        self.create_joints()
+
+        # build
+        self.rightEar = FullEar(
+            side="R",
+            guides=self.guides,
+            main_ctrl=self.main_ctrl.transform,
+            joint_parent=self.main_jnt,
+            control_grp=self.control_grp,
+            component_grp=self.component_grp,
+            control_size=self.control_size,
+        )
+
+        self.rightEar.build_tip()
+
+        self.rightEar = FullEar(
+            side="L",
+            guides=self.guides,
+            main_ctrl=self.main_ctrl.transform,
+            joint_parent=self.main_jnt,
+            control_grp=self.control_grp,
+            component_grp=self.component_grp,
+            control_size=self.control_size,
+        )
+
+        self.rightEar.build_tip()

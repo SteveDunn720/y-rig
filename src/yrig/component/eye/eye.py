@@ -78,8 +78,7 @@ class Eye:
     def create_controls(self) -> None:
 
         eye_radius: float = self.get_nurbs_surface_radius(obj=self.guides["eye_diam"])
-        mod = -1 if self.side == "R" else 1
-        offset_pos = (0, eye_radius * 2 * mod, 0)
+        offset_pos = (eye_radius * 2, 0, eye_radius)
         self.main_ctrl = create_control(
             name=self.guides["root_name"],
             parent=self.control_grp,

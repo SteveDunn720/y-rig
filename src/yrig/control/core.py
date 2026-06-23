@@ -74,6 +74,7 @@ def _create_control_curve(
     direction: Direction = "y",
     size: float = 1,
     dimensions: tuple[float, float, float] = (1, 1, 1),
+    position_offset: tuple[float, float, float] = (0, 0, 0),
 ) -> str:
     curve_transform = create_curve(name, control_shape)
     bake: bool = False
@@ -99,6 +100,9 @@ def _create_control_curve(
             raise RuntimeError(
                 f"{direction} is not a valid direction. It should be x,y,z or -x,-y,-z."
             )
+    if position_offset != (0, 0, 0):
+        cmds.move(position_offset[0], position_offset[1], position_offset[2], curve_transform)
+        bake = True
 
     if (size != 1) or (dimensions != (1, 1, 1)):
         scaled_dimensions = (size * dimension for dimension in dimensions)
@@ -120,6 +124,7 @@ def create_control(
     dimensions: tuple[float, float, float] = (1, 1, 1),
     rotation_order: RotateOrder = RotateOrder.XYZ,
     limit_min_scale: bool = True,
+    position_offset: tuple[float, float, float] = (0, 0, 0),
 ) -> Control:
     transform_matrix: MMatrix | None
     if transform is not None:
@@ -148,7 +153,7 @@ def create_control(
             None,
             side=get_side(name) or MIDDLE_SIDE_NAME,
             control_icon_creator=lambda: _create_control_curve(
-                control_name, control_shape, direction, size, dimensions
+                control_name, control_shape, direction, size, dimensions, position_offset
             ),
             rotation_order=str(rotation_order),
         )

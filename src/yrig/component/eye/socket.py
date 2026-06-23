@@ -192,6 +192,7 @@ class Socket:
         self.major_controls = {}
         self.parent_controls = {}
         self.main_joints = {}
+        self.sub_socket_control = []
         major_guides = [
             "socket_inner_upper",
             "socket_mid_upper",
@@ -208,10 +209,16 @@ class Socket:
                 name=f"socket_{side}_{self.side}",
                 parent=self.main_ctrl,
                 transform=self.guides[f"socket_mid_{side}"],
-                size=self.control_size / 4,
+                size=self.control_size / 2,
                 control_shape="round_square",
                 direction="z",
                 dimensions=(1, 0.2, 0.2),
+            )
+
+            cmds.addAttr(
+                self.parent_controls[f"{side}_ctrl"].transform,
+                longName="sub_socket",
+                proxy=f"{self.main_ctrl}.sub_socket",
             )
 
         for x, side in enumerate(["upper", "lower"]):
@@ -246,6 +253,8 @@ class Socket:
                     control_shape="circle",
                     direction="z",
                 )
+
+                self.sub_socket_control.append(self.major_controls[f"{guide.name}_ctrl"])
                 self.main_joints[f"{guide.name}_jnt"] = create_joint(
                     name=f"{guide.name}_{self.side}",
                     transform=self.major_controls[f"{guide.name}_ctrl"].transform,
@@ -258,3 +267,11 @@ class Socket:
                 split_influences=jnt_list,  # <-- the ones you just created
             )
             cmds.delete(curveguides.group)
+
+        for control in self.sub_socket_control:
+            cmds.connectAttr(f"{self.main_ctrl}.sub_socket", f"{control.transform}.visibility")
+            cmds.addAttr(
+                f"{control.transform}",
+                longName="sub_socket",
+                proxy=f"{self.main_ctrl}.sub_socket",
+            )

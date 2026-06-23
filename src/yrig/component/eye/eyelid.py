@@ -324,6 +324,8 @@ class Eyelid:
         self, z_offset: float = 1, x_offset: float = 1, colide_offset: float = 2
     ) -> None:
 
+        self.sub_eyelid_controls = []
+
         self.upper_guides = GuideCurve(
             curve=self.guides["eyelid_upper_curve"],
             resample_amount=7,
@@ -508,9 +510,11 @@ class Eyelid:
                     parent=self.main_ctrl,
                     transform=guide,
                     size=self.control_size / 4,
-                    control_shape="sphere",
+                    control_shape="circle",
                     direction="z",
                 )
+
+                self.sub_eyelid_controls.append(eyelid_control)
 
                 joint = create_joint(
                     name=f"{sub_blink}_{side}_eyelid_{self.side}",
@@ -595,7 +599,10 @@ class Eyelid:
         # Main Control Behavior
         ##########
         for i, side in enumerate(["upper", "lower"]):
-            blink_matrix: Any = self.convert_to_matrix(pos=(blink_x, blink_y, blink_z))
+            side_mod = -1 if self.side == "R" else 1
+            blink_matrix: Any = self.convert_to_matrix(
+                pos=(blink_x, blink_y, blink_z), scale=(1 * side_mod, 1, 1)
+            )
             blink_ctrl = create_control(
                 name=f"{side}_blink_{self.side}",
                 parent=self.main_ctrl,
@@ -689,6 +696,13 @@ class Eyelid:
                 f"{control}",
                 longName="sub_blink",
                 proxy=f"{self.main_ctrl}.sub_blink",
+            )
+        for control in self.sub_eyelid_controls:
+            cmds.connectAttr(f"{self.main_ctrl}.sub_eyelid", f"{control.transform}.visibility")
+            cmds.addAttr(
+                f"{control.transform}",
+                longName="sub_eyelid",
+                proxy=f"{self.main_ctrl}.sub_eyelid",
             )
 
         # end of blink

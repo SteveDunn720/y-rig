@@ -189,13 +189,6 @@ class Nostril:
         # OUTSIDE
         # =====================================================
 
-        # print("OUTSIDE GUIDE:", guide)
-        # print("EXISTS:", cmds.objExists(guide))
-        # print(cmds.ls("*outside*"))
-        # for key, value in self.guides.items():
-        #     if "nostril" in key:
-        #         print(value, cmds.objExists(value))
-
         self.outside_offset = create_transform(
             name=f"nostril_outside_{self.side}_offset",
             parent=self.center_ctrl.transform,

@@ -69,8 +69,6 @@
             "code": [
                 "from yrig.component.nose.nose import Nose",
                 "",
-                "print(\"BUILDING NOSE\")",
-                "",
                 "nose = Nose(",
                 "    part=\"${name}\",",
                 "    side=\"${side}\",",

@@ -23,16 +23,16 @@ class FullEar:
 
     def build_tip(self) -> None:
         self.center_ctrl = create_control(
-            name=f"ear_main_{self.side}",
+            name=f"ear_tip_{self.side}",
             parent=self.main_ctrl,
-            transform=self.guides[f"ear_{self.side}"],
+            transform=self.guides["main"],
             size=self.control_size * 0.35,
             control_shape="circle",
             direction="z",
         )
 
         self.center_jnt = create_joint(
-            name=f"ear_main_{self.side}",
-            transform=self.center_ctrl,
+            name=f"ear_tip_{self.side}",
+            transform=self.center_ctrl.transform,
             parent=self.joint_parent,
         )

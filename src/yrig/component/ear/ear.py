@@ -7,7 +7,7 @@ from yrig.transform import create_transform
 from .full_ear import FullEar
 
 
-class Nose:
+class Ear:
     def __init__(
         self,
         part: str = "ear",
@@ -24,59 +24,43 @@ class Nose:
         self.control_size = control_size
         self.parent_jnt = parent_jnt
 
-        self.guides = {"ear_main_R": "ear_R", "ear_main_L": "ear_L"}
+        self.guides = {
+            "root": f"ear_root_{side}",
+            "main": f"ear_base_{side}",
+        }
 
     def setup_structure(self) -> None:
-
-        self.main_grp = create_transform(
-            name=f"nose_{self.side}",
-            parent=self.parent,
-        )
-
+        self.main_grp = create_transform(name=f"ear_{self.side}", parent=self.parent)
         self.component_grp = create_transform(
-            name=f"nose_component_{self.side}",
-            parent=self.main_grp,
+            name=f"ear_component_{self.side}", parent=self.main_grp
         )
-
         cmds.hide(self.component_grp)
-
-        self.control_grp = create_transform(
-            name=f"nose_control_{self.side}",
-            parent=self.main_grp,
-        )
+        self.control_grp = create_transform(name=f"ear_control_{self.side}", parent=self.main_grp)
 
     def create_controls(self) -> None:
-
-        # print(self.guides["root"])
-        # print(cmds.objExists(self.guides["root"]))
-
         self.main_ctrl = create_control(
-            name="nose_M",
+            name=f"ear_{self.side}",
             parent=self.control_grp,
-            transform=self.guides["bridge"],
+            transform=self.guides["main"],
             size=self.control_size,
             control_shape="round_square",
             direction="z",
         )
 
     def create_joints(self) -> None:
-
         self.main_jnt = create_joint(
-            name="root",
+            name=f"ear_root_{self.side}",
             parent=self.parent_jnt,
             transform=self.main_ctrl.transform,
         )
-
-    # Build
 
     def build(self) -> None:
         self.setup_structure()
         self.create_controls()
         self.create_joints()
 
-        # build
-        self.rightEar = FullEar(
-            side="R",
+        self.ear = FullEar(
+            side=self.side,
             guides=self.guides,
             main_ctrl=self.main_ctrl.transform,
             joint_parent=self.main_jnt,
@@ -85,16 +69,4 @@ class Nose:
             control_size=self.control_size,
         )
 
-        self.rightEar.build_tip()
-
-        self.rightEar = FullEar(
-            side="L",
-            guides=self.guides,
-            main_ctrl=self.main_ctrl.transform,
-            joint_parent=self.main_jnt,
-            control_grp=self.control_grp,
-            component_grp=self.component_grp,
-            control_size=self.control_size,
-        )
-
-        self.rightEar.build_tip()
+        self.ear.build_tip()

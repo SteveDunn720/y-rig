@@ -5,7 +5,8 @@
     "mute": false,
     "solo": false,
     "references": [
-        "/users/animation/collindv/sandwichRepo/y-rig/nxt/nose.nxt",
+        "$YRIG_NXT_DIR/ear.nxt",
+        "$YRIG_NXT_DIR/nose.nxt",
         "$YRIG_NXT_DIR/mouth.nxt",
         "$YRIG_NXT_DIR/eye.nxt",
         "$YRIG_NXT_DIR/core.nxt"

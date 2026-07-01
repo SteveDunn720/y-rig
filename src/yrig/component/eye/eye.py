@@ -48,6 +48,25 @@ class Eye:
     # Build steps
     # -------------------
 
+    def get_nurbs_surface_radius(self, obj: str) -> float:
+        """
+        Returns the radius of a NURBS circle.
+
+        Args:
+            obj (str): Transform of the NURBS circle
+
+        Returns:
+            float: radius
+        """
+
+        bbox: list[int | float] = cmds.exactWorldBoundingBox(obj)
+
+        x: int | float = bbox[3] - bbox[0]
+        y: int | float = bbox[4] - bbox[1]
+        z: int | float = bbox[5] - bbox[2]
+
+        return max(x, y, z) * 0.5
+
     def setup_structure(self) -> None:
         self.main_grp = create_transform(name=f"eye_{self.side}", parent=self.parent)
         self.component_grp = create_transform(
@@ -57,6 +76,9 @@ class Eye:
         self.control_grp = create_transform(name=f"eye_control_{self.side}", parent=self.main_grp)
 
     def create_controls(self) -> None:
+
+        eye_radius: float = self.get_nurbs_surface_radius(obj=self.guides["eye_diam"])
+        offset_pos = (eye_radius * 2, 0, eye_radius)
         self.main_ctrl = create_control(
             name=self.guides["root_name"],
             parent=self.control_grp,
@@ -64,6 +86,7 @@ class Eye:
             size=self.control_size,
             control_shape="round_square",
             direction="z",
+            position_offset=offset_pos,
         )
 
     def create_joints(self) -> None:

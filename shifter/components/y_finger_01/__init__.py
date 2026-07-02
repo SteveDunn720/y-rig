@@ -35,38 +35,27 @@ class Component(component.Main):
             self.fk_ref = []
             self.fk_off = []
             t = self.guide.tra["root"]
-            self.ik_cns = primitive.addTransform(
-                self.root, self.getName("ik_cns"), t)
+            self.ik_cns = primitive.addTransform(self.root, self.getName("ik_cns"), t)
             parent = self.ik_cns
             tOld = False
             fk_ctl = None
             self.previusTag = self.parentCtlTag
-            for i, t in enumerate(transform.getChainTransform(self.guide.apos,
-                                                              self.normal,
-                                                              self.negate)):
-                dist = vector.getDistance(self.guide.apos[i],
-                                          self.guide.apos[i + 1])
+            for i, t in enumerate(
+                transform.getChainTransform(self.guide.apos, self.normal, self.negate)
+            ):
+                dist = vector.getDistance(self.guide.apos[i], self.guide.apos[i + 1])
                 if self.settings["neutralpose"] or not tOld:
                     tnpo = t
                 else:
-                    tnpo = transform.setMatrixPosition(
-                        tOld,
-                        transform.getPositionFromMatrix(t))
+                    tnpo = transform.setMatrixPosition(tOld, transform.getPositionFromMatrix(t))
                 if i:
-                    tref = transform.setMatrixPosition(
-                        tOld,
-                        transform.getPositionFromMatrix(t))
-                    fk_ref = primitive.addTransform(
-                        fk_ctl,
-                        self.getName(f"fk{i}_ref"),
-                        tref)
+                    tref = transform.setMatrixPosition(tOld, transform.getPositionFromMatrix(t))
+                    fk_ref = primitive.addTransform(fk_ctl, self.getName(f"fk{i}_ref"), tref)
                     self.fk_ref.append(fk_ref)
                 else:
                     tref = t
-                fk_off = primitive.addTransform(
-                    parent, self.getName(f"fk{i}_off"), tref)
-                fk_npo = primitive.addTransform(
-                    fk_off, self.getName(f"fk{i}_npo"), tnpo)
+                fk_off = primitive.addTransform(parent, self.getName(f"fk{i}_off"), tref)
+                fk_npo = primitive.addTransform(fk_off, self.getName(f"fk{i}_npo"), tnpo)
                 fk_ctl = self.addCtl(
                     fk_npo,
                     f"fk{i}_ctl",
@@ -74,10 +63,11 @@ class Component(component.Main):
                     self.color_fk,
                     "cube",
                     w=dist,
-                    h=self.size * .1,
-                    d=self.size * .1,
-                    po=datatypes.Vector(dist * .5 * self.n_factor, 0, 0),
-                    tp=self.previusTag)
+                    h=self.size * 0.1,
+                    d=self.size * 0.1,
+                    po=datatypes.Vector(dist * 0.5 * self.n_factor, 0, 0),
+                    tp=self.previusTag,
+                )
 
                 self.fk_off.append(fk_off)
                 self.fk_npo.append(fk_npo)
@@ -92,7 +82,8 @@ class Component(component.Main):
                 parent = fk_npo.getParent()
                 roll_name = self.getName(f"fk{i}_ROLL_OFST")
                 roll_group = primitive.addTransform(
-                    parent, roll_name, transform.getTransform(fk_npo))
+                    parent, roll_name, transform.getTransform(fk_npo)
+                )
                 pm.parent(fk_npo, roll_group)  # type: ignore
                 self.roll_offsets.append(roll_group)
 
@@ -104,8 +95,9 @@ class Component(component.Main):
                     transform.getTransform(base_ctl),
                     self.color_fk,
                     "circle",
-                    w=self.size * .2,
-                    tp=self.root)
+                    w=self.size * 0.2,
+                    tp=self.root,
+                )
 
                 # connect roll control to roll offsets
                 for i, roll_group in enumerate(self.roll_offsets):
@@ -126,37 +118,37 @@ class Component(component.Main):
 
         # IK controllers ------------------------------------
         if self.isIk:
-
             normal = vector.getTransposedVector(
                 self.normal,
                 [self.guide.apos[0], self.guide.apos[1]],
-                [self.guide.apos[-2], self.guide.apos[-1]])
-            t = transform.getTransformLookingAt(self.guide.apos[-2],
-                                                self.guide.apos[-1],
-                                                normal,
-                                                "xy",
-                                                self.negate)
+                [self.guide.apos[-2], self.guide.apos[-1]],
+            )
+            t = transform.getTransformLookingAt(
+                self.guide.apos[-2], self.guide.apos[-1], normal, "xy", self.negate
+            )
             t = transform.setMatrixPosition(t, self.guide.apos[-1])
 
-            self.ik_cns = primitive.addTransform(self.root,
-                                                 self.getName("ik_cns"),
-                                                 t)
-            self.ikcns_ctl = self.addCtl(self.ik_cns,
-                                         "ikcns_ctl",
-                                         t,
-                                         self.color_ik,
-                                         "null",
-                                         w=self.size,
-                                         tp=self.parentCtlTag)
-            self.ik_ctl = self.addCtl(self.ikcns_ctl,
-                                      "ik_ctl",
-                                      t,
-                                      self.color_ik,
-                                      "cube",
-                                      w=self.size * .3,
-                                      h=self.size * .3,
-                                      d=self.size * .3,
-                                      tp=self.ikcns_ctl)
+            self.ik_cns = primitive.addTransform(self.root, self.getName("ik_cns"), t)
+            self.ikcns_ctl = self.addCtl(
+                self.ik_cns,
+                "ikcns_ctl",
+                t,
+                self.color_ik,
+                "null",
+                w=self.size,
+                tp=self.parentCtlTag,
+            )
+            self.ik_ctl = self.addCtl(
+                self.ikcns_ctl,
+                "ik_ctl",
+                t,
+                self.color_ik,
+                "cube",
+                w=self.size * 0.3,
+                h=self.size * 0.3,
+                d=self.size * 0.3,
+                tp=self.ikcns_ctl,
+            )
             attribute.setKeyableAttributes(self.ik_ctl, self.t_params)
 
             v = self.guide.apos[-1] - self.guide.apos[0]
@@ -164,32 +156,31 @@ class Component(component.Main):
             v.normalize()
             v *= self.size
             v += self.guide.apos[1]
-            self.upv_cns = primitive.addTransformFromPos(
-                self.root, self.getName("upv_cns"), v)
+            self.upv_cns = primitive.addTransformFromPos(self.root, self.getName("upv_cns"), v)
 
-            self.upv_ctl = self.addCtl(self.upv_cns,
-                                       "upv_ctl",
-                                       transform.getTransform(self.upv_cns),
-                                       self.color_ik,
-                                       "diamond",
-                                       w=self.size * .1,
-                                       tp=self.parentCtlTag)
+            self.upv_ctl = self.addCtl(
+                self.upv_cns,
+                "upv_ctl",
+                transform.getTransform(self.upv_cns),
+                self.color_ik,
+                "diamond",
+                w=self.size * 0.1,
+                tp=self.parentCtlTag,
+            )
             attribute.setKeyableAttributes(self.upv_ctl, self.t_params)
 
             # Chain
-            self.chain = primitive.add2DChain(self.root,
-                                              self.getName("chain"),
-                                              self.guide.apos,
-                                              self.normal,
-                                              self.negate)
+            self.chain = primitive.add2DChain(
+                self.root, self.getName("chain"), self.guide.apos, self.normal, self.negate
+            )
             self.chain[0].attr("visibility").set(self.WIP)
 
         # Chain of deformers -------------------------------
         self.loc = []
         parent = self.root
-        for i, t in enumerate(transform.getChainTransform(self.guide.apos,
-                                                          self.normal,
-                                                          self.negate)):
+        for i, t in enumerate(
+            transform.getChainTransform(self.guide.apos, self.normal, self.negate)
+        ):
             loc = primitive.addTransform(parent, self.getName(f"{i}_loc"), t)
 
             self.loc.append(loc)
@@ -198,16 +189,10 @@ class Component(component.Main):
         # IK/FK Matching
         if self.isFkIk:
             for i, fk in enumerate(self.fk_ctl):
-                self.add_match_ref(fk,
-                                   self.chain[i],
-                                   f"{fk.name()}_mth")
-            self.add_match_ref(self.ik_ctl,
-                               self.fk_ctl[-1],
-                               "ik_mth")
+                self.add_match_ref(fk, self.chain[i], f"{fk.name()}_mth")
+            self.add_match_ref(self.ik_ctl, self.fk_ctl[-1], "ik_mth")
 
-            self.add_match_ref(self.upv_ctl,
-                               self.fk_ctl[0],
-                               "upv_mth")
+            self.add_match_ref(self.upv_ctl, self.fk_ctl[0], "upv_mth")
 
     # =====================================================
     # ATTRIBUTES
@@ -218,22 +203,17 @@ class Component(component.Main):
         # Anim -------------------------------------------
         if self.isFkIk:
             self.blend_att = self.addAnimParam(
-                "blend", "Fk/Ik Blend", "double", self.settings["blend"], 0, 1)
+                "blend", "Fk/Ik Blend", "double", self.settings["blend"], 0, 1
+            )
 
         if self.isIk:
-            self.roll_att = self.addAnimParam(
-                "roll", "Roll", "double", 0, -180, 180)
+            self.roll_att = self.addAnimParam("roll", "Roll", "double", 0, -180, 180)
 
             # Ref
             if self.settings["ikrefarray"]:
-                ref_names = self.get_valid_alias_list(
-                    self.settings["ikrefarray"].split(","))
+                ref_names = self.get_valid_alias_list(self.settings["ikrefarray"].split(","))
                 if len(ref_names) > 1:
-                    self.ikref_att = self.addAnimEnumParam(
-                        "ikref",
-                        "Ik Ref",
-                        0,
-                        ref_names)
+                    self.ikref_att = self.addAnimEnumParam("ikref", "Ik Ref", 0, ref_names)
 
     # =====================================================
     # OPERATORS
@@ -270,12 +250,10 @@ class Component(component.Main):
         # FK Chain -----------------------------------------
         if self.isFk:
             for off, ref in zip(self.fk_off[1:], self.fk_ref, strict=False):
-                applyop.gear_mulmatrix_op(
-                    ref.worldMatrix, off.parentInverseMatrix, off, "rt")
+                applyop.gear_mulmatrix_op(ref.worldMatrix, off.parentInverseMatrix, off, "rt")
         # IK Chain -----------------------------------------
         if self.isIk:
-            self.ikh = primitive.addIkHandle(
-                self.root, self.getName("ikh"), self.chain)
+            self.ikh = primitive.addIkHandle(self.root, self.getName("ikh"), self.chain)
             self.ikh.attr("visibility").set(False)  # type: ignore
 
             # Constraint and up vector
@@ -283,9 +261,9 @@ class Component(component.Main):
             pm.poleVectorConstraint(self.upv_ctl, self.ikh)  # type: ignore
 
             # TwistTest
-            o_list = [round(elem, 4) for elem
-                      in transform.getTranslation(self.chain[1])] \
-                != [round(elem, 4) for elem in self.guide.apos[1]]
+            o_list = [round(elem, 4) for elem in transform.getTranslation(self.chain[1])] != [
+                round(elem, 4) for elem in self.guide.apos[1]
+            ]
 
             if o_list:
                 add_nodeTwist = node.createAddNode(180.0, self.roll_att)
@@ -298,7 +276,6 @@ class Component(component.Main):
 
         # Chain of deformers -------------------------------
         for i, loc in enumerate(self.loc):
-
             if self.settings["mode"] == 0:  # fk only
                 pm.parentConstraint(self.fk_ctl[i], loc, maintainOffset=False)  # type: ignore
                 pm.connectAttr(self.fk_ctl[i] + ".scale", loc + ".scale")  # type: ignore
@@ -307,7 +284,6 @@ class Component(component.Main):
                 pm.parentConstraint(self.chain[i], loc, maintainOffset=False)  # type: ignore
 
             elif self.settings["mode"] == 2:  # fk/ik
-
                 rev_node = node.createReverseNode(self.blend_att)
 
                 # orientation

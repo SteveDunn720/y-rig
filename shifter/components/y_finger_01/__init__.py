@@ -89,10 +89,20 @@ class Component(component.Main):
 
             if self.fk_ctl:
                 base_ctl = self.fk_ctl[0]
-                roll_ctl = self.addCtl(
+                t = transform.getTransform(base_ctl)
+                # t = transform.setMatrixRotation(
+                #     t, transform.getRotationFromMatrix(transform.getTransform(self.root))
+                # )
+                roll_npo = primitive.addTransform(
                     self.root,
+                    self.getName("roll_npo"),
+                    t,
+                )
+
+                roll_ctl = self.addCtl(
+                    roll_npo,
                     "roll_ctl",
-                    transform.getTransform(base_ctl),
+                    t,
                     self.color_fk,
                     "circle",
                     w=self.size * 0.2,

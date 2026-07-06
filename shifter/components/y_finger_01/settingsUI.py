@@ -54,23 +54,17 @@ class Ui_Form:
 
         self.ikRefArray_listWidget = QtWidgets.QListWidget(self.ikRefArray_groupBox)
         self.ikRefArray_listWidget.setDragDropOverwriteMode(True)
-        self.ikRefArray_listWidget.setDragDropMode(
-            QtWidgets.QAbstractItemView.InternalMove
-        )
+        self.ikRefArray_listWidget.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
         self.ikRefArray_listWidget.setDefaultDropAction(QtCore.Qt.MoveAction)
         self.ikRefArray_listWidget.setAlternatingRowColors(True)
-        self.ikRefArray_listWidget.setSelectionMode(
-            QtWidgets.QAbstractItemView.ExtendedSelection
-        )
+        self.ikRefArray_listWidget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.ikRefArray_listWidget.setSelectionRectVisible(False)
         self.ikRefArray_listWidget.setObjectName("ikRefArray_listWidget")
 
         self.ikRefArrayAdd_pushButton = QtWidgets.QPushButton("<<", self.ikRefArray_groupBox)
         self.ikRefArrayAdd_pushButton.setObjectName("ikRefArrayAdd_pushButton")
 
-        self.ikRefArrayRemove_pushButton = QtWidgets.QPushButton(
-            ">>", self.ikRefArray_groupBox
-        )
+        self.ikRefArrayRemove_pushButton = QtWidgets.QPushButton(">>", self.ikRefArray_groupBox)
         self.ikRefArrayRemove_pushButton.setObjectName("ikRefArrayRemove_pushButton")
 
     def create_layout(self, Form):

@@ -60,9 +60,7 @@ class Guide(guide.ComponentGuide):
         self.pNeutralPose = self.addParam("neutralpose", "bool", True)
         self.pIkRefArray = self.addParam("ikrefarray", "string", "")
         self.pUseIndex = self.addParam("useIndex", "bool", False)
-        self.pParentJointIndex = self.addParam(
-            "parentJointIndex", "long", -1, None, None
-        )
+        self.pParentJointIndex = self.addParam("parentJointIndex", "long", -1, None, None)
 
 
 ##########################################################
@@ -76,7 +74,7 @@ class settingsTab(QtWidgets.QDialog, sui.Ui_Form):
         self.setupUi(self)
 
 
-class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings):
+class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings):  # type: ignore
     def __init__(self, parent=None):
         self.toolName = TYPE
         pyqt.deleteInstances(self, MayaQDockWidget)
@@ -104,24 +102,14 @@ class componentSettings(MayaQWidgetDockableMixin, guide.componentMainSettings):
     def populate_componentControls(self):
         self.tabs.insertTab(1, self.settingsTab, "Component Settings")
 
-        self.settingsTab.ikfk_slider.setValue(
-            int(self.root.attr("blend").get() * 100)
-        )
-        self.settingsTab.ikfk_spinBox.setValue(
-            int(self.root.attr("blend").get() * 100)
-        )
-        self.settingsTab.mode_comboBox.setCurrentIndex(
-            self.root.attr("mode").get()
-        )
+        self.settingsTab.ikfk_slider.setValue(int(self.root.attr("blend").get() * 100))
+        self.settingsTab.ikfk_spinBox.setValue(int(self.root.attr("blend").get() * 100))
+        self.settingsTab.mode_comboBox.setCurrentIndex(self.root.attr("mode").get())
 
         if self.root.attr("neutralpose").get():
-            self.settingsTab.neutralPose_checkBox.setCheckState(
-                QtCore.Qt.Checked
-            )
+            self.settingsTab.neutralPose_checkBox.setCheckState(QtCore.Qt.Checked)
         else:
-            self.settingsTab.neutralPose_checkBox.setCheckState(
-                QtCore.Qt.Unchecked
-            )
+            self.settingsTab.neutralPose_checkBox.setCheckState(QtCore.Qt.Unchecked)
 
         ikRefArrayItems = self.root.attr("ikrefarray").get().split(",")
         for item in ikRefArrayItems:

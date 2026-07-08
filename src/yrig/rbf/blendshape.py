@@ -1,13 +1,39 @@
+from attr import dataclass
 import os
+from pathlib import Path
 
 import maya.cmds as cmds
 
 
-def read_blendshape(
+@dataclass
+class ShapeTarget:
+    name: str
+    index: int
+    attr: str
+
+
+@dataclass
+class BlendShape:
+    node: str
+    targets: list
+    meshes: list
+
+    def get_target(self, target: str | int) -> ShapeTarget:
+        for shape in self.targets:
+            if shape.name == target:
+                return shape
+
+            if shape.index == target:
+                return shape
+
+        raise ValueError(f"{target} does not exist")
+
+
+def import_blendshape(
     target_mesh: str,
-    shape_path: str,
+    shape_path: Path,
     blendshape_name: str,
-) -> str:
+) -> BlendShape:
     """
     Create and load a blendShape from a .shape/.shp file.
 
@@ -22,7 +48,7 @@ def read_blendshape(
             Name of the blendShape node.
 
     Returns:
-        The blendShape node name.
+        The blendShape as a blendshape data class.
     """
 
     if not os.path.exists(shape_path):
@@ -33,7 +59,7 @@ def read_blendshape(
         blendshape_node = blendshape_name
 
     else:
-        result: list[str] = cmds.blendShape(  # type:ignore
+        result: list[str] = cmds.blendShape(
             target_mesh,
             name=blendshape_name,
             frontOfChain=True,
@@ -51,13 +77,13 @@ def read_blendshape(
         ip=shape_path,
     )
 
-    return blendshape_node
+    return serialize_blendshape(blendshape_node)
 
 
-def write_blendshape(
+def export_blendshape(
     blendshape_node: str,
-    shape_path: str,
-) -> str:
+    shape_path: Path,
+) -> Path:
     """
     Export a blendShape node to a .shape/.shp file.
 
@@ -92,3 +118,30 @@ def write_blendshape(
     )
 
     return shape_path
+
+
+def serialize_blendshape(blendshape_node: str) -> BlendShape:
+    targets = []
+
+    # Get target aliases
+    aliases = cmds.aliasAttr(blendshape_node, query=True) or []
+
+    for i in range(0, len(aliases), 2):
+        attr_name = aliases[i]
+        attr_path = aliases[i + 1]
+
+        # Extract weight index
+        index = int(attr_path.split("[")[-1].replace("]", ""))
+
+        targets.append(
+            ShapeTarget(name=attr_name, index=index, attr=f"{blendshape_node}.{attr_name}")
+        )  # type:ignore
+
+    # Find connected meshes
+    meshes = []
+
+    geometry = cmds.blendShape(blendshape_node, query=True, geometry=True) or []
+
+    meshes.extend(geometry)
+
+    return BlendShape(node=blendshape_node, targets=targets, meshes=meshes)  # type:ignore

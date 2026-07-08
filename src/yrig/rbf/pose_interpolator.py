@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import maya.cmds as cmds
@@ -11,9 +10,9 @@ def import_pose_interpolator(path: Path, pose_interp_parent: str) -> None:
         cmds.select("*_poseInterpolator")
         pose_interp = cmds.ls(selection=True)
         if pose_interp_parent:
-            cmds.parent(pose_interp, pose_interp_parent)
+            cmds.parent(pose_interp, pose_interp_parent)  # type:ignore
     except Exception as e:
-        cmds.warning(e)
+        cmds.warning(str(e))
 
 
 def export_pose_interpolator(path: Path, pose_interp: str) -> None:
@@ -29,4 +28,4 @@ def export_pose_interpolator(path: Path, pose_interp: str) -> None:
         )
 
     except Exception as e:
-        cmds.warning(e)
+        cmds.warning(str(e))

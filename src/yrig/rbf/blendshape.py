@@ -1,6 +1,7 @@
-from attr import dataclass
 import os
+from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import maya.cmds as cmds
 
@@ -59,10 +60,13 @@ def import_blendshape(
         blendshape_node = blendshape_name
 
     else:
-        result: list[str] = cmds.blendShape(
-            target_mesh,
-            name=blendshape_name,
-            frontOfChain=True,
+        result = cast(
+            list[str],
+            cmds.blendShape(
+                target_mesh,
+                name=blendshape_name,
+                frontOfChain=True,
+            ),
         )
 
         if not result:
@@ -74,7 +78,7 @@ def import_blendshape(
     cmds.blendShape(
         blendshape_node,
         edit=True,
-        ip=shape_path,
+        ip=str(shape_path),
     )
 
     return serialize_blendshape(blendshape_node)
@@ -114,7 +118,7 @@ def export_blendshape(
     cmds.blendShape(
         blendshape_node,
         edit=True,
-        export=shape_path,
+        export=str(shape_path),
     )
 
     return shape_path
@@ -135,13 +139,14 @@ def serialize_blendshape(blendshape_node: str) -> BlendShape:
 
         targets.append(
             ShapeTarget(name=attr_name, index=index, attr=f"{blendshape_node}.{attr_name}")
-        )  # type:ignore
+        )
 
     # Find connected meshes
     meshes = []
 
     geometry = cmds.blendShape(blendshape_node, query=True, geometry=True) or []
 
-    meshes.extend(geometry)
+    if isinstance(geometry, list):
+        meshes.extend(geometry)
 
-    return BlendShape(node=blendshape_node, targets=targets, meshes=meshes)  # type:ignore
+    return BlendShape(node=blendshape_node, targets=targets, meshes=meshes)

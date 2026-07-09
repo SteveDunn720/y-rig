@@ -144,7 +144,10 @@ def get_blendshape_data(blendshape_node: str) -> BlendShape:
     # Find connected meshes
     meshes = []
 
-    geometry = cmds.blendShape(blendshape_node, query=True, geometry=True) or []
+    geometry = cast(
+        list[str] | None,
+        cmds.blendShape(blendshape_node, query=True, geometry=True),
+    )
 
     if isinstance(geometry, list):
         meshes.extend(geometry)

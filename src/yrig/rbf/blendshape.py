@@ -16,8 +16,8 @@ class ShapeTarget:
 @dataclass
 class BlendShape:
     node: str
-    targets: list
-    meshes: list
+    targets: list[ShapeTarget]
+    meshes: list[str]
 
     def get_target(self, target: str | int) -> ShapeTarget:
         for shape in self.targets:

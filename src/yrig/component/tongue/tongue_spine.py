@@ -25,7 +25,7 @@ class TongueSpine:
         self.control_size = control_size
 
     def build_tongue_spine(self) -> None:
-        
+
         # --------------------------------------------------------
         # Create Joint Chain
         # --------------------------------------------------------
@@ -75,7 +75,7 @@ class TongueSpine:
             solver="ikSplineSolver",
             createCurve=True,
             parentCurve=False,
-        ) # type: ignore
+        )  # type: ignore
 
         ik_handle = cmds.rename(ik_handle, "tongue_ikh")
         curve = cmds.rename(curve, "tongue_crv")
@@ -86,16 +86,16 @@ class TongueSpine:
 
         cmds.rebuildCurve(
             curve,
-            ch=False, # type: ignore
-            rpo=True, # type: ignore
-            rt=0, # type: ignore
-            end=1, # type: ignore
-            kr=0, # type: ignore
-            kcp=False, # type: ignore
-            kep=True, # type: ignore
-            kt=False, # type: ignore
-            s=4, # type: ignore
-            d=3, # type: ignore
+            ch=False,  # type: ignore
+            rpo=True,  # type: ignore
+            rt=0,  # type: ignore
+            end=1,  # type: ignore
+            kr=0,  # type: ignore
+            kcp=False,  # type: ignore
+            kep=True,  # type: ignore
+            kt=False,  # type: ignore
+            s=4,  # type: ignore
+            d=3,  # type: ignore
         )
 
         # --------------------------------------------------------
@@ -105,20 +105,19 @@ class TongueSpine:
         cvs = cmds.ls(f"{curve}.cv[*]", flatten=True)
 
         cluster_sets = [
-            cvs[:2],          # first two cvs
+            cvs[:2],  # first two cvs
             [cvs[2]],
             [cvs[3]],
-            cvs[-2:],         # last two cvs
+            cvs[-2:],  # last two cvs
         ]
 
         controls = []
 
         for i, cv_set in enumerate(cluster_sets):
-
             cluster, handle = cmds.cluster(
-                cv_set, # type: ignore
+                cv_set,  # type: ignore
                 name=f"tongue_cluster_{i}",
-            ) # type: ignore
+            )  # type: ignore
 
             cmds.parent(handle, self.component_grp)
 
@@ -138,14 +137,10 @@ class TongueSpine:
                 direction="x",
             )
 
-            ctrl_transform = (
-                ctrl.transform
-                if hasattr(ctrl, "transform")
-                else ctrl
-            )
+            ctrl_transform = ctrl.transform if hasattr(ctrl, "transform") else ctrl
 
             cmds.parentConstraint(
-                ctrl_transform, # type: ignore
+                ctrl_transform,  # type: ignore
                 handle,
                 maintainOffset=True,
             )

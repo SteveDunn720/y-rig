@@ -124,7 +124,7 @@ class Component(component.Main):
                             force=True,
                         )
 
-                pm.orientConstraint(roll_ctl, base_ctl, maintainOffset=False)  # type: ignore
+                # pm.orientConstraint(roll_ctl, base_ctl, maintainOffset=False)  # type: ignore
 
         # IK controllers ------------------------------------
         if self.isIk:

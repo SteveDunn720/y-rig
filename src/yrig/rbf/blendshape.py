@@ -16,8 +16,13 @@ class ShapeTarget:
 @dataclass
 class BlendShape:
     node: str
+<<<<<<< HEAD
     targets: list[ShapeTarget]
     meshes: list[str]
+=======
+    targets: list
+    meshes: list
+>>>>>>> origin/main
 
     def get_target(self, target: str | int) -> ShapeTarget:
         for shape in self.targets:
@@ -81,7 +86,11 @@ def import_blendshape(
         ip=str(shape_path),
     )
 
+<<<<<<< HEAD
     return get_blendshape_data(blendshape_node)
+=======
+    return serialize_blendshape(blendshape_node)
+>>>>>>> origin/main
 
 
 def export_blendshape(

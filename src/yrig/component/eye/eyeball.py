@@ -237,11 +237,6 @@ class Eyeball:
         cmds.pointConstraint(self.main_ctrl, self.look_root, maintainOffset=True)
         cmds.orientConstraint(self.look_root, self.eye_ctrl.offset, maintainOffset=True)
 
-        for attr in ["translateX", "translateY", "translateZ"]:
-            cmds.setAttr(
-                f"{self.eye_ctrl.transform}.{attr}", lock=True, keyable=False, channelBox=False
-            )
-
         pupil_degree: float = round(
             self.compare_radius_and_angle(self.guides["eye_diam"], self.guides["pupil_diam"])
         )
@@ -313,6 +308,14 @@ class Eyeball:
             cmds.addAttr(circle, longName="dilation_amount", attributeType="double", keyable=True)
 
             key = circle_type in ["iris", "pupil"]
+
+            cmds.addAttr(
+                self.main_ctrl,
+                longName=f"{circle_type}_adjustments",
+                attributeType="enum",
+                enumName="----",
+                keyable=key,
+            )
 
             cmds.addAttr(
                 self.main_ctrl,
@@ -458,11 +461,13 @@ class Eyeball:
             "dilation_controls",
             "iris_dilation",
             "pupil_dilation",
+            "iris_adjustments",
             "iris_offsetX",
             "iris_offsetY",
             "iris_offsetZ",
             "iris_scaleX",
             "iris_scaleY",
+            "pupil_adjustments",
             "pupil_offsetX",
             "pupil_offsetY",
             "pupil_offsetZ",

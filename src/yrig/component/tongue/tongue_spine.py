@@ -39,22 +39,41 @@ class TongueSpine:
             "tongue_front",
         ]
 
+        jaw_guide = ["jaw_M_jnt"]
+
         self.joints = []
 
         joint_parent = self.joint_parent if cmds.objExists(self.joint_parent) else None
         control_parent = self.control_grp
 
         temp_ctrls = []
+        ctrl_tran = None
 
-        for guide in guide_order:
-            ctrl = create_control(
-                name=f"{guide}_ctrl",
-                parent=control_parent,
-                transform=self.guides[guide],
-                size=self.control_size * 0.5,
-                control_shape="circle",
-                direction="x",
-            )
+        for i, guide in enumerate(guide_order):
+            if i == 0:
+                ctrl_tran = create_transform(
+                    name=f"{guide}_ofst",
+                    transform=jaw_guide[0],
+                    parent=control_parent,
+                )
+
+                ctrl = create_control(
+                    name=f"{guide}_ctrl",
+                    parent=ctrl_tran,
+                    transform=self.guides[guide],
+                    size=self.control_size * 0.5,
+                    control_shape="circle",
+                    direction="x",
+                )
+            else:
+                ctrl = create_control(
+                    name=f"{guide}_ctrl",
+                    parent=control_parent,
+                    transform=self.guides[guide],
+                    size=self.control_size * 0.5,
+                    control_shape="circle",
+                    direction="x",
+                )
 
             temp_ctrls.append(ctrl)
 
@@ -139,7 +158,16 @@ class TongueSpine:
 
         controls = []
 
-        parent = self.control_grp
+        first_ctrl = temp_ctrls[0]
+        first_ctrl_transform = (
+            first_ctrl.transform if hasattr(first_ctrl, "transform") else first_ctrl
+        )
+
+        parent = cmds.listRelatives(
+            first_ctrl_transform,
+            parent=True,
+            fullPath=False,
+        )[0]
 
         for i, cv_set in enumerate(cluster_sets):
             cluster, handle = cast(
@@ -204,3 +232,10 @@ class TongueSpine:
         self.controls = controls
         self.curve = curve
         self.ik_handle = ik_handle
+
+        if cmds.objExists("jaw_M_ctl"):
+            cmds.connectAttr(
+                f"{jaw_guide[0]}.rotate",
+                f"{ctrl_tran}.rotate",
+                force=True,
+            )

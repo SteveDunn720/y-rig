@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 import maya.cmds as cmds
 
 from yrig.control import create_control
@@ -26,9 +28,7 @@ class TongueSpine:
 
     def build_tongue_spine(self) -> None:
 
-        # --------------------------------------------------------
         # Create Joint Chain
-        # --------------------------------------------------------
 
         guide_order = [
             "tongue_back",
@@ -40,21 +40,38 @@ class TongueSpine:
         ]
 
         self.joints = []
-        parent = self.joint_parent
+
+        joint_parent = self.joint_parent if cmds.objExists(self.joint_parent) else None
+        control_parent = self.control_grp
+
+        temp_ctrls = []
 
         for guide in guide_order:
-            joint = create_joint(
-                name=f"{guide}_jnt",
-                parent=parent,
+            ctrl = create_control(
+                name=f"{guide}_ctrl",
+                parent=control_parent,
                 transform=self.guides[guide],
+                size=self.control_size * 0.5,
+                control_shape="circle",
+                direction="x",
             )
 
-            # If create_joint returns an object instead of a string,
-            # uncomment the next line.
-            # joint = joint.transform
+            temp_ctrls.append(ctrl)
+
+            joint = create_joint(
+                name=guide,
+                parent=joint_parent,
+                transform=ctrl,
+                connect=False,
+            )
 
             self.joints.append(joint)
-            parent = joint
+
+            joint_parent = joint
+
+            control_parent = ctrl.transform
+
+        # Orient Joint Chain
 
         cmds.joint(
             self.joints[0],
@@ -65,65 +82,75 @@ class TongueSpine:
             zeroScaleOrient=True,
         )
 
-        # --------------------------------------------------------
         # Create Spline IK
-        # --------------------------------------------------------
 
-        ik_handle, effector, curve = cmds.ikHandle(
-            startJoint=self.joints[0],
-            endEffector=self.joints[-1],
-            solver="ikSplineSolver",
-            createCurve=True,
-            parentCurve=False,
-        )  # type: ignore
+        ik_result = cast(
+            tuple[str, str, str],
+            cmds.ikHandle(
+                startJoint=self.joints[0],
+                endEffector=self.joints[-1],
+                solver="ikSplineSolver",
+                createCurve=True,
+                parentCurve=False,
+            ),
+        )
+        ik_handle, effector, curve = ik_result
 
-        ik_handle = cmds.rename(ik_handle, "tongue_ikh")
-        curve = cmds.rename(curve, "tongue_crv")
+        ik_handle = cmds.rename(
+            ik_handle,
+            "tongue_ikh",
+        )
 
-        # --------------------------------------------------------
+        curve = cmds.rename(
+            curve,
+            "tongue_crv",
+        )
+
         # Rebuild Curve
-        # --------------------------------------------------------
 
         cmds.rebuildCurve(
             curve,
-            ch=False,  # type: ignore
-            rpo=True,  # type: ignore
-            rt=0,  # type: ignore
-            end=1,  # type: ignore
-            kr=0,  # type: ignore
-            kcp=False,  # type: ignore
-            kep=True,  # type: ignore
-            kt=False,  # type: ignore
-            s=4,  # type: ignore
-            d=3,  # type: ignore
+            constructionHistory=False,
+            keepControlPoints=True,
+            keepEndPoints=True,
+            keepTangents=True,
+            spans=4,
+            degree=3,
         )
 
-        # --------------------------------------------------------
         # Create Clusters
-        # --------------------------------------------------------
 
-        cvs = cmds.ls(f"{curve}.cv[*]", flatten=True)
+        cvs = cmds.ls(
+            f"{curve}.cv[*]",
+            flatten=True,
+        )
 
         cluster_sets = [
-            cvs[:2],  # first two cvs
+            cvs[0:2],
             [cvs[2]],
             [cvs[3]],
-            cvs[-2:],  # last two cvs
+            [cvs[4]],
+            cvs[5:7],
         ]
 
         controls = []
 
+        parent = self.control_grp
+
         for i, cv_set in enumerate(cluster_sets):
-            cluster, handle = cmds.cluster(
-                cv_set,  # type: ignore
-                name=f"tongue_cluster_{i}",
-            )  # type: ignore
+            cluster, handle = cast(
+                tuple[str, str],
+                cmds.cluster(
+                    *cv_set,
+                    name=f"tongue_cluster_{i}",
+                ),
+            )
 
             cmds.parent(handle, self.component_grp)
 
             offset = create_transform(
                 name=f"tongue_{i}_ofs",
-                parent=self.control_grp,
+                parent=parent,
             )
 
             cmds.matchTransform(offset, handle)
@@ -140,16 +167,24 @@ class TongueSpine:
             ctrl_transform = ctrl.transform if hasattr(ctrl, "transform") else ctrl
 
             cmds.parentConstraint(
-                ctrl_transform,  # type: ignore
+                ctrl_transform,
                 handle,
                 maintainOffset=True,
             )
 
             controls.append(ctrl)
 
-        # --------------------------------------------------------
+            # Make the next offset a child of this control
+            parent = ctrl_transform
+
         # Cleanup
-        # --------------------------------------------------------
+
+        # Delete Temporary Joint Controls
+        for ctrl in temp_ctrls:
+            ctrl_transform = ctrl.transform if hasattr(ctrl, "transform") else ctrl
+
+            if cmds.objExists(ctrl_transform):
+                cmds.delete(ctrl_transform)
 
         cmds.parent(
             ik_handle,

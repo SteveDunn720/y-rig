@@ -25,7 +25,7 @@ class Tongue:
         self.parent_jnt = parent_jnt
 
         self.guides: dict[str, str] = {
-            "root": "tongue_root_M",
+            "root": "tongue_M_root",
             "tongue_back": "tongue_back_M",
             "tongue2": "tongue_2_M",
             "tongue3": "tongue_3_M",
@@ -37,7 +37,7 @@ class Tongue:
     # Structure
 
     def setup_structure(self) -> None:
-
+        # Match the Nose component implementation exactly
         self.main_grp = create_transform(
             name=f"tongue_{self.side}",
             parent=self.parent,
@@ -57,9 +57,6 @@ class Tongue:
 
     def create_controls(self) -> None:
 
-        # print(self.guides["root"])
-        # print(cmds.objExists(self.guides["root"]))
-
         self.main_ctrl = create_control(
             name="tongue_M",
             parent=self.control_grp,
@@ -70,11 +67,21 @@ class Tongue:
         )
 
     def create_joints(self) -> None:
+        cmds.select(cl=True)  # type: ignore
+
+        parent = self.parent_jnt if cmds.objExists(self.parent_jnt) else None
+
+        if parent:
+            cmds.select(parent)
+
+        source_transform = None
+        if hasattr(self.main_ctrl, "transform"):
+            source_transform = self.main_ctrl.transform
 
         self.main_jnt = create_joint(
-            name="root",
-            parent=self.parent_jnt,
-            transform=self.main_ctrl.transform,
+            name=f"{self.part}_{self.side}_root",
+            parent=parent,
+            transform=source_transform,
         )
 
     # Build
@@ -83,6 +90,7 @@ class Tongue:
 
         self.setup_structure()
         self.create_controls()
+
         self.create_joints()
 
         self.ts = TongueSpine(

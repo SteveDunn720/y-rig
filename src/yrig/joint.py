@@ -55,6 +55,7 @@ def create_joint(
     radius: float = 1,
 ) -> str:
     joint = cmds.createNode("joint", name=f"{name}{JOINT_SUFFIX}")
+
     if parent is not None:
         cmds.parent(joint, parent, relative=True)
     source_transform: str | None = None

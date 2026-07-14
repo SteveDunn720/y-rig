@@ -59,9 +59,6 @@
             "code": [
                 "from yrig.component.tongue.tongue import Tongue",
                 "",
-                "for num in range(100):",
-                "    print(\"hello world\")",
-                "",
                 "tongue = Tongue(",
                 "    part=\"${name}\",",
                 "    side=\"${side}\",",

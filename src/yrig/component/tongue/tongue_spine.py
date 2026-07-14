@@ -111,9 +111,13 @@ class TongueSpine:
         cmds.rebuildCurve(
             curve,
             constructionHistory=False,
-            keepControlPoints=True,
+            replaceOriginal=True,
+            rebuildType=0,
+            endKnots=1,
+            keepRange=0,
+            keepControlPoints=False,
             keepEndPoints=True,
-            keepTangents=True,
+            keepTangents=False,
             spans=4,
             degree=3,
         )

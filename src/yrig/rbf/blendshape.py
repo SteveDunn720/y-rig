@@ -16,8 +16,8 @@ class ShapeTarget:
 @dataclass
 class BlendShape:
     node: str
-    targets: list
-    meshes: list
+    targets: list[ShapeTarget]
+    meshes: list[str]
 
     def get_target(self, target: str | int) -> ShapeTarget:
         for shape in self.targets:
@@ -81,7 +81,7 @@ def import_blendshape(
         ip=str(shape_path),
     )
 
-    return serialize_blendshape(blendshape_node)
+    return get_blendshape_data(blendshape_node)
 
 
 def export_blendshape(
@@ -124,7 +124,7 @@ def export_blendshape(
     return shape_path
 
 
-def serialize_blendshape(blendshape_node: str) -> BlendShape:
+def get_blendshape_data(blendshape_node: str) -> BlendShape:
     targets = []
 
     # Get target aliases
@@ -144,7 +144,10 @@ def serialize_blendshape(blendshape_node: str) -> BlendShape:
     # Find connected meshes
     meshes = []
 
-    geometry = cmds.blendShape(blendshape_node, query=True, geometry=True) or []
+    geometry = cast(
+        list[str] | None,
+        cmds.blendShape(blendshape_node, query=True, geometry=True),
+    )
 
     if isinstance(geometry, list):
         meshes.extend(geometry)

@@ -642,7 +642,7 @@ class RemapValueNode(Node):
 
     def _setup_attributes(self) -> None:
         self.input_value = ScalarAttribute(f"{self.name}.inputValue")
-        self.output = ScalarAttribute(f"{self.name}.output")
+        self.output = ScalarAttribute(f"{self.name}.outValue")
         self.input_max = ScalarAttribute(f"{self.name}.inputMax")
         self.input_min = ScalarAttribute(f"{self.name}.inputMin")
         self.output_max = ScalarAttribute(f"{self.name}.outputMax")

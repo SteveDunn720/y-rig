@@ -9,9 +9,9 @@ from yrig.maya_api.node import EulerToQuatNode, QuatSlerpNode, QuatToEulerNode, 
 @dataclass
 class PopInfo:
     axis: str
-    pop_mult: int
-    pop_clampup: int
-    pop_clampdown: int
+    pop_mult: float
+    pop_clampup: float
+    pop_clampdown: float
 
 
 def build_star_joint(
@@ -20,7 +20,7 @@ def build_star_joint(
     ignore_axes: list[str],
     pop_axes: list[PopInfo],
     twist_axis: str = "X",
-    local_distance: int = 3,
+    local_distance: float = 3,
 ) -> None:
     root_joints = []
     bind_joints = []

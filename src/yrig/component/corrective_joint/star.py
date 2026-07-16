@@ -17,11 +17,11 @@ class PopInfo:
 def build_star_joint(
     name: str,
     joint: str,
+    ignore_axes: list[str],
+    pop_axes: list[PopInfo],
     twist_axis: str = "X",
-    ignore_axes: list[str] = [],
     local_distance: int = 3,
-    pop_axes: list[PopInfo] = [],
-):
+) -> None:
     root_joints = []
     bind_joints = []
 

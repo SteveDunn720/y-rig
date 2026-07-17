@@ -150,6 +150,8 @@ class LipSpline:
                 name=segment_name, transform=driver, parent=joint_parent, radius=0.5
             )
             self.joints.append(joint)
+        cmds.setAttr(f"{self.curve}.overrideEnabled", 1)  # type:ignore
+        cmds.setAttr(f"{self.curve}.overrideDisplayType", 2)  # type:ignore
 
 
 class Lip:

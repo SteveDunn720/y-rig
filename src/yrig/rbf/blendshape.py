@@ -153,3 +153,66 @@ def get_blendshape_data(blendshape_node: str) -> BlendShape:
         meshes.extend(geometry)
 
     return BlendShape(node=blendshape_node, targets=targets, meshes=meshes)
+
+
+def build_blendshape_networks(blendshape: BlendShape) -> dict[str, str]:
+    """
+    Creates one network node per blendshape type and connects
+    custom attributes to the corresponding blendshape targets.
+
+    Example:
+        mouth_l_up_07
+            -> mouth_l_nw.up_07
+
+        mouth_l_up_07_out_10
+            -> mouth_l_nw.up_07_out_10
+    """
+    network_nodes: dict[str, str] = {}
+
+    for shape in blendshape.targets:
+        parts = shape.name.split("_")
+
+        if len(parts) < 3:
+            cmds.warning(f"Invalid blendshape name: {shape.name}")
+            continue
+
+        target_type = "_".join(parts[:2])
+        target_name = "_".join(parts[2:])
+
+        network_name = f"{target_type}_nw"
+
+        if target_type not in network_nodes:
+            if cmds.objExists(network_name):
+                network_node = network_name
+            else:
+                network_node = cmds.createNode(
+                    "network",
+                    name=network_name,
+                )
+
+            network_nodes[target_type] = network_node
+
+        network_node = network_nodes[target_type]
+
+        if not cmds.attributeQuery(
+            target_name,
+            node=network_node,
+            exists=True,
+        ):
+            cmds.addAttr(
+                network_node,
+                longName=target_name,
+                attributeType="double",
+                defaultValue=0.0,
+                minValue=0.0,
+                maxValue=1.0,
+                keyable=True,
+            )
+
+        cmds.connectAttr(
+            f"{network_node}.{target_name}",
+            shape.attr,
+            force=True,
+        )
+
+    return network_nodes

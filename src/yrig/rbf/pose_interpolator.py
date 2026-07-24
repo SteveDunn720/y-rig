@@ -1,79 +1,279 @@
+from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import maya.cmds as cmds
 import maya.mel as mel
 
 
-def import_pose_interpolator(path: Path, pose_interp_parent: str) -> None:
+@dataclass
+class PoseInterpolatorDriver:
+    name: str
+    index: int
+    matrix_attr: str
+
+
+@dataclass
+class PoseInterpolatorPose:
+    name: str
+    index: int
+    attr: str
+
+
+@dataclass
+class PoseInterpolator:
+    node: str
+    drivers: list[PoseInterpolatorDriver]
+    poses: list[PoseInterpolatorPose]
+
+    def get_pose(self, pose: str | int) -> PoseInterpolatorPose:
+        """
+        Get a pose using either its name or logical index.
+        """
+
+        for pose_data in self.poses:
+            if pose_data.name == pose:
+                return pose_data
+
+            if pose_data.index == pose:
+                return pose_data
+
+        raise ValueError(f"Pose {pose!r} does not exist on {self.node}")
+
+    def get_driver(
+        self,
+        driver: str | int,
+    ) -> PoseInterpolatorDriver:
+        """
+        Get a driver using either its name or logical index.
+        """
+
+        for driver_data in self.drivers:
+            if driver_data.name == driver:
+                return driver_data
+
+            if driver_data.index == driver:
+                return driver_data
+
+        raise ValueError(f"Driver {driver!r} does not exist on {self.node}")
+
+
+def import_pose_interpolator(
+    path: str | Path,
+    pose_interp_parent: str = "",
+) -> list[PoseInterpolator]:
+    path = Path(path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Pose Interpolator file does not exist: {path}")
+
+    existing_pose_interps = set(cmds.ls(type="poseInterpolator") or [])
+
     try:
-        existing_pose_interps = set(cmds.ls(type="poseInterpolator"))
+        mel.eval(f'poseInterpolatorImportPoses "{path.as_posix()}" 1;')
 
-        mel.eval(f'poseInterpolatorImportPoses "{path}" 1;')
+    except Exception as error:
+        raise RuntimeError(f"Failed to import Pose Interpolator file: {path}") from error
 
-        created_pose_interps = list(set(cmds.ls(type="poseInterpolator")) - existing_pose_interps)
+    current_pose_interps = set(cmds.ls(type="poseInterpolator") or [])
 
-        if pose_interp_parent and created_pose_interps:
-            cmds.parent(created_pose_interps, pose_interp_parent)  # type:ignore
+    created_pose_interps = sorted(current_pose_interps - existing_pose_interps)
 
-    except Exception as e:
-        cmds.warning(str(e))
+    if pose_interp_parent and created_pose_interps:
+        if not cmds.objExists(pose_interp_parent):
+            raise RuntimeError(f"Pose Interpolator parent does not exist: {pose_interp_parent}")
+
+        cmds.parent(
+            created_pose_interps,  # type:ignore
+            pose_interp_parent,
+        )
+
+    return [get_pose_interpolator_data(node) for node in created_pose_interps]
 
 
-def export_pose_interpolator(path: Path, pose_interp: str) -> None:
+def export_pose_interpolator(
+    path: Path,
+    pose_interp: str,
+) -> Path:
+    """
+    Export a Pose Interpolator node.
+
+    Args:
+        path:
+            Output path.
+
+        pose_interp:
+            Pose Interpolator node to export.
+
+    Returns:
+        The exported path.
+    """
+
+    validate_pose_interpolator(pose_interp)
+
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    pose_path = path.as_posix()
+
     try:
-        pose_path: str = str(path)
-
         mel.eval(
             f'''
             string $tpls[] = {{"{pose_interp}"}};
             string $poses[] = {{}};
-            poseInterpolatorExportPoses("{pose_path}", $tpls, $poses, 1);
+
+            poseInterpolatorExportPoses(
+                "{pose_path}",
+                $tpls,
+                $poses,
+                1
+            );
             '''
         )
 
-    except Exception as e:
-        cmds.warning(str(e))
+    except Exception as error:
+        raise RuntimeError(f"Failed to export Pose Interpolator: {pose_interp}") from error
+
+    return path
 
 
-# taking it out of mel and into python kinda works, however the python wrapper doesnt handel the connected blendshapes at all, so i would have to write some tooling for handeling the blendshapes on my own, which i dont have the time to do, if i have time ill com back to it, but until then im going to stick with mel.
-"""from pathlib import Path
+def get_pose_interpolator_data(
+    pose_interp_node: str,
+) -> PoseInterpolator:
+    """
+    Read a Pose Interpolator node into a data class.
 
-import maya.cmds as cmds
+    Args:
+        pose_interp_node:
+            Pose Interpolator node to read.
+
+    Returns:
+        Structured Pose Interpolator information.
+    """
+
+    validate_pose_interpolator(pose_interp_node)
+
+    drivers = get_pose_interpolator_drivers(pose_interp_node)
+
+    poses = get_pose_interpolator_poses(pose_interp_node)
+
+    return PoseInterpolator(
+        node=pose_interp_node,
+        drivers=drivers,
+        poses=poses,
+    )
 
 
-def import_pose_interpolator(path: Path, pose_interp_parent: str) -> None:
-    try:
-        before = set(cmds.ls(type="poseInterpolator"))
+def get_pose_interpolator_drivers(
+    pose_interp_node: str,
+) -> list[PoseInterpolatorDriver]:
+    """
+    Get the drivers used by a Pose Interpolator.
+    """
 
-        created = cmds.poseInterpolator(importPoses=str(path))
+    driver_names = (
+        cast(
+            list[str] | None,
+            cmds.poseInterpolator(
+                pose_interp_node,
+                query=True,
+                drivers=True,
+            ),
+        )
+        or []
+    )
 
-        # Some Maya commands return None, some return a string/list.
-        # Fall back to finding newly-created nodes if needed.
-        if not created:
-            after = set(cmds.ls(type="poseInterpolator"))
-            created = list(after - before)
+    driver_indices = get_multi_indices(f"{pose_interp_node}.driver")
 
-        if isinstance(created, str):
-            created = [created]
+    drivers: list[PoseInterpolatorDriver] = []
 
-        if created and pose_interp_parent:
-            cmds.parent(created, pose_interp_parent)  # type:ignore
+    for list_index, driver_name in enumerate(driver_names):
+        if list_index < len(driver_indices):
+            driver_index = driver_indices[list_index]
+        else:
+            driver_index = list_index
 
-    except Exception as e:
-        cmds.warning(str(e))
-
-
-def export_pose_interpolator(path: Path, pose_interp: str) -> None:
-    try:
-        cmds.poseInterpolator(
-            pose_interp,
-            edit=True,
-            exportPoses=str(path),
+        drivers.append(
+            PoseInterpolatorDriver(
+                name=driver_name,
+                index=driver_index,
+                matrix_attr=(f"{pose_interp_node}.driver[{driver_index}].driverMatrix"),
+            )
         )
 
-    except Exception as e:
-        cmds.warning(str(e))
+    return drivers
 
 
+def get_pose_interpolator_poses(
+    pose_interp_node: str,
+) -> list[PoseInterpolatorPose]:
+    """
+    Get the poses and output attributes from a Pose Interpolator.
+    """
 
-"""
+    pose_names = (
+        cast(
+            list[str] | None,
+            cmds.poseInterpolator(
+                pose_interp_node,
+                query=True,
+                poseNames=True,
+            ),
+        )
+        or []
+    )
+
+    pose_indices = get_multi_indices(f"{pose_interp_node}.pose")
+
+    poses: list[PoseInterpolatorPose] = []
+
+    for list_index, pose_name in enumerate(pose_names):
+        if list_index < len(pose_indices):
+            pose_index = pose_indices[list_index]
+        else:
+            pose_index = list_index
+
+        poses.append(
+            PoseInterpolatorPose(
+                name=pose_name,
+                index=pose_index,
+                attr=(f"{pose_interp_node}.output[{pose_index}]"),
+            )
+        )
+
+    return poses
+
+
+def get_multi_indices(attribute: str) -> list[int]:
+    """
+    Return the populated logical indices of a Maya multi attribute.
+    """
+
+    if not cmds.objExists(attribute):
+        return []
+
+    indices = cmds.getAttr(
+        attribute,
+        multiIndices=True,
+    )
+
+    if not indices:
+        return []
+
+    return sorted(cast(list[int], indices))
+
+
+def validate_pose_interpolator(
+    pose_interp_node: str,
+) -> None:
+    """
+    Validate that a node exists and is a Pose Interpolator.
+    """
+
+    if not cmds.objExists(pose_interp_node):
+        raise RuntimeError(f"Pose Interpolator does not exist: {pose_interp_node}")
+
+    if cmds.nodeType(pose_interp_node) != "poseInterpolator":
+        raise TypeError(f"{pose_interp_node} is not a poseInterpolator node")

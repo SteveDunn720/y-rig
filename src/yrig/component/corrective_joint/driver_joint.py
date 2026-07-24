@@ -1,7 +1,9 @@
-from yrig.maya_api.node import MultiplyDivideNode
-from yrig.joint import create_joint
 from dataclasses import dataclass
+
 import maya.cmds as cmds
+
+from yrig.joint import create_joint
+from yrig.maya_api.node import MultiplyDivideNode
 
 
 @dataclass

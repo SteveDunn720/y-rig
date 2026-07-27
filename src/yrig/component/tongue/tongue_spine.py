@@ -284,7 +284,7 @@ class TongueSpine:
                 "multiplyDivide",
                 name="tongue_stretch_md",
             )
-            cmds.setAttr(f"{stretch_md}.operation", "2")  # Divide
+            cmds.setAttr(f"{stretch_md}.operation", 2)  # type: ignore # Divide
 
             cmds.connectAttr(
                 f"{current_curve_info}.arcLength",

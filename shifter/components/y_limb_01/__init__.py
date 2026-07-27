@@ -1,5 +1,6 @@
 # type: ignore
 import ast
+import traceback
 
 import mgear.pymaya as pm
 from mgear.core import applyop, attribute, icon, node, primitive, string, transform, vector
@@ -13,6 +14,50 @@ from yrig.transform.matrix import (
     matrix_constraint,
 )
 from yrig.transform.quat import create_swing_only_transform, twist_extract_quat
+
+
+def _mirror_vector_world_x(value):
+    """Reflect a point or direction across the world YZ plane."""
+    value = datatypes.Vector(value)
+    return datatypes.Vector(-value.x, value.y, value.z)
+
+
+def _mirror_matrix_world_x(matrix):
+    """Reflect a world-space matrix across the world YZ plane.
+
+    The matrix basis vectors are stored in rows 0–2 and translation
+    is stored in row 3. Mirroring across world X negates the world-X
+    component of every basis vector and the translate-X value.
+    """
+    return datatypes.Matrix(
+        [
+            [
+                -matrix[0][0],
+                matrix[0][1],
+                matrix[0][2],
+                matrix[0][3],
+            ],
+            [
+                -matrix[1][0],
+                matrix[1][1],
+                matrix[1][2],
+                matrix[1][3],
+            ],
+            [
+                -matrix[2][0],
+                matrix[2][1],
+                matrix[2][2],
+                matrix[2][3],
+            ],
+            [
+                -matrix[3][0],
+                matrix[3][1],
+                matrix[3][2],
+                matrix[3][3],
+            ],
+        ]
+    )
+
 
 #############################################
 # COMPONENT
@@ -30,23 +75,25 @@ class Component(component.Main):
     # OBJECTS
     # =====================================================
     def addObjects(self) -> None:
-        """Add all the objects needed to create the component."""
+        """Add component objects with detailed error reporting."""
 
-        self._add_common_setup()
-        self._add_root_control()
-        self._add_fk_controls()
-        self._add_ik_upv()
-        self._add_ik_controls()
-        self._add_reference_objects()
-        self._add_solver_chain()
-        self._add_match_refs()
-        self._add_swing_twist()
-        self._add_mid_control()
-        self._add_twist_chains()
-        self._add_divisions()
-        self._add_end_reference()
-        self._add_bendy_controls()
-        self._add_ik_visual_reference()
+        build_steps = [
+            ("_add_common_setup", self._add_common_setup),
+            ("_add_root_control", self._add_root_control),
+            ("_add_fk_controls", self._add_fk_controls),
+            ("_add_ik_upv", self._add_ik_upv),
+            ("_add_ik_controls", self._add_ik_controls),
+            ("_add_reference_objects", self._add_reference_objects),
+            ("_add_solver_chain", self._add_solver_chain),
+            ("_add_match_refs", self._add_match_refs),
+            ("_add_swing_twist", self._add_swing_twist),
+            ("_add_mid_control", self._add_mid_control),
+            ("_add_twist_chains", self._add_twist_chains),
+            ("_add_divisions", self._add_divisions),
+            ("_add_end_reference", self._add_end_reference),
+            ("_add_bendy_controls", self._add_bendy_controls),
+            ("_add_ik_visual_reference", self._add_ik_visual_reference),
+        ]
 
     def _add_common_setup(self) -> None:
         self.WIP = self.options["mode"]
@@ -54,6 +101,17 @@ class Component(component.Main):
 
         self.normal = self.getNormalFromPos(self.guide.apos)
         self.binormal = self.getBiNormalFromPos(self.guide.apos)
+
+        # The right-side guide positions are already mirrored in world X.
+        # Reconstruct a canonical left-space copy and calculate its normal
+        # from those points. Recalculating the normal is important because
+        # a normal produced by cross products does not transform exactly like
+        # an ordinary direction vector under reflection.
+        self.canonical_apos = [
+            _mirror_vector_world_x(pos) if self.negate else datatypes.Vector(pos)
+            for pos in self.guide.apos
+        ]
+        self.canonical_normal = self.getNormalFromPos(self.canonical_apos)
 
         self.length0 = vector.getDistance(self.guide.apos[0], self.guide.apos[1])
         self.length1 = vector.getDistance(self.guide.apos[1], self.guide.apos[2])
@@ -67,6 +125,41 @@ class Component(component.Main):
         self.root_guide = self.GUIDE_MAP.get("root", "root")
         self.mid_guide = self.GUIDE_MAP.get("mid", "mid")
         self.end_guide = self.GUIDE_MAP.get("end", "end")
+
+    def _get_mirrored_transform_looking_at(
+        self,
+        pos,
+        lookat,
+        axis: str = "xz",
+    ):
+        """Build in canonical left space, then mirror the finished matrix.
+
+        Right-side guides already contain mirrored world-space positions.
+        For the right side, this method first converts the two positions back
+        into canonical left space, builds the orientation without mGear's
+        ``negate`` behavior, and finally reflects the complete matrix once.
+        """
+        if not self.negate:
+            return transform.getTransformLookingAt(
+                pos,
+                lookat,
+                self.canonical_normal,
+                axis,
+                False,
+            )
+
+        canonical_pos = _mirror_vector_world_x(pos)
+        canonical_lookat = _mirror_vector_world_x(lookat)
+
+        matrix = transform.getTransformLookingAt(
+            canonical_pos,
+            canonical_lookat,
+            self.canonical_normal,
+            axis,
+            False,
+        )
+
+        return _mirror_matrix_world_x(matrix)
 
     def _add_root_control(self) -> None:
         t = transform.getTransformFromPos(self.guide.apos[0])
@@ -85,12 +178,10 @@ class Component(component.Main):
     def _add_fk_controls(self) -> None:
         # FK Controlers -----------------------------------
         # FK 0
-        t = transform.getTransformLookingAt(
+        t = self._get_mirrored_transform_looking_at(
             self.guide.apos[0],
             self.guide.apos[1],
-            self.normal,
             "xz",
-            self.negate,
         )
 
         t_npo = t
@@ -109,12 +200,10 @@ class Component(component.Main):
         )
 
         # FK 1
-        t = transform.getTransformLookingAt(
+        t = self._get_mirrored_transform_looking_at(
             self.guide.apos[1],
             self.guide.apos[2],
-            self.normal,
             "xz",
-            self.negate,
         )
 
         t_npo = t
@@ -139,12 +228,10 @@ class Component(component.Main):
             attribute.setKeyableAttributes(f_ctl, ["tx", "ty", "tz", "ro", "rx", "ry", "rz"])
 
         # FK 2
-        t = transform.getTransformLookingAt(
+        t = self._get_mirrored_transform_looking_at(
             self.guide.apos[2],
             self.guide.apos[3],
-            self.normal,
             "xz",
-            self.negate,
         )
 
         t_npo = t
@@ -273,24 +360,11 @@ class Component(component.Main):
         if self.WORLD_ALIGN_IK:
             m = transform.getTransformFromPos(self.guide.pos[self.end_guide])
         else:
-            if self.negate:
-                m = transform.getTransformLookingAt(
-                    self.guide.pos[self.end_guide],
-                    self.guide.pos["eff"],
-                    self.normal,
-                    "x-y",
-                    True,
-                )
-                # if self.settings["mirrorIK"]:
-                #     m = transform.setMatrixScale(m, [-1, 1, 1])
-            else:
-                m = transform.getTransformLookingAt(
-                    self.guide.pos[self.end_guide],
-                    self.guide.pos["eff"],
-                    self.normal,
-                    "xy",
-                    False,
-                )
+            m = self._get_mirrored_transform_looking_at(
+                self.guide.pos[self.end_guide],
+                self.guide.pos["eff"],
+                "xy",
+            )
         self.ik_ctl = self.addCtl(
             self.ikcns_ctl,
             "ik_ctl",
@@ -307,12 +381,10 @@ class Component(component.Main):
         #     attribute.setInvertMirror(self.ik_ctl, ["tx", "ry", "rz"])
         attribute.setKeyableAttributes(self.ik_ctl)
         # we use same as fk2_ctl
-        ik_ref_t = transform.getTransformLookingAt(
+        ik_ref_t = self._get_mirrored_transform_looking_at(
             self.guide.apos[2],
             self.guide.apos[3],
-            self.normal,
             "xz",
-            self.negate,
         )
         self.ik_ctl_ref = primitive.addTransform(self.ik_ctl, self.getName("ikCtl_ref"), ik_ref_t)
 
@@ -320,12 +392,10 @@ class Component(component.Main):
 
     def _add_reference_objects(self) -> None:
         # References --------------------------------------
-        trnIK_ref = transform.getTransformLookingAt(
+        trnIK_ref = self._get_mirrored_transform_looking_at(
             self.guide.pos[self.end_guide],
             self.guide.pos["eff"],
-            self.normal,
             "xz",
-            self.negate,
         )
         self.ik_ref = primitive.addTransform(self.ik_ctl_ref, self.getName("ik_ref"), trnIK_ref)
         self.fk_ref = primitive.addTransform(self.fk_ctl[2], self.getName("fk_ref"), trnIK_ref)
@@ -440,20 +510,16 @@ class Component(component.Main):
     def _add_mid_control(self) -> None:
         # Mid control Locator
 
-        tA = transform.getTransformLookingAt(
+        tA = self._get_mirrored_transform_looking_at(
             self.guide.apos[0],
             self.guide.apos[1],
-            self.normal,
             "xz",
-            self.negate,
         )
         tA = transform.setMatrixPosition(tA, self.guide.apos[1])
-        tB = transform.getTransformLookingAt(
+        tB = self._get_mirrored_transform_looking_at(
             self.guide.apos[1],
             self.guide.apos[2],
-            self.normal,
             "xz",
-            self.negate,
         )
 
         t = transform.getInterpolateTransformMatrix(tA, tB)
@@ -500,7 +566,7 @@ class Component(component.Main):
             self.getName("upperTwist%s_jnt"),
             self.upperChainPos,
             self.normal,
-            self.negate,
+            False,  # self.negate,
             self.WIP,
         )
 
@@ -520,38 +586,41 @@ class Component(component.Main):
             self.getName("lowerTwist%s_jnt"),
             self.lowerChainPos,
             self.normal,
-            self.negate,
+            False,  # self.negate,
             self.WIP,
         )
 
     def _add_divisions(self) -> None:
-        # Divisions ----------------------------------------
-        # We have attribute least one division attribute the start, the end
-        # and one for the mid control. + 2 for mid angle control
+        """Create division controls and bind-joint driver transforms."""
+
         self.extra_div = 2
         self.divisions = self.settings["div0"] + self.settings["div1"] + self.extra_div
 
         tagP = self.parentCtlTag
+
         self.tweak_ctl = []
         self.div_cns = []
         self.roll_offset = []
+        self.joint_offset = []
 
-        # Track jnt_pos indices per segment for weight split tagging in finalize
         self.upper_jnt_indices = []
         self.lower_jnt_indices = []
 
-        # joint Description Name
         jdn_upper = self.jd_names[0]
         jdn_lower = self.jd_names[1]
         jdn_upper_twist = self.jd_names[2]
         jdn_lower_twist = self.jd_names[3]
 
         for i in range(self.divisions):
-            div_cns = primitive.addTransform(self.root_ctl, self.getName(f"div{i}_loc"))
+            div_cns = primitive.addTransform(
+                self.root_ctl,
+                self.getName(f"div{i}_loc"),
+            )
 
             self.div_cns.append(div_cns)
 
             t = transform.getTransform(div_cns)
+
             tweak_ctl = self.addCtl(
                 div_cns,
                 f"tweak{i}_ctl",
@@ -563,49 +632,69 @@ class Component(component.Main):
                 ro=datatypes.Vector([0, 0, 1.5708]),
                 tp=tagP,
             )
+
             attribute.setKeyableAttributes(tweak_ctl)
 
             tagP = tweak_ctl
             self.tweak_ctl.append(tweak_ctl)
 
-            roll_off = primitive.addTransform(tweak_ctl, self.getName(f"roll{i}_off"))
+            roll_off = primitive.addTransform(
+                tweak_ctl,
+                self.getName(f"roll{i}_off"),
+            )
 
             self.roll_offset.append(roll_off)
 
-            # setting the joints
+            # Separate driver used only by generated bind joints.
+            joint_off = primitive.addTransform(
+                roll_off,
+                self.getName(f"joint{i}_off"),
+                transform.getTransform(roll_off),
+            )
+
+            # Rotate the local Y/Z axes into their mirrored orientation
+            # without introducing negative scale.
+            """ if self.negate:
+                joint_off.rotateX.set(180.0)"""
+
+            self.joint_offset.append(joint_off)
+
             if i == 0:
-                self.limb_root_base = roll_off
+                self.limb_root_base = joint_off
 
                 self.upper_jnt_indices.append(len(self.jnt_pos))
+
                 self.jnt_pos.append(
                     {
-                        "obj": self.limb_root_base,
+                        "obj": joint_off,
                         "name": jdn_upper,
                         "guide_relative": "root",
                         "data_contracts": "Ik",
                         "leaf_joint": self.settings["leafJoints"],
                     }
                 )
+
                 current_parent = "root"
                 twist_name = jdn_upper_twist
                 twist_idx = 1
                 increment = 1
 
-                # extra joint twist/swing
                 if self.settings["div0"]:
                     self.jnt_pos.append(
                         {
-                            "obj": roll_off,
+                            "obj": joint_off,
                             "name": jdn_upper + "_swing",
-                            "data_contracts": "Twist,Squash",
+                            "data_contracts": ("Twist,Squash"),
                             "newActiveJnt": current_parent,
                         }
                     )
+
             elif i == self.settings["div0"] + 1:
                 self.lower_jnt_indices.append(len(self.jnt_pos))
+
                 self.jnt_pos.append(
                     {
-                        "obj": roll_off,
+                        "obj": joint_off,
                         "name": jdn_lower,
                         "newActiveJnt": current_parent,
                         "guide_relative": self.mid_guide,
@@ -613,24 +702,32 @@ class Component(component.Main):
                         "leaf_joint": self.settings["leafJoints"],
                     }
                 )
+
                 twist_name = jdn_lower_twist
                 current_parent = self.mid_guide
                 twist_idx = self.settings["div1"]
                 increment = -1
+
             else:
                 if twist_name == jdn_upper_twist:
                     self.upper_jnt_indices.append(len(self.jnt_pos))
                 else:
                     self.lower_jnt_indices.append(len(self.jnt_pos))
+
                 self.jnt_pos.append(
                     {
-                        "obj": roll_off,
-                        "name": string.replaceSharpWithPadding(twist_name, twist_idx),
+                        "obj": joint_off,
+                        "name": string.replaceSharpWithPadding(
+                            twist_name,
+                            twist_idx,
+                        ),
                         "newActiveJnt": current_parent,
-                        "data_contracts": "Twist,Squash",
+                        "data_contracts": ("Twist,Squash"),
                     }
                 )
+
                 twist_idx += increment
+
         self.divisions_end = current_parent
 
     def _add_end_reference(self) -> None:
@@ -645,8 +742,8 @@ class Component(component.Main):
             self.getName("end_ref"),
             transform.getTransform(self.eff_loc),
         )
-        if self.negate:
-            self.end_ref.attr("rz").set(180.0)
+        """if self.negate:
+            self.end_ref.attr("rz").set(180.0)"""
 
         self.eff_jnt_off = self.end_ref
 
@@ -713,12 +810,10 @@ class Component(component.Main):
         self.lowerBendy_aim = primitive.addTransform(
             self.bone1,
             self.getName("lowerBendy_aim"),
-            transform.getTransformLookingAt(
+            self._get_mirrored_transform_looking_at(
                 self.guide.apos[2],
                 self.guide.apos[1],
-                self.normal,
                 "xz",
-                self.negate,
             ),
         )
         self.lowerBendy_pin = primitive.addTransform(
@@ -864,6 +959,110 @@ class Component(component.Main):
             )
             attribute.addProxyAttribute(self.roll_att, [self.ik_ctl, self.upv_ctl])
 
+    def _connect_mirrored_bind_transform(
+        self,
+        source,
+        destination,
+    ) -> None:
+        """Drive a bind transform with stable world-X-mirrored rotation.
+
+        Translation is copied directly. Rotation is mirrored through quaternion
+        components, avoiding Euler decomposition flips.
+        """
+
+        local_matrix = applyop.gear_mulmatrix_op(
+            source.attr("worldMatrix[0]"),
+            destination.attr("parentInverseMatrix[0]"),
+        )
+
+        decompose = pm.createNode(
+            "decomposeMatrix",
+            name=self.getName(f"{destination.nodeName()}_decompose"),
+        )
+
+        pm.connectAttr(
+            local_matrix.attr("output"),
+            decompose.attr("inputMatrix"),
+        )
+
+        # Position does not need special mirroring because the source is
+        # already on the correct side of the character.
+        pm.connectAttr(
+            decompose.attr("outputTranslate"),
+            destination.attr("translate"),
+        )
+
+        if not self.negate:
+            pm.connectAttr(
+                decompose.attr("outputRotate"),
+                destination.attr("rotate"),
+            )
+            return
+
+        # Mirroring a rotation across world X:
+        #
+        # quaternion (w, x, y, z)
+        # becomes    (w, x, -y, -z)
+        #
+        # This represents S * R * S and remains a valid rotation.
+        invert_y = pm.createNode(
+            "multDoubleLinear",
+            name=self.getName(f"{destination.nodeName()}_mirrorQuatY"),
+        )
+
+        invert_z = pm.createNode(
+            "multDoubleLinear",
+            name=self.getName(f"{destination.nodeName()}_mirrorQuatZ"),
+        )
+
+        invert_y.input2.set(-1.0)
+        invert_z.input2.set(-1.0)
+
+        pm.connectAttr(
+            decompose.attr("outputQuatY"),
+            invert_y.attr("input1"),
+        )
+
+        pm.connectAttr(
+            decompose.attr("outputQuatZ"),
+            invert_z.attr("input1"),
+        )
+
+        quat_to_euler = pm.createNode(
+            "quatToEuler",
+            name=self.getName(f"{destination.nodeName()}_mirrorQuatToEuler"),
+        )
+
+        pm.connectAttr(
+            decompose.attr("outputQuatW"),
+            quat_to_euler.attr("inputQuatW"),
+        )
+
+        pm.connectAttr(
+            decompose.attr("outputQuatX"),
+            quat_to_euler.attr("inputQuatX"),
+        )
+
+        pm.connectAttr(
+            invert_y.attr("output"),
+            quat_to_euler.attr("inputQuatY"),
+        )
+
+        pm.connectAttr(
+            invert_z.attr("output"),
+            quat_to_euler.attr("inputQuatZ"),
+        )
+
+        pm.connectAttr(
+            destination.attr("rotateOrder"),
+            quat_to_euler.attr("inputRotateOrder"),
+        )
+
+        pm.connectAttr(
+            quat_to_euler.attr("outputRotate"),
+            destination.attr("rotate"),
+        )
+
     # =====================================================
     # OPERATORS
     # =====================================================
@@ -997,8 +1196,8 @@ class Component(component.Main):
 
         # connect mid ref
         cns = pm.parentConstraint(self.bone1, self.mid_ref, mo=False)
-        if self.negate and self.settings["div1"]:
-            pm.setAttr(cns + ".target[0].targetOffsetRotateZ", 180)
+        """if self.negate and self.settings["div1"]:
+            pm.setAttr(cns + ".target[0].targetOffsetRotateZ", 180)"""
 
         # scale: this fix the scalin popping issue
         intM_node = applyop.gear_intmatrix_op(
@@ -1156,8 +1355,8 @@ class Component(component.Main):
             name=f"{self.bone0_tr}_twist",
             parent=str(self.bone0_tr),
             cv_transforms=[str(transform) for transform in cns_list],
-            primary_axis=(1, 0, 0) if not self.negate else (-1, 0, 0),
-            secondary_axis=(0, 0, 1) if not self.negate else (0, 0, -1),
+            primary_axis=(1, 0, 0),
+            secondary_axis=(0, 0, 1),
             degree=2,
             pinned_transforms=[str(transform) for transform in self.upperTwistChain],
             padded=False,
@@ -1172,8 +1371,8 @@ class Component(component.Main):
             name=f"{self.bone1_tr}_twist",
             parent=str(self.bone1_tr),
             cv_transforms=[str(transform) for transform in cns_list],
-            primary_axis=(1, 0, 0) if not self.negate else (-1, 0, 0),
-            secondary_axis=(0, 0, 1) if not self.negate else (0, 0, -1),
+            primary_axis=(1, 0, 0),
+            secondary_axis=(0, 0, 1),
             degree=2,
             pinned_transforms=[str(transform) for transform in self.lowerTwistChain],
             padded=False,

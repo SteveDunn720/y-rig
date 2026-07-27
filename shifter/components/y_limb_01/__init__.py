@@ -1,6 +1,5 @@
 # type: ignore
 import ast
-import traceback
 
 import mgear.pymaya as pm
 from mgear.core import applyop, attribute, icon, node, primitive, string, transform, vector

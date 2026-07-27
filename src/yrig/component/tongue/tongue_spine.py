@@ -239,3 +239,67 @@ class TongueSpine:
                 f"{ctrl_tran}.rotate",
                 force=True,
             )
+
+        # ---------------------------------------------------------------------
+        # Stretchy Spline IK
+        # ---------------------------------------------------------------------
+
+        # Get the curve shape and original shape
+        curve_shapes = cmds.listRelatives(curve, shapes=True, fullPath=False) or []
+
+        curve_shape = None
+        curve_shape_orig = None
+
+        for shape in curve_shapes:
+            if shape.endswith("ShapeOrig"):
+                curve_shape_orig = shape
+            elif shape.endswith("Shape"):
+                curve_shape = shape
+
+        if curve_shape and curve_shape_orig:
+            # Current curve length
+            current_curve_info = cmds.createNode(
+                "curveInfo",
+                name="tongue_current_curveInfo",
+            )
+            cmds.connectAttr(
+                f"{curve_shape}.worldSpace[0]",
+                f"{current_curve_info}.inputCurve",
+                force=True,
+            )
+
+            # Original curve length
+            original_curve_info = cmds.createNode(
+                "curveInfo",
+                name="tongue_original_curveInfo",
+            )
+            cmds.connectAttr(
+                f"{curve_shape_orig}.worldSpace[0]",
+                f"{original_curve_info}.inputCurve",
+                force=True,
+            )
+
+            # Stretch ratio = currentLength / originalLength
+            stretch_md = cmds.createNode(
+                "multiplyDivide",
+                name="tongue_stretch_md",
+            )
+            cmds.setAttr(f"{stretch_md}.operation", "2")  # Divide
+
+            cmds.connectAttr(
+                f"{current_curve_info}.arcLength",
+                f"{stretch_md}.input1X",
+                force=True,
+            )
+            cmds.connectAttr(
+                f"{original_curve_info}.arcLength",
+                f"{stretch_md}.input2X",
+                force=True,
+            )
+
+            # Drive the first tongue joint scale
+            cmds.connectAttr(
+                f"{stretch_md}.outputX",
+                "tongue_back_jnt.scaleX",
+                force=True,
+            )

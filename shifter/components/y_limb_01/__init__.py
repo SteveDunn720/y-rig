@@ -74,25 +74,23 @@ class Component(component.Main):
     # OBJECTS
     # =====================================================
     def addObjects(self) -> None:
-        """Add component objects with detailed error reporting."""
+        """Add all the objects needed to create the component."""
 
-        build_steps = [
-            ("_add_common_setup", self._add_common_setup),
-            ("_add_root_control", self._add_root_control),
-            ("_add_fk_controls", self._add_fk_controls),
-            ("_add_ik_upv", self._add_ik_upv),
-            ("_add_ik_controls", self._add_ik_controls),
-            ("_add_reference_objects", self._add_reference_objects),
-            ("_add_solver_chain", self._add_solver_chain),
-            ("_add_match_refs", self._add_match_refs),
-            ("_add_swing_twist", self._add_swing_twist),
-            ("_add_mid_control", self._add_mid_control),
-            ("_add_twist_chains", self._add_twist_chains),
-            ("_add_divisions", self._add_divisions),
-            ("_add_end_reference", self._add_end_reference),
-            ("_add_bendy_controls", self._add_bendy_controls),
-            ("_add_ik_visual_reference", self._add_ik_visual_reference),
-        ]
+        self._add_common_setup()
+        self._add_root_control()
+        self._add_fk_controls()
+        self._add_ik_upv()
+        self._add_ik_controls()
+        self._add_reference_objects()
+        self._add_solver_chain()
+        self._add_match_refs()
+        self._add_swing_twist()
+        self._add_mid_control()
+        self._add_twist_chains()
+        self._add_divisions()
+        self._add_end_reference()
+        self._add_bendy_controls()
+        self._add_ik_visual_reference()
 
     def _add_common_setup(self) -> None:
         self.WIP = self.options["mode"]
@@ -565,7 +563,7 @@ class Component(component.Main):
             self.getName("upperTwist%s_jnt"),
             self.upperChainPos,
             self.normal,
-            False,  # self.negate,
+            self.negate,
             self.WIP,
         )
 
@@ -585,41 +583,38 @@ class Component(component.Main):
             self.getName("lowerTwist%s_jnt"),
             self.lowerChainPos,
             self.normal,
-            False,  # self.negate,
+            self.negate,
             self.WIP,
         )
 
     def _add_divisions(self) -> None:
-        """Create division controls and bind-joint driver transforms."""
-
+        # Divisions ----------------------------------------
+        # We have attribute least one division attribute the start, the end
+        # and one for the mid control. + 2 for mid angle control
         self.extra_div = 2
         self.divisions = self.settings["div0"] + self.settings["div1"] + self.extra_div
 
         tagP = self.parentCtlTag
-
         self.tweak_ctl = []
         self.div_cns = []
         self.roll_offset = []
-        self.joint_offset = []
 
+        # Track jnt_pos indices per segment for weight split tagging in finalize
         self.upper_jnt_indices = []
         self.lower_jnt_indices = []
 
+        # joint Description Name
         jdn_upper = self.jd_names[0]
         jdn_lower = self.jd_names[1]
         jdn_upper_twist = self.jd_names[2]
         jdn_lower_twist = self.jd_names[3]
 
         for i in range(self.divisions):
-            div_cns = primitive.addTransform(
-                self.root_ctl,
-                self.getName(f"div{i}_loc"),
-            )
+            div_cns = primitive.addTransform(self.root_ctl, self.getName(f"div{i}_loc"))
 
             self.div_cns.append(div_cns)
 
             t = transform.getTransform(div_cns)
-
             tweak_ctl = self.addCtl(
                 div_cns,
                 f"tweak{i}_ctl",
@@ -631,69 +626,49 @@ class Component(component.Main):
                 ro=datatypes.Vector([0, 0, 1.5708]),
                 tp=tagP,
             )
-
             attribute.setKeyableAttributes(tweak_ctl)
 
             tagP = tweak_ctl
             self.tweak_ctl.append(tweak_ctl)
 
-            roll_off = primitive.addTransform(
-                tweak_ctl,
-                self.getName(f"roll{i}_off"),
-            )
+            roll_off = primitive.addTransform(tweak_ctl, self.getName(f"roll{i}_off"))
 
             self.roll_offset.append(roll_off)
 
-            # Separate driver used only by generated bind joints.
-            joint_off = primitive.addTransform(
-                roll_off,
-                self.getName(f"joint{i}_off"),
-                transform.getTransform(roll_off),
-            )
-
-            # Rotate the local Y/Z axes into their mirrored orientation
-            # without introducing negative scale.
-            """ if self.negate:
-                joint_off.rotateX.set(180.0)"""
-
-            self.joint_offset.append(joint_off)
-
+            # setting the joints
             if i == 0:
-                self.limb_root_base = joint_off
+                self.limb_root_base = roll_off
 
                 self.upper_jnt_indices.append(len(self.jnt_pos))
-
                 self.jnt_pos.append(
                     {
-                        "obj": joint_off,
+                        "obj": self.limb_root_base,
                         "name": jdn_upper,
                         "guide_relative": "root",
                         "data_contracts": "Ik",
                         "leaf_joint": self.settings["leafJoints"],
                     }
                 )
-
                 current_parent = "root"
                 twist_name = jdn_upper_twist
                 twist_idx = 1
                 increment = 1
 
+                # extra joint twist/swing
                 if self.settings["div0"]:
                     self.jnt_pos.append(
                         {
-                            "obj": joint_off,
+                            "obj": roll_off,
                             "name": jdn_upper + "_swing",
-                            "data_contracts": ("Twist,Squash"),
+                            "data_contracts": "Twist,Squash",
                             "newActiveJnt": current_parent,
                         }
                     )
-
             elif i == self.settings["div0"] + 1:
                 self.lower_jnt_indices.append(len(self.jnt_pos))
-
                 self.jnt_pos.append(
                     {
-                        "obj": joint_off,
+                        "obj": roll_off,
                         "name": jdn_lower,
                         "newActiveJnt": current_parent,
                         "guide_relative": self.mid_guide,
@@ -701,32 +676,24 @@ class Component(component.Main):
                         "leaf_joint": self.settings["leafJoints"],
                     }
                 )
-
                 twist_name = jdn_lower_twist
                 current_parent = self.mid_guide
                 twist_idx = self.settings["div1"]
                 increment = -1
-
             else:
                 if twist_name == jdn_upper_twist:
                     self.upper_jnt_indices.append(len(self.jnt_pos))
                 else:
                     self.lower_jnt_indices.append(len(self.jnt_pos))
-
                 self.jnt_pos.append(
                     {
-                        "obj": joint_off,
-                        "name": string.replaceSharpWithPadding(
-                            twist_name,
-                            twist_idx,
-                        ),
+                        "obj": roll_off,
+                        "name": string.replaceSharpWithPadding(twist_name, twist_idx),
                         "newActiveJnt": current_parent,
-                        "data_contracts": ("Twist,Squash"),
+                        "data_contracts": "Twist,Squash",
                     }
                 )
-
                 twist_idx += increment
-
         self.divisions_end = current_parent
 
     def _add_end_reference(self) -> None:
@@ -741,8 +708,8 @@ class Component(component.Main):
             self.getName("end_ref"),
             transform.getTransform(self.eff_loc),
         )
-        """if self.negate:
-            self.end_ref.attr("rz").set(180.0)"""
+        if self.negate:
+            self.end_ref.attr("rz").set(180.0)
 
         self.eff_jnt_off = self.end_ref
 
@@ -958,110 +925,6 @@ class Component(component.Main):
             )
             attribute.addProxyAttribute(self.roll_att, [self.ik_ctl, self.upv_ctl])
 
-    def _connect_mirrored_bind_transform(
-        self,
-        source,
-        destination,
-    ) -> None:
-        """Drive a bind transform with stable world-X-mirrored rotation.
-
-        Translation is copied directly. Rotation is mirrored through quaternion
-        components, avoiding Euler decomposition flips.
-        """
-
-        local_matrix = applyop.gear_mulmatrix_op(
-            source.attr("worldMatrix[0]"),
-            destination.attr("parentInverseMatrix[0]"),
-        )
-
-        decompose = pm.createNode(
-            "decomposeMatrix",
-            name=self.getName(f"{destination.nodeName()}_decompose"),
-        )
-
-        pm.connectAttr(
-            local_matrix.attr("output"),
-            decompose.attr("inputMatrix"),
-        )
-
-        # Position does not need special mirroring because the source is
-        # already on the correct side of the character.
-        pm.connectAttr(
-            decompose.attr("outputTranslate"),
-            destination.attr("translate"),
-        )
-
-        if not self.negate:
-            pm.connectAttr(
-                decompose.attr("outputRotate"),
-                destination.attr("rotate"),
-            )
-            return
-
-        # Mirroring a rotation across world X:
-        #
-        # quaternion (w, x, y, z)
-        # becomes    (w, x, -y, -z)
-        #
-        # This represents S * R * S and remains a valid rotation.
-        invert_y = pm.createNode(
-            "multDoubleLinear",
-            name=self.getName(f"{destination.nodeName()}_mirrorQuatY"),
-        )
-
-        invert_z = pm.createNode(
-            "multDoubleLinear",
-            name=self.getName(f"{destination.nodeName()}_mirrorQuatZ"),
-        )
-
-        invert_y.input2.set(-1.0)
-        invert_z.input2.set(-1.0)
-
-        pm.connectAttr(
-            decompose.attr("outputQuatY"),
-            invert_y.attr("input1"),
-        )
-
-        pm.connectAttr(
-            decompose.attr("outputQuatZ"),
-            invert_z.attr("input1"),
-        )
-
-        quat_to_euler = pm.createNode(
-            "quatToEuler",
-            name=self.getName(f"{destination.nodeName()}_mirrorQuatToEuler"),
-        )
-
-        pm.connectAttr(
-            decompose.attr("outputQuatW"),
-            quat_to_euler.attr("inputQuatW"),
-        )
-
-        pm.connectAttr(
-            decompose.attr("outputQuatX"),
-            quat_to_euler.attr("inputQuatX"),
-        )
-
-        pm.connectAttr(
-            invert_y.attr("output"),
-            quat_to_euler.attr("inputQuatY"),
-        )
-
-        pm.connectAttr(
-            invert_z.attr("output"),
-            quat_to_euler.attr("inputQuatZ"),
-        )
-
-        pm.connectAttr(
-            destination.attr("rotateOrder"),
-            quat_to_euler.attr("inputRotateOrder"),
-        )
-
-        pm.connectAttr(
-            quat_to_euler.attr("outputRotate"),
-            destination.attr("rotate"),
-        )
-
     # =====================================================
     # OPERATORS
     # =====================================================
@@ -1195,8 +1058,8 @@ class Component(component.Main):
 
         # connect mid ref
         cns = pm.parentConstraint(self.bone1, self.mid_ref, mo=False)
-        """if self.negate and self.settings["div1"]:
-            pm.setAttr(cns + ".target[0].targetOffsetRotateZ", 180)"""
+        if self.negate and self.settings["div1"]:
+            pm.setAttr(cns + ".target[0].targetOffsetRotateZ", 180)
 
         # scale: this fix the scalin popping issue
         intM_node = applyop.gear_intmatrix_op(
@@ -1354,8 +1217,8 @@ class Component(component.Main):
             name=f"{self.bone0_tr}_twist",
             parent=str(self.bone0_tr),
             cv_transforms=[str(transform) for transform in cns_list],
-            primary_axis=(1, 0, 0),
-            secondary_axis=(0, 0, 1),
+            primary_axis=(1, 0, 0) if not self.negate else (-1, 0, 0),
+            secondary_axis=(0, 0, 1) if not self.negate else (0, 0, -1),
             degree=2,
             pinned_transforms=[str(transform) for transform in self.upperTwistChain],
             padded=False,
@@ -1370,8 +1233,8 @@ class Component(component.Main):
             name=f"{self.bone1_tr}_twist",
             parent=str(self.bone1_tr),
             cv_transforms=[str(transform) for transform in cns_list],
-            primary_axis=(1, 0, 0),
-            secondary_axis=(0, 0, 1),
+            primary_axis=(1, 0, 0) if not self.negate else (-1, 0, 0),
+            secondary_axis=(0, 0, 1) if not self.negate else (0, 0, -1),
             degree=2,
             pinned_transforms=[str(transform) for transform in self.lowerTwistChain],
             padded=False,

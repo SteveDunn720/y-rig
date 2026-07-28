@@ -286,6 +286,12 @@ class TongueSpine:
             )
             cmds.setAttr(f"{stretch_md}.operation", 2)  # type: ignore # Divide
 
+            scale_md = cmds.createNode(
+                "multiplyDivide",
+                name="tongue_scale_md",
+            )
+            cmds.setAttr(f"{scale_md}.operation", 2)  # type: ignore # Divide
+
             cmds.connectAttr(
                 f"{current_curve_info}.arcLength",
                 f"{stretch_md}.input1X",
@@ -297,9 +303,19 @@ class TongueSpine:
                 force=True,
             )
 
-            # Drive the first tongue joint scale
             cmds.connectAttr(
                 f"{stretch_md}.outputX",
+                f"{scale_md}.input1X",
+            )
+
+            cmds.connectAttr(
+                "world_ctl.scaleX",
+                f"{scale_md}.input2X",
+            )
+
+            # Drive the first tongue joint scale
+            cmds.connectAttr(
+                f"{scale_md}.outputX",
                 "tongue_back_jnt.scaleX",
                 force=True,
             )

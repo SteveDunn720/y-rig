@@ -33,7 +33,6 @@ def get_teeth_locator_indices(cvs_count: int) -> list[int]:
     return sorted(indices)
 
 
-
 class TeethSpline:
     def __init__(
         self,
@@ -68,7 +67,6 @@ class TeethSpline:
         parent = self.control_grp
 
         for i, cv_index in enumerate(indices):
-
             pos = cmds.pointPosition(cvs[cv_index], world=True)
             pos_tuple: tuple[float, float, float] = (
                 float(pos[0]),
@@ -119,7 +117,6 @@ class TeethSpline:
         joints = []
 
         for i, pinned in enumerate(spline.pinned_transforms):
-
             jnt = create_joint(
                 name=f"{guide_name}_{i}",
                 parent=joint_parent,
@@ -135,7 +132,6 @@ class TeethSpline:
     def build_teeth(self) -> None:
 
         for guide in ("top_teeth", "bottom_teeth"):
-
             if guide not in self.guides:
                 continue
 

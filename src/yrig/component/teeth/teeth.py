@@ -67,7 +67,6 @@ class Teeth:
 
         parent = self.parent_jnt if cmds.objExists(self.parent_jnt) else None
 
-
         if parent:
             cmds.select(parent)
 
@@ -99,4 +98,3 @@ class Teeth:
             component_grp=self.component_grp,
             control_size=self.control_size,
         ).build_teeth()
-

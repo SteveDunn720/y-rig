@@ -50,11 +50,7 @@ class TeethSpline:
         self.component_grp = component_grp
         self.control_size = control_size
 
-    def build_single_teeth_spline(self, guide_name: str) -> tuple[object, list[str]]:
-
-        # ------------------------------------------------------------------
-        # Sample the guide curve
-        # ------------------------------------------------------------------
+    def build_single_teeth_spline(self, guide_name: str, num: int) -> tuple[object, list[str]]:
 
         cvs = cmds.ls(f"{guide_name}.cv[*]", flatten=True)
         if not cvs:
@@ -64,7 +60,27 @@ class TeethSpline:
 
         cv_controls = []
 
-        parent = self.control_grp
+        group = create_transform(
+            name=f"{guide_name}_ofst_grp",
+            parent=self.control_grp,
+        )
+        if num == 1:
+            cmds.parentConstraint(
+                "jaw_M_ctl",
+                group,
+                maintainOffset=True,
+            )
+
+        main_control = create_control(
+            name=f"{guide_name}_main",
+            parent=group,
+            transform=group,
+            size=self.control_size * 0.5,
+            control_shape="circle",
+            direction="x",
+        )
+
+        parent = main_control
 
         for i, cv_index in enumerate(indices):
             pos = cmds.pointPosition(cvs[cv_index], world=True)
@@ -76,14 +92,14 @@ class TeethSpline:
 
             offset = create_transform(
                 name=f"{guide_name}_{i}_ofs",
-                parent=parent,
+                parent=parent,  # type: ignore
             )
 
             cmds.xform(offset, worldSpace=True, translation=pos_tuple)
 
             ctrl = create_control(
                 name=f"{guide_name}_{i}",
-                parent=offset,
+                parent=parent,
                 transform=offset,
                 size=self.control_size * 0.5,
                 control_shape="circle",
@@ -92,11 +108,7 @@ class TeethSpline:
 
             cv_controls.append(ctrl.transform)
 
-            parent = ctrl.transform
-
-        # ------------------------------------------------------------------
-        # Build the matrix spline
-        # ------------------------------------------------------------------
+            # parent = ctrl.transform
 
         spline = matrix_spline_from_transforms(
             name=f"{guide_name}_matrixSpline",
@@ -108,13 +120,9 @@ class TeethSpline:
             parent=self.component_grp,
         )
 
-        # ------------------------------------------------------------------
-        # Create joints on every pinned transform
-        # ------------------------------------------------------------------
-
         joint_parent = self.joint_parent
 
-        joints = []
+        self.joints = []
 
         for i, pinned in enumerate(spline.pinned_transforms):
             jnt = create_joint(
@@ -123,20 +131,34 @@ class TeethSpline:
                 transform=pinned,
             )
 
-            joints.append(jnt)
+            # Disconnect rotation on the end joints
+            if i == 0 or i == len(spline.pinned_transforms) - 1:
+                dest = f"{jnt}.rotate"
+                source = cmds.connectionInfo(dest, sourceFromDestination=True)
+
+                if source:
+                    cmds.disconnectAttr(source, dest)  # type: ignore
+
+            self.joints.append(jnt)
 
             joint_parent = jnt
 
-        return spline, joints
+        return spline, self.joints
+
+    def cleanup(self) -> None:
+        cmds.hide("teeth_M_npo")
+
+        return
 
     def build_teeth(self) -> None:
 
-        for guide in ("top_teeth", "bottom_teeth"):
+        for j, guide in enumerate(("top_teeth", "bottom_teeth")):
             if guide not in self.guides:
                 continue
 
             if not cmds.objExists(self.guides[guide]):
                 continue
 
-            self.build_single_teeth_spline(self.guides[guide])
+            self.build_single_teeth_spline(self.guides[guide], j)
+        self.cleanup()
         return

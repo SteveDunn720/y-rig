@@ -10,6 +10,7 @@
         "$YRIG_NXT_DIR/mouth.nxt",
         "$YRIG_NXT_DIR/eye.nxt",
         "$YRIG_NXT_DIR/tongue.nxt",
+        "$YRIG_NXT_DIR/teeth.nxt",
         "$YRIG_NXT_DIR/core.nxt"
     ],
     "meta_data": {

@@ -2,6 +2,7 @@ import maya.cmds as cmds
 
 from yrig.control import create_control
 from yrig.joint import create_joint
+from yrig.skin.split.tag import tag_for_weight_split
 from yrig.transform import create_transform
 
 from .build_teeth import TeethSpline
@@ -88,7 +89,7 @@ class Teeth:
         self.create_controls()
         self.create_joints()
 
-        TeethSpline(
+        teeth_spline = TeethSpline(
             guides=self.guides,
             main_ctrl=self.main_ctrl.transform
             if hasattr(self.main_ctrl, "transform")
@@ -97,4 +98,19 @@ class Teeth:
             control_grp=self.control_grp,
             component_grp=self.component_grp,
             control_size=self.control_size,
-        ).build_teeth()
+        )
+
+        self.teeth_joints = teeth_spline.build_teeth()
+
+        top_joints = self.teeth_joints[:5]
+        bottom_joints = self.teeth_joints[5:]
+
+        tag_for_weight_split(
+            influence=top_joints[0],
+            split_influences=top_joints,
+        )
+
+        tag_for_weight_split(
+            influence=bottom_joints[0],
+            split_influences=bottom_joints,
+        )

@@ -150,7 +150,8 @@ class TeethSpline:
 
         return
 
-    def build_teeth(self) -> None:
+    def build_teeth(self) -> list[str]:
+        all_joints = []
 
         for j, guide in enumerate(("top_teeth", "bottom_teeth")):
             if guide not in self.guides:
@@ -159,6 +160,8 @@ class TeethSpline:
             if not cmds.objExists(self.guides[guide]):
                 continue
 
-            self.build_single_teeth_spline(self.guides[guide], j)
+            _, joints = self.build_single_teeth_spline(self.guides[guide], j)
+            all_joints.extend(joints)
+
         self.cleanup()
-        return
+        return all_joints

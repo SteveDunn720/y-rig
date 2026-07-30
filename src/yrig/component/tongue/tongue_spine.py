@@ -314,8 +314,10 @@ class TongueSpine:
             )
 
             # Drive the first tongue joint scale
-            cmds.connectAttr(
-                f"{scale_md}.outputX",
-                "tongue_back_jnt.scaleX",
-                force=True,
-            )
+            axises = ["X", "Y", "Z"]
+            for axis in axises:
+                cmds.connectAttr(
+                    f"{scale_md}.outputX",
+                    f"tongue_back_jnt.scale{axis}",
+                    force=True,
+                )

@@ -150,6 +150,20 @@ class TeethSpline:
 
         return
 
+    def twist_fix(self, guide: str, all_joints: list) -> None:
+        if "bottom" in guide:
+            twist_fix_md = cmds.createNode(
+                "multiplyDivide",
+                name="twist_fix_md",
+            )
+            cmds.setAttr(f"{twist_fix_md}.input2X", -1)  # type: ignore
+            cmds.connectAttr("jaw_M_ctl" + ".rotateX", f"{twist_fix_md}.input1X")
+
+            bottom_joints = all_joints[5:]
+            cmds.connectAttr(f"{twist_fix_md}.outputX", f"{bottom_joints[0]}.rotateZ")
+
+        return
+
     def build_teeth(self) -> list[str]:
         all_joints = []
 
@@ -162,6 +176,7 @@ class TeethSpline:
 
             _, joints = self.build_single_teeth_spline(self.guides[guide], j)
             all_joints.extend(joints)
+            self.twist_fix(guide, all_joints)
 
         self.cleanup()
         return all_joints

@@ -209,6 +209,19 @@ class ProximityWrap:
 
         return self
 
+    def get_attribute(
+        self,
+        attribute: str,
+        default: int | float | bool | str | None = None,
+    ) -> int | float | bool | str | None:
+        """Get an attribute value from the proximityWrap node."""
+        plug = f"{self.node}.{attribute}"
+
+        if not cmds.objExists(plug):
+            return default
+
+        return cmds.getAttr(plug)
+
     def set_attribute(
         self,
         attribute: str,
@@ -363,7 +376,7 @@ def create_proximity_wrap(
 ) -> ProximityWrap:
     """Convenience wrapper around ProximityWrap.create()."""
     proximity_wrap = ProximityWrap.create(
-        driver=driver,
+        drivers=driver,
         driven=driven,
         name=name,
     )

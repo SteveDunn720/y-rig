@@ -209,40 +209,19 @@ class ProximityWrap:
 
         return self
 
-    def get_attribute(
-        self,
-        attribute: str,
-        default: Any = None,
-    ) -> Any:
-        """Get an attribute value from the proximityWrap node."""
-        plug = f"{self.node}.{attribute}"
-
-        if not cmds.objExists(plug):
-            if default is not None:
-                return default
-
-            raise AttributeError(f"{self.node} does not have attribute {attribute}.")
-
-        return cmds.getAttr(plug)
-
     def set_attribute(
         self,
         attribute: str,
-        value: Any,
+        value: int | float | bool | str,
     ) -> ProximityWrap:
         """Set an attribute and refresh the dataclass."""
         plug = f"{self.node}.{attribute}"
 
         if not cmds.objExists(plug):
-            raise AttributeError(f"{self.node} does not have attribute {attribute}.")
-
-        if cmds.getAttr(plug, lock=True):
-            raise RuntimeError(f"{plug} is locked.")
+            raise ValueError(f"Attribute does not exist: {plug}")
 
         cmds.setAttr(plug, value)
-        self.refresh()
-
-        return self
+        return self.refresh()
 
     def set_settings(
         self,
@@ -377,18 +356,23 @@ class ProximityWrap:
 
 
 def create_proximity_wrap(
-    drivers: str | list[str],
+    driver: str,
     driven: str | list[str],
     name: str | None = None,
-    **settings: Any,
+    settings: dict[str, int | float] | None = None,
 ) -> ProximityWrap:
     """Convenience wrapper around ProximityWrap.create()."""
-    return ProximityWrap.create(
-        drivers=drivers,
+    proximity_wrap = ProximityWrap.create(
+        driver=driver,
         driven=driven,
         name=name,
-        **settings,
     )
+
+    if settings:
+        for attribute, value in settings.items():
+            proximity_wrap.set_attribute(attribute, value)
+
+    return proximity_wrap
 
 
 def read_proximity_wrap(node: str) -> ProximityWrap:

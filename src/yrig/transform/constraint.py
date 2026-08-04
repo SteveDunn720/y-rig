@@ -1,11 +1,11 @@
 # type:ignore
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Literal, Sequence
+from typing import Literal
 
 import maya.cmds as cmds
-
 
 ConstraintType = Literal[
     "parent",

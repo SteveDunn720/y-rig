@@ -209,7 +209,9 @@ def find_blendshape(mesh: str) -> BlendShape:
     return get_blendshape_data(blendshape_nodes[0])
 
 
-def build_blendshape_networks(blendshape: BlendShape, targets: list = []) -> dict[str, str]:
+def build_blendshape_networks(
+    blendshape: BlendShape, targets: list[ShapeTarget] | None = None
+) -> dict[str, str]:
     """
     Creates one network node per blendshape type and connects
     custom attributes to the corresponding blendshape targets.

@@ -1,21 +1,20 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass, field
 
 import maya.cmds as cmds
 
-
+from yrig.deform.proxy_wrap import (
+    ProximityWrap,
+    create_proximity_wrap,
+)
 from yrig.rbf.blendshape import (
     BlendShape,
     ShapeTarget,
     create_blendshape,
     find_blendshape,
     get_blendshape_data,
-)
-
-from yrig.deform.proxy_wrap import (
-    ProximityWrap,
-    create_proximity_wrap,
 )
 
 
@@ -122,7 +121,7 @@ def set_weight_values(
         if connections:
             raise RuntimeError(f"{plug} has an incoming connection from {connections[0]}")
 
-        cmds.setAttr(plug, value)
+        cmds.setAttr(plug, value)  # type:ignore
 
 
 def zero_blendshape(blendshape: BlendShape) -> None:
@@ -277,11 +276,15 @@ def transfer_blendshapes(
             "smooth_normals": smooth_normals,
         }
 
+        filtered_wrap_settings: dict[str, int | float] = {
+            setting: value for setting, value in wrap_settings.items() if value is not None
+        }
+
         result.proximity_wrap = create_proximity_wrap(
-            drivers=source_mesh,
+            driver=source_mesh,
             driven=target_mesh,
             name=f"{destination.node}_transfer_proximityWrap",
-            **{setting: value for setting, value in wrap_settings.items() if value is not None},
+            settings=filtered_wrap_settings,
         )
 
         for source_target in targets_to_transfer:
@@ -289,10 +292,8 @@ def transfer_blendshapes(
 
             existing_target: ShapeTarget | None = None
 
-            try:
+            with suppress(ValueError):
                 existing_target = destination.get_target(source_target.name)
-            except ValueError:
-                pass
 
             if existing_target and not overwrite_existing:
                 result.skipped.append(source_target.name)
@@ -304,7 +305,7 @@ def transfer_blendshapes(
 
             source_plug = f"{source.node}.weight[{source_target.index}]"
 
-            cmds.setAttr(source_plug, 1.0)
+            cmds.setAttr(source_plug, 1.0)  # type:ignore
             cmds.dgdirty(target_mesh)
             cmds.refresh(force=True)
 
@@ -354,7 +355,7 @@ def transfer_blendshapes(
                 )
             )
 
-            cmds.setAttr(source_plug, 0.0)
+            cmds.setAttr(source_plug, 0.0)  # type:ignore
 
             cmds.delete(temporary_target)
             temporary_meshes.remove(temporary_target)

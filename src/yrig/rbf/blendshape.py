@@ -155,7 +155,63 @@ def get_blendshape_data(blendshape_node: str) -> BlendShape:
     return BlendShape(node=blendshape_node, targets=targets, meshes=meshes)
 
 
-def build_blendshape_networks(blendshape: BlendShape) -> dict[str, str]:
+def create_blendshape(
+    target_mesh: str,
+    blendshape_name: str,
+    front_of_chain: bool = True,
+) -> BlendShape:
+    """Create an empty blendShape and return its data."""
+    if cmds.objExists(blendshape_name):
+        if cmds.nodeType(blendshape_name) != "blendShape":
+            raise TypeError(f"{blendshape_name} exists but is not a blendShape node")
+
+        return get_blendshape_data(blendshape_name)
+
+    result = cast(
+        list[str],
+        cmds.blendShape(
+            target_mesh,
+            name=blendshape_name,
+            frontOfChain=front_of_chain,
+        ),
+    )
+
+    if not result:
+        raise RuntimeError(f"Failed to create blendShape: {blendshape_name}")
+
+    return get_blendshape_data(result[0])
+
+
+def find_blendshape(mesh: str) -> BlendShape:
+    """Find the first blendShape in a mesh's history."""
+    history = (
+        cmds.listHistory(
+            mesh,
+            pruneDagObjects=True,
+        )
+        or []
+    )
+
+    blendshape_nodes = (
+        cmds.ls(
+            history,  # type:ignore
+            type="blendShape",
+        )
+        or []
+    )
+
+    if not blendshape_nodes:
+        raise ValueError(f"No blendShape was found on {mesh}")
+
+    if len(blendshape_nodes) > 1:
+        cmds.warning(f"Multiple blendShapes found on {mesh}. Using {blendshape_nodes[0]}")
+
+    return get_blendshape_data(blendshape_nodes[0])
+
+
+def build_blendshape_networks(
+    blendshape: BlendShape, targets: list[ShapeTarget] | None = None
+) -> dict[str, str]:
     """
     Creates one network node per blendshape type and connects
     custom attributes to the corresponding blendshape targets.
@@ -169,50 +225,54 @@ def build_blendshape_networks(blendshape: BlendShape) -> dict[str, str]:
     """
     network_nodes: dict[str, str] = {}
 
-    for shape in blendshape.targets:
-        parts = shape.name.split("_")
+    if targets:
+        pass
+        # only connects targets in the list if htere arent any then we just do all of them
+    else:
+        for shape in blendshape.targets:
+            parts = shape.name.split("_")
 
-        if len(parts) < 3:
-            cmds.warning(f"Invalid blendshape name: {shape.name}")
-            continue
+            if len(parts) < 3:
+                cmds.warning(f"Invalid blendshape name: {shape.name}")
+                continue
 
-        target_type = "_".join(parts[:2])
-        target_name = "_".join(parts[2:])
+            target_type = "_".join(parts[:2])
+            target_name = "_".join(parts[2:])
 
-        network_name = f"{target_type}_nw"
+            network_name = f"{target_type}_nw"
 
-        if target_type not in network_nodes:
-            if cmds.objExists(network_name):
-                network_node = network_name
-            else:
-                network_node = cmds.createNode(
-                    "network",
-                    name=network_name,
+            if target_type not in network_nodes:
+                if cmds.objExists(network_name):
+                    network_node = network_name
+                else:
+                    network_node = cmds.createNode(
+                        "network",
+                        name=network_name,
+                    )
+
+                network_nodes[target_type] = network_node
+
+            network_node = network_nodes[target_type]
+
+            if not cmds.attributeQuery(
+                target_name,
+                node=network_node,
+                exists=True,
+            ):
+                cmds.addAttr(
+                    network_node,
+                    longName=target_name,
+                    attributeType="double",
+                    defaultValue=0.0,
+                    minValue=0.0,
+                    maxValue=1.0,
+                    keyable=True,
                 )
 
-            network_nodes[target_type] = network_node
-
-        network_node = network_nodes[target_type]
-
-        if not cmds.attributeQuery(
-            target_name,
-            node=network_node,
-            exists=True,
-        ):
-            cmds.addAttr(
-                network_node,
-                longName=target_name,
-                attributeType="double",
-                defaultValue=0.0,
-                minValue=0.0,
-                maxValue=1.0,
-                keyable=True,
+            cmds.connectAttr(
+                f"{network_node}.{target_name}",
+                shape.attr,
+                force=True,
             )
-
-        cmds.connectAttr(
-            f"{network_node}.{target_name}",
-            shape.attr,
-            force=True,
-        )
 
     return network_nodes

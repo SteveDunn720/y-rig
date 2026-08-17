@@ -1,11 +1,8 @@
-from dataclasses import dataclass
 import maya.cmds as cmds
 
 from yrig.control import create_control
 from yrig.joint import create_joint
-from yrig.maya_api.node import BlendColorsNode, MultiplyDivideNode, SumNode
 from yrig.transform import create_transform
-from yrig.transform.matrix import matrix_constraint
 
 
 class Glasses:

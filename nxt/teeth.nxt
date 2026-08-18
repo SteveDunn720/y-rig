@@ -13,17 +13,10 @@
             "/teeth_component2": [
                 -534.6346739575092,
                 1318.1845543738864
-            ],
-            "/tongue_component": [
-                20.0,
-                20.0
             ]
         }
     },
     "nodes": {
-        "/middle/teeth_component2": {
-            "instance": "/teeth_component"
-        },
         "/teeth_component": {
             "instance": "/component",
             "child_order": [
@@ -66,7 +59,6 @@
                 "",
                 "teeth.build()"
             ]
-        },
-        "/tongue_component": {}
+        }
     }
 }

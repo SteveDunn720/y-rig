@@ -5,7 +5,7 @@
     "mute": false,
     "solo": false,
     "references": [
-        "/groups/sandwich/05_production/rig_build/character/goonstocky/data/face/glasses.nxt",
+        "$YRIG_NXT_DIR/glasses.nxt",
         "$YRIG_NXT_DIR/ear.nxt",
         "$YRIG_NXT_DIR/nose.nxt",
         "$YRIG_NXT_DIR/mouth.nxt",

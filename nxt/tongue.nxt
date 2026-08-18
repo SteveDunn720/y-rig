@@ -9,35 +9,21 @@
             "/tongue_component": [
                 -864.6346739575092,
                 890.1845543738862
-            ],
-            "/middle": [
-                20.0,
-                20.0
             ]
         }
     },
     "nodes": {
-        "/middle": {
-            "child_order": [
-                "tongue_comp"
-            ]
-        },
-
-        "/middle/tongue_comp": {
-            "instance": "/tongue_component"
-        },
-
         "/tongue_component": {
             "instance": "/component",
             "child_order": [
                 "build"
             ],
             "attrs": {
-                "joint_parent": {
-                    "value": "face_jnt"
-                },
                 "control_parent": {
                     "value": "jaw_M_ctl"
+                },
+                "joint_parent": {
+                    "value": "face_jnt"
                 },
                 "name": {
                     "type": "raw",
@@ -54,7 +40,6 @@
                 "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
             ]
         },
-
         "/tongue_component/build": {
             "code": [
                 "from yrig.component.tongue.tongue import Tongue",

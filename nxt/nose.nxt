@@ -13,34 +13,6 @@
         }
     },
     "nodes": {
-        "/eye_component": {
-            "child_order": [
-                "build"
-            ],
-            "code": [
-                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
-                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
-                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
-                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
-            ]
-        },
-        "/eye_component/build": {
-            "code": [
-                "from yrig.component.eye.eye import Eye",
-                "",
-                "eye = Eye(",
-                "    part=\"${name}\",",
-                "    side=\"${side}\",",
-                "    parent=\"${component_group}\",",
-                "    control_parent=\"${control_parent}\",",
-                "    parent_jnt=\"${joint_parent}\",",
-                "    control_size=1,",
-                "    look_parent='${look_parent}'",
-                ")",
-                "",
-                "eye.build()"
-            ]
-        },
         "/nose_component": {
             "instance": "/component",
             "child_order": [

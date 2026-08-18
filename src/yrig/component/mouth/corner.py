@@ -11,7 +11,7 @@ from yrig.surface import surface_slide_constraint
 class MouthCorner:
     def __init__(
         self,
-        side: Literal["L"] | Literal["R"],
+        side: Literal["L", "R"],
         guide: str,
         mouth_surface: str,
         control_parent: Control | str,

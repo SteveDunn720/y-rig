@@ -1,15 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
 import mgear.shifter.custom_step as cstp
 from maya import cmds
 
 from yrig.skin.split import auto_split_weights
-
-if TYPE_CHECKING:
-    pass
 
 log = logging.getLogger(__name__)
 

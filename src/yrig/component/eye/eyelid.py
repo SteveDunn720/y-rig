@@ -2,7 +2,7 @@ import math
 from dataclasses import dataclass
 from typing import Any, Literal
 
-import maya.cmds as cmds
+from maya import cmds
 from maya.api.OpenMaya import MEulerRotation, MMatrix, MSpace, MTransformationMatrix, MVector
 
 from yrig.control import ControlShape, create_control

@@ -11,7 +11,7 @@ from typing import (
     TypeVar,
 )
 
-import maya.cmds as cmds
+from maya import cmds
 from maya.api.OpenMaya import MMatrix
 
 from yrig.maya_api.enum import AimMatrixAxisMode
@@ -115,7 +115,6 @@ class StringAttribute(Attribute[str]):
 class NumericAttribute(Attribute[T]):
     """Base class for numeric Maya attributes (int/float-like values)."""
 
-    pass
 
 
 class ScalarAttribute(NumericAttribute[float]):
@@ -170,7 +169,7 @@ class IntegerAttribute(NumericAttribute[int]):
         """Get the value of this attribute."""
         return int(cmds.getAttr(self.attr_path))
 
-    def set(self, value: float | int) -> None:
+    def set(self, value: float) -> None:
         """Set the value of this attribute."""
         cmds.setAttr(self.attr_path, int(value))  # type: ignore
 
@@ -340,7 +339,7 @@ class EnumAttribute(Attribute[EnumType], Generic[EnumType]):
         cmds.setAttr(self.attr_path, int(value))  # type: ignore
 
 
-class ArrayAttribute(Attribute, Generic[AttributeType], Iterable[AttributeType]):
+class ArrayAttribute(Attribute, Iterable[AttributeType], Generic[AttributeType]):
     """Base class for array-style Maya attributes supporting indexed access."""
 
     def __init__(

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
-import maya.cmds as cmds
+from maya import cmds
 
 
 @dataclass

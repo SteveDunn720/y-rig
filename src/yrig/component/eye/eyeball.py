@@ -1,6 +1,6 @@
 import math
 
-import maya.cmds as cmds
+from maya import cmds
 
 from yrig.control import create_control
 from yrig.joint import create_joint
@@ -229,7 +229,7 @@ class Eyeball:
             startJoint=self.look_root,
             endEffector=self.look_end,
             solver="ikSCsolver",
-        )
+        )  # type: ignore
 
         cmds.parent(self.ik_handle, self.component_grp)
 
@@ -398,7 +398,7 @@ class Eyeball:
                 connect=False,
             )
             self.dilation_joints.append(jnt)
-            cmds.setAttr(f"{jnt}.translateZ", loops_list[i])
+            cmds.setAttr(f"{jnt}.translateZ", _loop)
 
             x = i / 10.0
             if x < iris_percent:

@@ -148,7 +148,6 @@ def uv_pin(
         uv_pin_node.deformed_geometry.connect_from(f"{primary_shape}.{shape_output}")
         index = 0
     else:
-        uv_pin_node = uv_pin_node
         pin_indices = uv_pin_node.coordinate.get_indices()
         index = 0
         while index in pin_indices:

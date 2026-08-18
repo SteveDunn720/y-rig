@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from dataclasses import dataclass, field
 
-import maya.cmds as cmds
+from maya import cmds
 
 from yrig.deform.proxy_wrap import (
     ProximityWrap,

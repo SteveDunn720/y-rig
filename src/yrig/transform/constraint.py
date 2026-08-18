@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
-import maya.cmds as cmds
+from maya import cmds
 
 ConstraintType = Literal[
     "parent",

@@ -110,7 +110,7 @@ def _temporary_log_handler(logger: logging.Logger, handler: logging.Handler) -> 
 class BuildStepFilter(logging.Filter):
     def __init__(self, build_steps: Sequence[BuildStep]) -> None:
         super().__init__()
-        self._build_prefix_set: set[str] = set(f"{step.name} : " for step in build_steps)
+        self._build_prefix_set: set[str] = {f"{step.name} : " for step in build_steps}
         self._custom_step_prefix_set: set[str] = {
             "EXEC: Executing custom step: ",
             "SUCCEED: Custom Shifter Step Class: ",

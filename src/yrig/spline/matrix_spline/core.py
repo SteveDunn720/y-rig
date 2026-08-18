@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-import maya.cmds as cmds
+from maya import cmds
 from maya.api.OpenMaya import (
     MDoubleArray,
     MFnNurbsCurve,
@@ -216,7 +216,7 @@ def closest_parameter_on_matrix_spline(
     Returns:
         float: The curve parameter value (in knot space) at the closest point to the input position.
     """
-    fn_curve, data_obj = get_matrix_spline_mfn_curve(matrix_spline)
+    fn_curve, _data_obj = get_matrix_spline_mfn_curve(matrix_spline)
     test_point = position if isinstance(position, MPoint) else MPoint(*position)
     parameter: float = fn_curve.closestPoint(test_point, space=MSpace.kObject)[1]
 

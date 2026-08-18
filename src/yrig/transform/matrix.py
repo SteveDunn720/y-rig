@@ -2,7 +2,7 @@ import logging
 from collections.abc import Iterable, Sequence
 from typing import TypeAlias
 
-import maya.cmds as cmds
+from maya import cmds
 from maya.api.OpenMaya import (
     MAngle,
     MDagPath,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import maya.cmds as cmds
+from maya import cmds
 
 from yrig.control import create_control
 from yrig.joint import create_joint
@@ -23,7 +23,7 @@ def get_teeth_locator_indices(cvs_count: int) -> list[int]:
 
     indices = [0]
     for offset in (0.25, 0.5, 0.75):
-        index = int(round((cvs_count - 1) * offset))
+        index = round((cvs_count - 1) * offset)
         if index not in indices:
             indices.append(index)
 
@@ -148,7 +148,6 @@ class TeethSpline:
     def cleanup(self) -> None:
         cmds.hide("teeth_M_npo")
 
-        return
 
     def twist_fix(self, guide: str, all_joints: list) -> None:
         if "bottom" in guide:
@@ -162,7 +161,6 @@ class TeethSpline:
             bottom_joints = all_joints[5:]
             cmds.connectAttr(f"{twist_fix_md}.outputX", f"{bottom_joints[0]}.rotateZ")
 
-        return
 
     def build_teeth(self) -> list[str]:
         all_joints = []

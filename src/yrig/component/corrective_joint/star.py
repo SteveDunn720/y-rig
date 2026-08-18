@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import maya.cmds as cmds
+from maya import cmds
 
 from yrig.joint import create_joint
 from yrig.maya_api.node import EulerToQuatNode, QuatSlerpNode, QuatToEulerNode, RemapValueNode

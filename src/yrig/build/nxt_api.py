@@ -39,7 +39,7 @@ class ProgressStage(Stage):
         :rtype: CompLayer
         """
         if not isinstance(layer, CompLayer):
-            raise ValueError("Execute Nodes requires a comp layer.")
+            raise ValueError("Execute Nodes requires a comp layer.")  # noqa
         if not layer.runtime:
             dup_comp = self.build_stage(layer.layer_idx())
             runtime_layer = self.setup_runtime_layer(dup_comp, parameters=parameters)

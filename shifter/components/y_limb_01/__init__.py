@@ -1,5 +1,6 @@
 # type: ignore
 import ast
+from typing import ClassVar
 
 import mgear.pymaya as pm
 from mgear.core import applyop, attribute, icon, node, primitive, string, transform, vector
@@ -23,7 +24,7 @@ class Component(component.Main):
     """Shifter component Class"""
 
     # Override in subclasses to map guide locator names to canonical names
-    GUIDE_MAP: dict[str, str] = {}  # e.g. {"mid": "elbow", "end": "wrist"}
+    GUIDE_MAP: ClassVar[dict[str, str]] = {}  # e.g. {"mid": "elbow", "end": "wrist"}
     WORLD_ALIGN_IK: bool = False
 
     # =====================================================
@@ -1264,7 +1265,6 @@ class Component(component.Main):
 
     def addConnection(self) -> None:
         """Add more connection definition to the set"""
-        pass
 
     def connect_standard(self) -> None:
         """standard connection definition for the component"""

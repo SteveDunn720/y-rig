@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-import maya.cmds as cmds
+from maya import cmds
 from maya.api.OpenMaya import (
     MDagPath,
     MFnDagNode,

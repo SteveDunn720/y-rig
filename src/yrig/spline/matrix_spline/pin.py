@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-import maya.cmds as cmds
+from maya import cmds
 
 from yrig.maya_api import node
 from yrig.maya_api.attribute import (

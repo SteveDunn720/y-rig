@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-import maya.cmds as cmds
+from maya import cmds
 
 
 @dataclass
@@ -212,7 +212,7 @@ class ProximityWrap:
     def get_attribute(
         self,
         attribute: str,
-        default: int | float | bool | str | None = None,
+        default: float | bool | str | None = None,
     ) -> int | float | bool | str | None:
         """Get an attribute value from the proximityWrap node."""
         plug = f"{self.node}.{attribute}"
@@ -225,7 +225,7 @@ class ProximityWrap:
     def set_attribute(
         self,
         attribute: str,
-        value: int | float | bool | str,
+        value: float | bool | str,
     ) -> ProximityWrap:
         """Set an attribute and refresh the dataclass."""
         plug = f"{self.node}.{attribute}"

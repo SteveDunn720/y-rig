@@ -1,4 +1,4 @@
-import maya.cmds as cmds
+from maya import cmds
 
 from yrig.maya_api.attribute import (
     AimMatrixAxisAttribute,
@@ -133,7 +133,6 @@ class Node:
 
     def _setup_attributes(self) -> None:
         """Override in subclasses to define node-specific attributes."""
-        pass
 
     def delete(self) -> None:
         """Delete this node."""

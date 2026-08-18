@@ -42,4 +42,3 @@ class CustomShifterStep(cstp.customShifterMainStep):
         data_path: Path = paths_step.rig_data_path
         control_shapes_path: Path = data_path / "control_shapes.json"
         apply_control_shapes_file(control_shapes_path)
-        return

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import cast
 
-import maya.cmds as cmds
+from maya import cmds
 
 from yrig.control import create_control
 from yrig.joint import create_joint
@@ -113,7 +113,7 @@ class TongueSpine:
                 parentCurve=False,
             ),
         )
-        ik_handle, effector, curve = ik_result
+        ik_handle, _effector, curve = ik_result
 
         ik_handle = cmds.rename(
             ik_handle,
@@ -170,7 +170,7 @@ class TongueSpine:
         )[0]
 
         for i, cv_set in enumerate(cluster_sets):
-            cluster, handle = cast(
+            _cluster, handle = cast(
                 tuple[str, str],
                 cmds.cluster(
                     *cv_set,

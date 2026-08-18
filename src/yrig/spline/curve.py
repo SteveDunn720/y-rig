@@ -92,9 +92,9 @@ def get_curve_cvs(curve: str, world_space: bool = True) -> list[MPoint]:
     sel.add(shape)
     dag_path: MDagPath = sel.getDagPath(0)
     curve_fn = MFnNurbsCurve(dag_path)
-    return list(
+    return [
         MPoint(cv) for cv in curve_fn.cvPositions(MSpace.kWorld if world_space else MSpace.kObject)
-    )
+    ]
 
 
 def create_transforms_at_curve_cvs(

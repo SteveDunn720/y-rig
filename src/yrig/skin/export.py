@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import maya.cmds as cmds
+from maya import cmds
 
 from yrig.build.context import get_asset_root
 from yrig.name import get_short_name

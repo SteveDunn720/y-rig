@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import ClassVar, Self
+
 from maya import cmds
 
 from yrig.maya_api.attribute import (
@@ -92,45 +97,49 @@ NODE_PLUGINS: dict[str, str] = {
 }
 
 
-class Node:
+class Node(ABC):
     """Base class for all Maya nodes."""
 
-    def __init__(self, node_type: str, name: str | None = None) -> None:
-        """
-        Initialize a Maya node with version compatibility.
+    node_type: ClassVar[str]
 
-        Args:
-            node_type: The base Maya node type (e.g., "multiply", "sum")
-            name: Optional custom name for the node
-        """
-        self.node_type: str = node_type
-        self.name: str = self._create_node(node_type, name=name or node_type)
-
+    def __init__(self, name: str) -> None:
+        """Wrap an existing node by name. Prefer .create() or .from_existing()."""
+        self.name = name
         self.message = MessageAttribute(f"{self.name}.message")
-
         self._setup_attributes()
 
-    def _ensure_plugin(self, node_type: str) -> None:
-        plugin: str | None = NODE_PLUGINS.get(node_type)
-        if plugin is not None:
-            ensure_plugin_loaded(plugin)
-
-    def _resolve_node_type(self, node_type: str) -> str:
+    @classmethod
+    def _resolve_node_type(cls) -> str:
+        node_type = cls.node_type
         if node_type in NODE_TYPES:
             types = NODE_TYPES[node_type]
             if is_maya2026_or_newer() and not is_target_2026_or_newer():
                 return types["DL"]
-            else:
-                return types["standard"]
-        else:
-            return node_type
+            return types["standard"]
+        return node_type
 
-    def _create_node(self, node_type: str, name: str) -> str:
-        """Create the Maya node with appropriate version handling."""
-        resolved_type = self._resolve_node_type(node_type)
-        self._ensure_plugin(resolved_type)
-        return cmds.createNode(resolved_type, name=name)
+    @classmethod
+    def _ensure_plugin(cls, node_type: str) -> None:
+        plugin: str | None = NODE_PLUGINS.get(node_type)
+        if plugin is not None:
+            ensure_plugin_loaded(plugin)
 
+    @classmethod
+    def create(cls, name: str | None = None) -> Self:
+        """Create a new node of this type."""
+        resolved_type = cls._resolve_node_type()
+        cls._ensure_plugin(resolved_type)
+        created_name = cmds.createNode(resolved_type, name=name or cls.node_type)
+        return cls(created_name)
+
+    @classmethod
+    def from_existing(cls, name: str) -> Self:
+        """Wrap a node that already exists in the scene."""
+        if not cmds.objExists(name):
+            raise ValueError(f"Node does not exist: {name}")
+        return cls(name)
+
+    @abstractmethod
     def _setup_attributes(self) -> None:
         """Override in subclasses to define node-specific attributes."""
 
@@ -153,8 +162,10 @@ class Node:
 class AbsoluteNode(Node):
     """Maya absolute node with enhanced interface."""
 
+    node_type = "absolute"
+
     def __init__(self, name: str = "absolute") -> None:
-        super().__init__("absolute", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input = ScalarAttribute(f"{self.name}.input")
@@ -164,8 +175,10 @@ class AbsoluteNode(Node):
 class AddDLNode(Node):
     """Maya addDL node with enhanced interface."""
 
+    node_type = "addDL"
+
     def __init__(self, name: str = "addDL") -> None:
-        super().__init__("addDL", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_1 = ScalarAttribute(f"{self.name}.input1")
@@ -176,8 +189,10 @@ class AddDLNode(Node):
 class AimMatrixNode(Node):
     """Maya aimMatrix node with enhanced interface."""
 
+    node_type = "aimMatrix"
+
     def __init__(self, name: str = "aimMatrix") -> None:
-        super().__init__("aimMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
@@ -192,8 +207,10 @@ class AimMatrixNode(Node):
 class AxisFromMatrixNode(Node):
     """Maya axisFromMatrix node with enhanced interface."""
 
+    node_type = "axisFromMatrix"
+
     def __init__(self, name: str = "axisFromMatrix") -> None:
-        super().__init__("axisFromMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input = MatrixAttribute(f"{self.name}.input")
@@ -204,8 +221,10 @@ class AxisFromMatrixNode(Node):
 class BlendColorsNode(Node):
     """Maya blendColors node with enhanced interface."""
 
+    node_type = "blendColors"
+
     def __init__(self, name: str = "blendColors") -> None:
-        super().__init__("blendColors", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.color1: ColorAttribute = ColorAttribute(f"{self.name}.color1")
@@ -217,8 +236,10 @@ class BlendColorsNode(Node):
 class BlendMatrixNode(Node):
     """Maya blendMatrix node with enhanced interface."""
 
+    node_type = "blendMatrix"
+
     def __init__(self, name: str = "blendMatrix") -> None:
-        super().__init__("blendMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
@@ -231,8 +252,10 @@ class BlendMatrixNode(Node):
 class ClampRangeNode(Node):
     """Maya clampRange node with enhanced interface."""
 
+    node_type = "clampRange"
+
     def __init__(self, name: str = "clampRange") -> None:
-        super().__init__("clampRange", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input = ScalarAttribute(f"{self.name}.input")
@@ -244,8 +267,10 @@ class ClampRangeNode(Node):
 class ClosestPointOnSurfaceNode(Node):
     """Maya closestPointOnSurface node with enhanced interface."""
 
+    node_type = "closestPointOnSurface"
+
     def __init__(self, name: str = "closestPointOnSurface") -> None:
-        super().__init__("closestPointOnSurface", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_surface = NurbsSurfaceAttribute(f"{self.name}.inputSurface")
@@ -256,8 +281,10 @@ class ClosestPointOnSurfaceNode(Node):
 class ComposeMatrixNode(Node):
     """Maya composeMatrix node with enhanced interface."""
 
+    node_type = "composeMatrix"
+
     def __init__(self, name: str = "composeMatrix") -> None:
-        super().__init__("composeMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
 
@@ -273,8 +300,10 @@ class ComposeMatrixNode(Node):
 class ConditionNode(Node):
     """Maya condition node with enhanced interface."""
 
+    node_type = "condition"
+
     def __init__(self, name: str = "condition") -> None:
-        super().__init__("condition", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.first_term = ScalarAttribute(f"{self.name}.firstTerm")
@@ -288,8 +317,10 @@ class ConditionNode(Node):
 class CosNode(Node):
     """Maya cos node with enhanced interface."""
 
+    node_type = "cos"
+
     def __init__(self, name: str = "cos") -> None:
-        super().__init__("cos", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input: ScalarAttribute = ScalarAttribute(f"{self.name}.input")
@@ -299,8 +330,10 @@ class CosNode(Node):
 class CrossProductNode(Node):
     """Maya crossProduct node with enhanced interface."""
 
+    node_type = "crossProduct"
+
     def __init__(self, name: str = "crossProduct") -> None:
-        super().__init__("crossProduct", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input1 = Vector3Attribute(f"{self.name}.input1")
@@ -311,8 +344,10 @@ class CrossProductNode(Node):
 class CurveInfoNode(Node):
     """Maya curveInfo node with enhanced interface."""
 
+    node_type = "curveInfo"
+
     def __init__(self, name: str = "curveInfo") -> None:
-        super().__init__("curveInfo", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_curve = NurbsCurveAttribute(f"{self.name}.inputCurve")
@@ -325,8 +360,10 @@ class CurveInfoNode(Node):
 class DecomposeMatrixNode(Node):
     """Maya decomposeMatrix node with enhanced interface."""
 
+    node_type = "decomposeMatrix"
+
     def __init__(self, name: str = "decomposeMatrix") -> None:
-        super().__init__("decomposeMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
@@ -341,8 +378,10 @@ class DecomposeMatrixNode(Node):
 class DistanceBetweenNode(Node):
     """Maya distanceBetween node with enhanced interface."""
 
+    node_type = "distanceBetween"
+
     def __init__(self, name: str = "distanceBetween") -> None:
-        super().__init__("distanceBetween", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.point1 = Vector3Attribute(f"{self.name}.point1")
@@ -355,8 +394,10 @@ class DistanceBetweenNode(Node):
 class DivideNode(Node):
     """Maya divide node with enhanced interface."""
 
+    node_type = "divide"
+
     def __init__(self, name: str = "divide") -> None:
-        super().__init__("divide", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input1 = ScalarAttribute(f"{self.name}.input1")
@@ -367,8 +408,10 @@ class DivideNode(Node):
 class EulerToQuatNode(Node):
     """Maya eulerToQuat node with enhanced interface."""
 
+    node_type = "eulerToQuat"
+
     def __init__(self, name: str = "eulerToQuat") -> None:
-        super().__init__("eulerToQuat", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.output_quat = QuatAttribute(f"{self.name}.outputQuat")
@@ -379,8 +422,10 @@ class EulerToQuatNode(Node):
 class FourByFourMatrixNode(Node):
     """Maya fourByFourMatrix node with enhanced interface."""
 
+    node_type = "fourByFourMatrix"
+
     def __init__(self, name: str = "fourByFourMatrix") -> None:
-        super().__init__("fourByFourMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.in_00 = ScalarAttribute(f"{self.name}.in00")
@@ -405,8 +450,10 @@ class FourByFourMatrixNode(Node):
 class InverseMatrixNode(Node):
     """Maya inverseMatrix node with enhanced interface."""
 
+    node_type = "inverseMatrix"
+
     def __init__(self, name: str = "inverseMatrix") -> None:
-        super().__init__("inverseMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
@@ -416,8 +463,10 @@ class InverseMatrixNode(Node):
 class LengthNode(Node):
     """Maya length node with enhanced interface."""
 
+    node_type = "length"
+
     def __init__(self, name: str = "length") -> None:
-        super().__init__("length", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input = Vector3Attribute(f"{self.name}.input")
@@ -427,8 +476,10 @@ class LengthNode(Node):
 class LerpNode(Node):
     """Maya lerp node with enhanced interface."""
 
+    node_type = "lerp"
+
     def __init__(self, name: str = "lerp") -> None:
-        super().__init__("lerp", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input1 = ScalarAttribute(f"{self.name}.input1")
@@ -440,8 +491,10 @@ class LerpNode(Node):
 class MotionPathNode(Node):
     """Maya motionPath node with enhanced interface."""
 
+    node_type = "motionPath"
+
     def __init__(self, name: str = "motionPath") -> None:
-        super().__init__("motionPath", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
 
@@ -476,8 +529,10 @@ class MotionPathNode(Node):
 class MultiplyNode(Node):
     """Maya multiply node with enhanced interface."""
 
+    node_type = "multiply"
+
     def __init__(self, name: str = "multiply") -> None:
-        super().__init__("multiply", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input = ArrayAttribute(f"{self.name}.input", ScalarAttribute)
@@ -487,8 +542,10 @@ class MultiplyNode(Node):
 class MultiplyDivideNode(Node):
     """Maya multiplyDivide node with enhanced interface."""
 
+    node_type = "multiplyDivide"
+
     def __init__(self, name: str = "multiplyDivide") -> None:
-        super().__init__("multiplyDivide", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input1 = Vector3Attribute(f"{self.name}.input1")
@@ -500,8 +557,10 @@ class MultiplyDivideNode(Node):
 class MultiplyPointByMatrixNode(Node):
     """Maya multiplyPointByMatrix node with enhanced interface."""
 
+    node_type = "multiplyPointByMatrix"
+
     def __init__(self, name: str = "multiplyPointByMatrix") -> None:
-        super().__init__("multiplyPointByMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_point = Vector3Attribute(f"{self.name}.input")
@@ -512,8 +571,10 @@ class MultiplyPointByMatrixNode(Node):
 class MultiplyVectorByMatrixNode(Node):
     """Maya multiplyVectorByMatrix node with enhanced interface."""
 
+    node_type = "multiplyVectorByMatrix"
+
     def __init__(self, name: str = "multiplyVectorByMatrix") -> None:
-        super().__init__("multiplyVectorByMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_vector = Vector3Attribute(f"{self.name}.input")
@@ -524,8 +585,10 @@ class MultiplyVectorByMatrixNode(Node):
 class MultMatrixNode(Node):
     """Maya multMatrix node with enhanced interface."""
 
+    node_type = "multMatrix"
+
     def __init__(self, name: str = "multMatrix") -> None:
-        super().__init__("multMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.matrix_in = ArrayAttribute(f"{self.name}.matrixIn", MatrixAttribute)
@@ -535,8 +598,10 @@ class MultMatrixNode(Node):
 class NormalizeNode(Node):
     """Maya normalize node with enhanced interface."""
 
+    node_type = "normalize"
+
     def __init__(self, name: str = "normalize") -> None:
-        super().__init__("normalize", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input = Vector3Attribute(f"{self.name}.input")
@@ -546,8 +611,10 @@ class NormalizeNode(Node):
 class PickMatrixNode(Node):
     """Maya pickMatrix node with enhanced interface."""
 
+    node_type = "pickMatrix"
+
     def __init__(self, name: str = "pickMatrix") -> None:
-        super().__init__("pickMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_matrix = MatrixAttribute(f"{self.name}.inputMatrix")
@@ -561,8 +628,10 @@ class PickMatrixNode(Node):
 class PlusMinusAverageNode(Node):
     """Maya plusMinusAverage node with enhanced interface."""
 
+    node_type = "plusMinusAverage"
+
     def __init__(self, name: str = "plusMinusAverage") -> None:
-        super().__init__("plusMinusAverage", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_3d = ArrayAttribute(f"{self.name}.input3D", Vector3Attribute)
@@ -577,8 +646,10 @@ class PlusMinusAverageNode(Node):
 class QuatInvertNode(Node):
     """Maya quatInvert node with enhanced interface."""
 
+    node_type = "quatInvert"
+
     def __init__(self, name: str = "quatInvert") -> None:
-        super().__init__("quatInvert", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
@@ -588,8 +659,10 @@ class QuatInvertNode(Node):
 class QuatNormalizeNode(Node):
     """Maya quatNormalize node with enhanced interface."""
 
+    node_type = "quatNormalize"
+
     def __init__(self, name: str = "quatNormalize") -> None:
-        super().__init__("quatNormalize", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
@@ -599,8 +672,10 @@ class QuatNormalizeNode(Node):
 class QuatProdNode(Node):
     """Maya quatProd node with enhanced interface."""
 
+    node_type = "quatProd"
+
     def __init__(self, name: str = "quatProd") -> None:
-        super().__init__("quatProd", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input1_quat = QuatAttribute(f"{self.name}.input1Quat")
@@ -611,8 +686,10 @@ class QuatProdNode(Node):
 class QuatSlerpNode(Node):
     """Maya quatSlerp node with enhanced interface."""
 
+    node_type = "quatSlerp"
+
     def __init__(self, name: str = "quatSlerp") -> None:
-        super().__init__("quatSlerp", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input1_quat = QuatAttribute(f"{self.name}.input1Quat")
@@ -624,8 +701,10 @@ class QuatSlerpNode(Node):
 class QuatToEulerNode(Node):
     """Maya quatToEuler node with enhanced interface."""
 
+    node_type = "quatToEuler"
+
     def __init__(self, name: str = "quatToEuler") -> None:
-        super().__init__("quatToEuler", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_quat = QuatAttribute(f"{self.name}.inputQuat")
@@ -636,8 +715,10 @@ class QuatToEulerNode(Node):
 class RemapValueNode(Node):
     """Maya remapValue node with enhanced interface."""
 
+    node_type = "remapValue"
+
     def __init__(self, name: str = "remapValue") -> None:
-        super().__init__("remapValue", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input_value = ScalarAttribute(f"{self.name}.inputValue")
@@ -651,8 +732,10 @@ class RemapValueNode(Node):
 class RowFromMatrixNode(Node):
     """Maya rowFromMatrix node with enhanced interface."""
 
+    node_type = "rowFromMatrix"
+
     def __init__(self, name: str = "rowFromMatrix") -> None:
-        super().__init__("rowFromMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input = IntegerAttribute(f"{self.name}.input")
@@ -663,8 +746,10 @@ class RowFromMatrixNode(Node):
 class SinNode(Node):
     """Maya sin node with enhanced interface."""
 
+    node_type = "sin"
+
     def __init__(self, name: str = "sin") -> None:
-        super().__init__("sin", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input: ScalarAttribute = ScalarAttribute(f"{self.name}.input")
@@ -674,8 +759,10 @@ class SinNode(Node):
 class SubtractNode(Node):
     """Maya subtract node with enhanced interface."""
 
+    node_type = "subtract"
+
     def __init__(self, name: str = "subtract") -> None:
-        super().__init__("subtract", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input1: ScalarAttribute = ScalarAttribute(f"{self.name}.input1")
@@ -686,8 +773,10 @@ class SubtractNode(Node):
 class SumNode(Node):
     """Maya sum node with enhanced interface."""
 
+    node_type = "sum"
+
     def __init__(self, name: str = "sum") -> None:
-        super().__init__("sum", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.input = ArrayAttribute(f"{self.name}.input", ScalarAttribute)
@@ -697,8 +786,10 @@ class SumNode(Node):
 class UvPinNode(Node):
     """Maya uvPin node with enhanced interface."""
 
+    node_type = "uvPin"
+
     def __init__(self, name: str = "uvPin") -> None:
-        super().__init__("uvPin", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.original_geometry = GeometryAttribute(f"{self.name}.originalGeometry")
@@ -721,8 +812,10 @@ class UvPinNode(Node):
 class WtAddMatrixNode(Node):
     """Maya wtAddMatrix node with enhanced interface."""
 
+    node_type = "wtAddMatrix"
+
     def __init__(self, name: str = "wtAddMatrix") -> None:
-        super().__init__("wtAddMatrix", name)
+        super().__init__(name)
 
     def _setup_attributes(self) -> None:
         self.weight_matrix = ArrayAttribute(f"{self.name}.wtMatrix", WtMatrixAttribute)

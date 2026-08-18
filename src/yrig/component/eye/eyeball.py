@@ -145,17 +145,21 @@ class Eyeball:
             cmds.addAttr(new_attr_tgt, longName=f"{circle_type}_{obj}_dilation", keyable=True)  # type:ignore
             dilation_attr = f"{new_attr_tgt}.{circle_type}_{obj}_dilation"
 
-        dilation_mult = MultiplyDivideNode(name=f"{circle_type}_dilation_mult_{self.side}_MD")
+        dilation_mult = MultiplyDivideNode.create(
+            name=f"{circle_type}_dilation_mult_{self.side}_MD"
+        )
         cmds.setAttr(f"{dilation_mult.input2.x}", 18)  # type:ignore  # Convert normalized dilation amount into spherical rotation angle
         dilation_mult.input1.x.connect_from(source_attr=dilation_attr)
-        etq_node = EulerToQuatNode(
+        etq_node = EulerToQuatNode.create(
             name=f"{circle_type}_dilation_mult_{self.side}_ETQ",
         )
         etq_node.input_rotate.x.connect_from(f"{dilation_mult.output.x}")
-        radius_adjust = MultiplyDivideNode(name=f"{circle_type}_radius_adjust_{self.side}_MD")
+        radius_adjust = MultiplyDivideNode.create(
+            name=f"{circle_type}_radius_adjust_{self.side}_MD"
+        )
         radius_adjust.input1.x.connect_from(etq_node.output_quat.x)
 
-        z_trans_adl = SumNode(name=f"{circle_type}_translateZ_{self.side}_ADL")
+        z_trans_adl = SumNode.create(name=f"{circle_type}_translateZ_{self.side}_ADL")
 
         radius_adjust.output.x.connect_to(z_trans_adl.input[0])
 
@@ -361,7 +365,9 @@ class Eyeball:
                 pass
             else:
                 # percents[i]
-                dilation_offset_node = SumNode(name=f"{circle_type}_dilation_mult_{self.side}_ADL")
+                dilation_offset_node = SumNode.create(
+                    name=f"{circle_type}_dilation_mult_{self.side}_ADL"
+                )
                 cmds.connectAttr(
                     f"{self.main_ctrl}.{circle_type}_dilation", f"{dilation_offset_node.input[1]}"
                 )
@@ -413,8 +419,8 @@ class Eyeball:
                 blend = ["pupil", "pupil"]
                 blend_num = (x - pupil_percent) / (1.0 - pupil_percent)
 
-            blendnode = BlendColorsNode(name=f"blend_dilation_{i:02d}_{self.side}_BC")
-            blendnode2 = BlendColorsNode(name=f"blend_offset_{i:02d}_{self.side}_BC")
+            blendnode = BlendColorsNode.create(name=f"blend_dilation_{i:02d}_{self.side}_BC")
+            blendnode2 = BlendColorsNode.create(name=f"blend_offset_{i:02d}_{self.side}_BC")
             blendnode.color1.r.connect_from(
                 source_attr=f"{self.preview_circles[blend[0]]}.dilation_amount"
             )

@@ -35,16 +35,16 @@ def build_star_joint(
         cmds.connectAttr(f"{joint}.translate{axis}", f"{star_jnt}.translate{axis}")
         cmds.connectAttr(f"{joint}.scale{axis}", f"{star_jnt}.scale{axis}")
 
-    etq = EulerToQuatNode(name=f"{name}_etq")
+    etq = EulerToQuatNode.create(name=f"{name}_etq")
     etq.input_rotate.connect_from(f"{joint}.rotate")
     etq.input_rotate_order.connect_from(f"{joint}.rotateOrder")
 
-    qslerp = QuatSlerpNode(name=f"{name}_qslerp")
+    qslerp = QuatSlerpNode.create(name=f"{name}_qslerp")
     qslerp.input1_quat.connect_from(etq.output_quat)
     qslerp.input_t.set(0.5)
     cmds.setAttr(f"{qslerp}.angleInterpolation", 1)  # type:ignore
 
-    qte = QuatToEulerNode(name=f"{name}_etq")
+    qte = QuatToEulerNode.create(name=f"{name}_etq")
     qte.input_quat.connect_from(qslerp.output_quat)
     qte.input_rotate_order.connect_from(f"{joint}.rotateOrder")
     qte.output_rotate.connect_to(f"{star_jnt}.rotate")
@@ -78,7 +78,7 @@ def build_star_joint(
         else:
             mod = ""
         swing_axis = [axis for axis in blend_axes if axis != temp_axis]
-        pop_remap = RemapValueNode(name=f"{name}_{pop.axis}_remap")
+        pop_remap = RemapValueNode.create(name=f"{name}_{pop.axis}_remap")
         pop_remap.input_value.connect_from(f"{joint}.rotate{swing_axis[0]}")
         pop_remap.input_max.set(pop.pop_clampup)
         pop_remap.output_max.set(pop.pop_clampup * pop.pop_mult)

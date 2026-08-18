@@ -62,7 +62,7 @@ class LipMidpoint:
             zero_at_rest=True,
             axes=(True, False, False),
         )
-        corner_distance_scale = MultiplyNode(f"{name}_distance_scale")
+        corner_distance_scale = MultiplyNode.create(f"{name}_distance_scale")
         corner_distance_scale.input[0].connect_from(corner_distance)
         corner_distance_scale.input[1].set(0.75)
         corner_distance_scale.output.connect_to(f"{self.main_control_driven}.translateX")

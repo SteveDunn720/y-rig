@@ -24,7 +24,7 @@ def create_driver_joint(driver: DrivenInfo, driven: DrivenInfo) -> str:
 
     for i, attr in enumerate(driver.channels):
         if i % 3 == 0:
-            mult_node = MultiplyDivideNode(name=f"{driver.transform}_0{i // 3 + 1}_mult")
+            mult_node = MultiplyDivideNode.create(name=f"{driver.transform}_0{i // 3 + 1}_mult")
             multchannel = "X"
         elif i % 3 == 1:
             multchannel = "Y"

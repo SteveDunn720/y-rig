@@ -5,10 +5,7 @@ from dataclasses import dataclass, field
 
 from maya import cmds
 
-from yrig.deformer.proxy_wrap import (
-    ProximityWrap,
-    create_proximity_wrap,
-)
+from yrig.deformer.proximity_wrap import create_proximity_wrap
 
 from .core import (
     BlendShape,
@@ -30,7 +27,7 @@ class TransferredShape:
 class BlendShapeTransfer:
     source: BlendShape
     destination: BlendShape
-    proximity_wrap: ProximityWrap | None
+    proximity_wrap: str | None
     transferred: list[TransferredShape] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
 
@@ -173,10 +170,6 @@ def transfer_blendshapes(
     target_names: list[str] | None = None,
     overwrite_existing: bool = False,
     delete_proximity_wrap: bool = True,
-    falloff_scale: float | None = None,
-    dropoff_rate_scale: float | None = None,
-    smooth_influences: int | None = None,
-    smooth_normals: int | None = None,
 ) -> BlendShapeTransfer:
     """Transfer blendShape targets between meshes using proximityWrap.
 
@@ -201,18 +194,6 @@ def transfer_blendshapes(
 
         delete_proximity_wrap:
             Delete the temporary proximityWrap after transferring.
-
-        falloff_scale:
-            Optional proximity-wrap falloffScale setting.
-
-        dropoff_rate_scale:
-            Optional proximity-wrap dropoffRateScale setting.
-
-        smooth_influences:
-            Optional proximity-wrap smoothInfluences setting.
-
-        smooth_normals:
-            Optional proximity-wrap smoothNormals setting.
 
     Returns:
         BlendShapeTransfer containing the resulting data.
@@ -270,22 +251,10 @@ def transfer_blendshapes(
         zero_blendshape(source)
         zero_blendshape(destination)
 
-        wrap_settings = {
-            "falloff_scale": falloff_scale,
-            "dropoff_rate_scale": dropoff_rate_scale,
-            "smooth_influences": smooth_influences,
-            "smooth_normals": smooth_normals,
-        }
-
-        filtered_wrap_settings: dict[str, int | float] = {
-            setting: value for setting, value in wrap_settings.items() if value is not None
-        }
-
         result.proximity_wrap = create_proximity_wrap(
             driver=source_mesh,
             driven=target_mesh,
             name=f"{destination.node}_transfer_proximityWrap",
-            settings=filtered_wrap_settings,
         )
 
         for source_target in targets_to_transfer:
@@ -379,7 +348,7 @@ def transfer_blendshapes(
         )
 
         if delete_proximity_wrap and result.proximity_wrap:
-            result.proximity_wrap.delete()
+            cmds.delete(result.proximity_wrap)
             result.proximity_wrap = None
 
         cmds.undoInfo(closeChunk=True)

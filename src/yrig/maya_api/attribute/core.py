@@ -14,8 +14,6 @@ from typing import (
 from maya import cmds
 from maya.api.OpenMaya import MMatrix
 
-from yrig.maya_api.enum import AimMatrixAxisMode
-
 if TYPE_CHECKING:
     from yrig.maya_api.node import Node
 
@@ -97,19 +95,113 @@ class Attribute(Generic[T]):
         cmds.setAttr(self.attr_path, channelBox=enabled)
 
 
-class StringAttribute(Attribute[str]):
-    """Maya string attribute."""
+class ArrayAttribute(Attribute, Iterable[AttributeType], Generic[AttributeType]):
+    """Base class for array-style Maya attributes supporting indexed access."""
+
+    def __init__(
+        self,
+        attr_path: str,
+        attribute_type: type[AttributeType],
+    ) -> None:
+        super().__init__(attr_path)
+        self.attribute_type = attribute_type
+
+    def __getitem__(self, index: int) -> AttributeType:
+        return self.attribute_type(f"{self.attr_path}[{index}]")
+
+    def __len__(self) -> int:
+        """Get the number of elements in this array."""
+        return cmds.getAttr(self.attr_path, size=True)
+
+    def get_indices(self) -> list[int]:
+        """Get all existing indices in this array."""
+        return cmds.getAttr(self.attr_path, multiIndices=True) or []
+
+    def __iter__(self) -> Iterator[AttributeType]:
+        """Iterate over all existing, non-sparse elements in the array."""
+        # This allows for loop iteration: for item in my_attr:
+        for index in self.get_indices():
+            yield self[index]
+
+
+class BooleanAttribute(Attribute[bool]):
+    """A Maya attribute of a bool type."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-    def get(self) -> str:
+    def get(self) -> bool:
         """Get the value of this attribute."""
-        return cmds.getAttr(self.attr_path)
+        return bool(cmds.getAttr(self.attr_path))
 
-    def set(self, value: str) -> None:
+    def set(self, value: bool) -> None:
         """Set the value of this attribute."""
-        cmds.setAttr(self.attr_path, value, type="string")
+        cmds.setAttr(self.attr_path, 1 if value else 0)  # type: ignore
+
+
+class ColorAttribute(Attribute[tuple[float, float, float]]):
+    """A Maya attribute of the type color (RGB)"""
+
+    def __init__(self, attr_path: str):
+        super().__init__(attr_path)
+
+        self.r = ScalarAttribute(f"{attr_path}R")
+        self.g = ScalarAttribute(f"{attr_path}G")
+        self.b = ScalarAttribute(f"{attr_path}B")
+
+    def get(self) -> tuple[float, float, float]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[float, float, float]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore
+
+
+class EnumAttribute(Attribute[EnumType], Generic[EnumType]):
+    """A Maya attribute of the enum type."""
+
+    def __init__(
+        self,
+        attr_path: str,
+        enum_type: type[EnumType],
+    ) -> None:
+        super().__init__(attr_path)
+        self.enum_type = enum_type
+
+    def get(self) -> EnumType:
+        return self.enum_type(int(cmds.getAttr(self.attr_path)))
+
+    def set(self, value: EnumType | int) -> None:
+        cmds.setAttr(self.attr_path, int(value))  # type: ignore
+
+
+class MessageAttribute(Attribute):
+    """A Maya message attribute."""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+    def connected_nodes(
+        self,
+        source: bool = True,
+        destination: bool = False,
+    ) -> list[str]:
+        if not cmds.objExists(self.attr_path):
+            return []
+        return cmds.listConnections(self.attr_path, source=source, destination=destination) or []
+
+    @property
+    def source_node(self) -> str | None:
+        source_nodes = self.connected_nodes(source=True, destination=False)
+        source_node = source_nodes[0] if source_nodes else None
+        return source_node
+
+    @property
+    def destination_nodes(self) -> list[str]:
+        return self.connected_nodes(source=False, destination=True)
 
 
 class NumericAttribute(Attribute[T]):
@@ -173,19 +265,19 @@ class IntegerAttribute(NumericAttribute[int]):
         cmds.setAttr(self.attr_path, int(value))  # type: ignore
 
 
-class BooleanAttribute(Attribute[bool]):
-    """A Maya attribute of a bool type."""
+class StringAttribute(Attribute[str]):
+    """Maya string attribute."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-    def get(self) -> bool:
+    def get(self) -> str:
         """Get the value of this attribute."""
-        return bool(cmds.getAttr(self.attr_path))
+        return cmds.getAttr(self.attr_path)
 
-    def set(self, value: bool) -> None:
+    def set(self, value: str) -> None:
         """Set the value of this attribute."""
-        cmds.setAttr(self.attr_path, 1 if value else 0)  # type: ignore
+        cmds.setAttr(self.attr_path, value, type="string")
 
 
 class MatrixAttribute(Attribute[MMatrix]):
@@ -227,6 +319,13 @@ class NurbsCurveAttribute(GeometryAttribute):
         super().__init__(attr_path)
 
 
+class NurbsSurfaceAttribute(GeometryAttribute):
+    """A Maya attribute of the nurbsSurface type."""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+
 class Vector2Attribute(Attribute[tuple[float, float]]):
     """A Maya attribute of the type double2 (XY)"""
 
@@ -245,13 +344,6 @@ class Vector2Attribute(Attribute[tuple[float, float]]):
     def set(self, value: tuple[float, float]) -> None:
         """Set the value of this attribute."""
         cmds.setAttr(self.attr_path, *value)  # type: ignore
-
-
-class NurbsSurfaceAttribute(GeometryAttribute):
-    """A Maya attribute of the nurbsSurface type."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
 
 
 class Vector3Attribute(Attribute[tuple[float, float, float]]):
@@ -287,27 +379,6 @@ class Vector4Attribute(Attribute[tuple[float, float, float, float]]):
         self.w = ScalarAttribute(f"{attr_path}W")
 
 
-class ColorAttribute(Attribute[tuple[float, float, float]]):
-    """A Maya attribute of the type color (RGB)"""
-
-    def __init__(self, attr_path: str):
-        super().__init__(attr_path)
-
-        self.r = ScalarAttribute(f"{attr_path}R")
-        self.g = ScalarAttribute(f"{attr_path}G")
-        self.b = ScalarAttribute(f"{attr_path}B")
-
-    def get(self) -> tuple[float, float, float]:
-        """Get the value of this attribute."""
-        return_list = cmds.getAttr(self.attr_path)
-        tuple = return_list[0]
-        return tuple
-
-    def set(self, value: tuple[float, float, float]) -> None:
-        """Set the value of this attribute."""
-        cmds.setAttr(self.attr_path, *value)  # type: ignore
-
-
 class QuatAttribute(Attribute[tuple[float, float, float, float]]):
     """A Maya attribute of the compound Quaternion type (XYZW)"""
 
@@ -318,142 +389,3 @@ class QuatAttribute(Attribute[tuple[float, float, float, float]]):
         self.y = ScalarAttribute(f"{attr_path}Y")
         self.z = ScalarAttribute(f"{attr_path}Z")
         self.w = ScalarAttribute(f"{attr_path}W")
-
-
-class EnumAttribute(Attribute[EnumType], Generic[EnumType]):
-    """A Maya attribute of the enum type."""
-
-    def __init__(
-        self,
-        attr_path: str,
-        enum_type: type[EnumType],
-    ) -> None:
-        super().__init__(attr_path)
-        self.enum_type = enum_type
-
-    def get(self) -> EnumType:
-        return self.enum_type(int(cmds.getAttr(self.attr_path)))
-
-    def set(self, value: EnumType | int) -> None:
-        cmds.setAttr(self.attr_path, int(value))  # type: ignore
-
-
-class ArrayAttribute(Attribute, Iterable[AttributeType], Generic[AttributeType]):
-    """Base class for array-style Maya attributes supporting indexed access."""
-
-    def __init__(
-        self,
-        attr_path: str,
-        attribute_type: type[AttributeType],
-    ) -> None:
-        super().__init__(attr_path)
-        self.attribute_type = attribute_type
-
-    def __getitem__(self, index: int) -> AttributeType:
-        return self.attribute_type(f"{self.attr_path}[{index}]")
-
-    def __len__(self) -> int:
-        """Get the number of elements in this array."""
-        return cmds.getAttr(self.attr_path, size=True)
-
-    def get_indices(self) -> list[int]:
-        """Get all existing indices in this array."""
-        return cmds.getAttr(self.attr_path, multiIndices=True) or []
-
-    def __iter__(self) -> Iterator[AttributeType]:
-        """Iterate over all existing, non-sparse elements in the array."""
-        # This allows for loop iteration: for item in my_attr:
-        for index in self.get_indices():
-            yield self[index]
-
-
-class BlendMatrixTargetAttribute(Attribute):
-    """A Maya attribute of the same compound type as the targets in a blendMatrix node."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
-        self.target_matrix = MatrixAttribute(f"{attr_path}.targetMatrix")
-        self.use_matrix = BooleanAttribute(f"{attr_path}.useMatrix")
-        self.weight = ScalarAttribute(f"{attr_path}.weight")
-        self.scale_weight = ScalarAttribute(f"{attr_path}.scaleWeight")
-        self.translate_weight = ScalarAttribute(f"{attr_path}.translateWeight")
-        self.rotate_weight = ScalarAttribute(f"{attr_path}.rotateWeight")
-        self.shear_weight = ScalarAttribute(f"{attr_path}.shearWeight")
-
-
-class WtMatrixAttribute(Attribute):
-    """A Maya attribute of the same compound type as the wtMatrix elements in a wtAddMatrix node."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
-        self.matrix_in = MatrixAttribute(f"{attr_path}.matrixIn")
-        self.weight_in = ScalarAttribute(f"{attr_path}.weightIn")
-
-
-class AimMatrixAxisAttribute(Attribute):
-    """A Maya attribute of the same compound type as the aimMatrix axes."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
-        self.input_axis = Vector3Attribute(f"{attr_path}InputAxis")
-        self.mode = EnumAttribute(f"{attr_path}Mode", AimMatrixAxisMode)
-        self.target_vector = Vector3Attribute(f"{attr_path}TargetVector")
-        self.target_matrix = MatrixAttribute(f"{attr_path}TargetMatrix")
-
-
-class UvPinCoordinateAttribute(Attribute[tuple[float, float]]):
-    """A Maya attribute of the type UV"""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
-        self.u = ScalarAttribute(f"{attr_path}.coordinateU")
-        self.v = ScalarAttribute(f"{attr_path}.coordinateV")
-
-    def get(self) -> tuple[float, float]:
-        """Get the value of this attribute."""
-        return_list = cmds.getAttr(self.attr_path)
-        tuple = return_list[0]
-        return tuple
-
-    def set(self, value: tuple[float, float]) -> None:
-        """Set the value of this attribute."""
-        cmds.setAttr(self.attr_path, *value)  # type: ignore
-
-
-class ClosestPointOnSurfaceResultAttribute(Attribute):
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
-        self.position = Vector3Attribute(f"{attr_path}.position")
-        self.parameter_u = ScalarAttribute(f"{attr_path}.parameterU")
-        self.parameter_v = ScalarAttribute(f"{attr_path}.parameterV")
-
-
-class MessageAttribute(Attribute):
-    """A Maya message attribute."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
-    def connected_nodes(
-        self,
-        source: bool = True,
-        destination: bool = False,
-    ) -> list[str]:
-        if not cmds.objExists(self.attr_path):
-            return []
-        return cmds.listConnections(self.attr_path, source=source, destination=destination) or []
-
-    @property
-    def source_node(self) -> str | None:
-        source_nodes = self.connected_nodes(source=True, destination=False)
-        source_node = source_nodes[0] if source_nodes else None
-        return source_node
-
-    @property
-    def destination_nodes(self) -> list[str]:
-        return self.connected_nodes(source=False, destination=True)

@@ -5,11 +5,12 @@ from dataclasses import dataclass, field
 
 from maya import cmds
 
-from yrig.deform.proxy_wrap import (
+from yrig.deformer.proxy_wrap import (
     ProximityWrap,
     create_proximity_wrap,
 )
-from yrig.rbf.blendshape import (
+
+from .core import (
     BlendShape,
     ShapeTarget,
     create_blendshape,

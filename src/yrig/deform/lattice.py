@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
-import maya.cmds as cmds
+from maya import cmds
 from maya.api.OpenMaya import MMatrix
+
+_set_attr = cast(Any, cmds.setAttr)
 
 
 @dataclass
@@ -45,14 +47,14 @@ class Lattice:
         """Return a full attribute path on the FFD deformer."""
         return f"{self.deformer}.{attribute}"
 
-    def set(self, attribute: str, value: Any) -> None:
+    def set(self, attribute: str, value: float | bool) -> None:
         """Set an attribute on the FFD deformer."""
         plug = self.attr(attribute)
 
         if not cmds.objExists(plug):
             raise AttributeError(f"{self.deformer} has no attribute '{attribute}'")
 
-        cmds.setAttr(plug, value)
+        _set_attr(plug, value)
 
     def connect(
         self,
@@ -122,9 +124,9 @@ class Lattice:
             noIntermediate=True,
         )[0]
 
-        cmds.setAttr(f"{lattice_shape}.sDivisions", s)
-        cmds.setAttr(f"{lattice_shape}.tDivisions", t)
-        cmds.setAttr(f"{lattice_shape}.uDivisions", u)
+        _set_attr(f"{lattice_shape}.sDivisions", s)
+        _set_attr(f"{lattice_shape}.tDivisions", t)
+        _set_attr(f"{lattice_shape}.uDivisions", u)
 
         self.divisions = (s, t, u)
 
@@ -166,7 +168,7 @@ class Lattice:
 
     @local_mode.setter
     def local_mode(self, value: bool) -> None:
-        cmds.setAttr(self.attr("local"), value)  # type:ignore
+        _set_attr(self.attr("local"), value)
         self.local = value
 
     def set_local_influences(
@@ -175,9 +177,9 @@ class Lattice:
         t: int,
         u: int,
     ) -> None:
-        cmds.setAttr(self.attr("localInfluenceS"), s)  # type:ignore
-        cmds.setAttr(self.attr("localInfluenceT"), t)  # type:ignore
-        cmds.setAttr(self.attr("localInfluenceU"), u)  # type:ignore
+        _set_attr(self.attr("localInfluenceS"), s)
+        _set_attr(self.attr("localInfluenceT"), t)
+        _set_attr(self.attr("localInfluenceU"), u)
 
         self.local_influences = (s, t, u)
 
@@ -196,7 +198,7 @@ class Lattice:
         1 = all points
         2 = falloff
         """
-        cmds.setAttr(self.attr("outsideLattice"), value)
+        _set_attr(self.attr("outsideLattice"), value)
         self.outside_lattice = value
 
     @property
@@ -205,7 +207,7 @@ class Lattice:
 
     @outside_falloff_distance.setter
     def outside_falloff_distance(self, value: float) -> None:
-        cmds.setAttr(
+        _set_attr(
             self.attr("outsideFalloffDist"),
             value,
         )
@@ -225,7 +227,7 @@ class Lattice:
         self,
         value: bool,
     ) -> None:
-        cmds.setAttr(
+        _set_attr(
             self.attr("usePartialResolution"),
             value,
         )
@@ -238,7 +240,7 @@ class Lattice:
 
     @resolution.setter
     def resolution(self, value: float) -> None:
-        cmds.setAttr(
+        _set_attr(
             self.attr("partialResolution"),
             value,
         )
@@ -337,54 +339,54 @@ def create_lattice(
     # DEFORMER SETTINGS
     # ---------------------------------------------------------
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.local",
-        local,  # type:ignore
+        local,
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.localInfluenceS",
-        local_influences[0],  # type:ignore
+        local_influences[0],
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.localInfluenceT",
-        local_influences[1],  # type:ignore
+        local_influences[1],
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.localInfluenceU",
-        local_influences[2],  # type:ignore
+        local_influences[2],
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.outsideLattice",
-        outside_lattice,  # type:ignore
+        outside_lattice,
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.outsideFalloffDist",
-        outside_falloff,  # type:ignore
+        outside_falloff,
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.freezeGeometry",
-        freeze_geometry,  # type:ignore
+        freeze_geometry,
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.bindToOriginalGeometry",
-        bind_original_geometry,  # type:ignore
+        bind_original_geometry,
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.usePartialResolution",
-        use_partial_resolution,  # type:ignore
+        use_partial_resolution,
     )
 
-    cmds.setAttr(
+    _set_attr(
         f"{deformer}.partialResolution",
-        partial_resolution,  # type:ignore
+        partial_resolution,
     )
 
     # ---------------------------------------------------------
@@ -395,7 +397,6 @@ def create_lattice(
         deformer=deformer,  # type:ignore
         lattice=lattice_transform,  # type:ignore
         base=base_transform,  # type:ignore
-        driven=driven,
         lattice_transform=get_transform_info(lattice_transform),  # type:ignore
         base_transform=get_transform_info(base_transform),  # type:ignore
         divisions=divisions,

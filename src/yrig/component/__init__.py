@@ -1,3 +1,4 @@
+from . import corrective_joint as corrective_joint
 from . import ear as ear
 from . import eye as eye
 from . import mouth as mouth

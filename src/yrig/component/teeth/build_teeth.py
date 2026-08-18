@@ -148,7 +148,6 @@ class TeethSpline:
     def cleanup(self) -> None:
         cmds.hide("teeth_M_npo")
 
-
     def twist_fix(self, guide: str, all_joints: list) -> None:
         if "bottom" in guide:
             twist_fix_md = cmds.createNode(
@@ -160,7 +159,6 @@ class TeethSpline:
 
             bottom_joints = all_joints[5:]
             cmds.connectAttr(f"{twist_fix_md}.outputX", f"{bottom_joints[0]}.rotateZ")
-
 
     def build_teeth(self) -> list[str]:
         all_joints = []

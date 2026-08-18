@@ -116,7 +116,6 @@ class NumericAttribute(Attribute[T]):
     """Base class for numeric Maya attributes (int/float-like values)."""
 
 
-
 class ScalarAttribute(NumericAttribute[float]):
     """Single float (double) Maya attribute."""
 

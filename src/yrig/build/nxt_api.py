@@ -1,6 +1,9 @@
 import logging
 import os
+from collections.abc import Generator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 from nxt.nxt_layer import CompLayer
 from nxt.nxt_node import get_node_enabled
@@ -15,6 +18,20 @@ YRIG_NXT_DIR = (  # Get the path (resolve symlinks first though)
     Path(__file__).resolve().parents[3] / "nxt"
 )
 os.environ["YRIG_NXT_DIR"] = str(YRIG_NXT_DIR.resolve())
+
+
+@contextmanager
+def nxt_file_roots(
+    file_roots: Sequence[Path], restore: bool = False
+) -> Generator[None, None, None]:
+    """Temporarily set the NXT_FILE_ROOTS env var, restoring it afterward if restore is True."""
+    default_value = os.environ["YRIG_NXT_DIR"]
+    os.environ["YRIG_NXT_DIR"] = os.pathsep.join(map(str, file_roots))
+    try:
+        yield
+    finally:
+        if restore:
+            os.environ["YRIG_NXT_DIR"] = default_value
 
 
 # We wrap the NXT execution so we can have nice progress reporting :)
@@ -76,6 +93,6 @@ class ProgressStage(Stage):
         return runtime_layer
 
 
-def execute_nxt_graph(filepath: Path) -> None:
-    stage = ProgressStage.load_from_filepath(str(filepath))
-    stage.execute()
+def execute_nxt_graph(filepath: Path, parameters: dict[str, Any] | None = None) -> None:
+    stage: ProgressStage = ProgressStage.load_from_filepath(str(filepath))
+    stage.execute(parameters=parameters)

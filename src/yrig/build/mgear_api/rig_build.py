@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from yrig.build.context import temp_asset_root, temp_build_scope
+from yrig.build.core import resolve_build_scope
 from yrig.build.mgear_api.log import (
     ProgressLogHandler,
     _capture_mgear_logs,
@@ -16,7 +17,6 @@ from yrig.build.mgear_api.step import BuildStep
 from yrig.build.progress import bind_progress_step
 from yrig.build.scope import BuildScope
 
-build_logger = logging.getLogger("yrig.build")
 mgear_api_logger = logging.getLogger("yrig.build.mgear_api")
 
 BUILD_STEPS: list[BuildStep] = [
@@ -113,19 +113,6 @@ def _build_from_shifter_file(  # noqa: ANN202
                 guide_data["ctl_buffers_dict"], rplStr=["_controlBuffer", ""]
             )
     return rig
-
-
-def resolve_build_scope(value: str | BuildScope | None) -> BuildScope | None:
-    if value is None:
-        return None
-    if isinstance(value, BuildScope):
-        return value
-    try:
-        return BuildScope(value)
-    except ValueError:
-        valid = [e.value for e in BuildScope]
-        build_logger.error("Invalid BuildScope '%s'. Valid options: %s", value, valid)
-        raise
 
 
 def build_from_path(

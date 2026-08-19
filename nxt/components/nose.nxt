@@ -16,7 +16,7 @@
         "/nose_component": {
             "instance": "/component",
             "child_order": [
-                "node"
+                "build"
             ],
             "attrs": {
                 "joint_parent": {
@@ -37,7 +37,7 @@
                 "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
             ]
         },
-        "/nose_component/node": {
+        "/nose_component/build": {
             "code": [
                 "from yrig.component.nose.nose import Nose",
                 "",

@@ -20,7 +20,7 @@
         "/teeth_component": {
             "instance": "/component",
             "child_order": [
-                "build2"
+                "build"
             ],
             "attrs": {
                 "control_parent": {
@@ -44,7 +44,7 @@
                 "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
             ]
         },
-        "/teeth_component/build2": {
+        "/teeth_component/build": {
             "code": [
                 "from yrig.component.teeth.teeth import Teeth",
                 "",

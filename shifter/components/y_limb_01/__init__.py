@@ -1058,26 +1058,26 @@ class Component(component.Main):
         )
 
         upper_twist_quat = twist_extract_quat(str(self.bone1), str(self.upper_swing), axis="x")
-        upper_twist_euler = QuatToEulerNode(f"{self.bone0}_twist")
+        upper_twist_euler = QuatToEulerNode.create(f"{self.bone0}_twist")
         upper_twist_euler.input_quat.connect_from(upper_twist_quat)
         upper_twist_euler.output_rotate.x.connect_to(f"{self.upper_twist}.rotateX")
-        upper_twist_mid = QuatSlerpNode(f"{upper_twist_quat}_blend")
+        upper_twist_mid = QuatSlerpNode.create(f"{upper_twist_quat}_blend")
         upper_twist_mid.input2_quat.connect_from(upper_twist_quat)
         upper_twist_mid.input_t.set(0.5)
-        upper_twist_mid_euler = QuatToEulerNode(f"{upper_twist_mid}_euler")
+        upper_twist_mid_euler = QuatToEulerNode.create(f"{upper_twist_mid}_euler")
         upper_twist_mid.output_quat.connect_to(upper_twist_mid_euler.input_quat)
         upper_twist_mid_euler.output_rotate.x.connect_to(f"{self.upperBendy_twist}.rotateX")
 
         lower_twist_quat = twist_extract_quat(
             str(self.end_eff_twist_out), str(self.bone1_tr), axis="x"
         )
-        lower_twist_euler = QuatToEulerNode(f"{self.bone1}_twist")
+        lower_twist_euler = QuatToEulerNode.create(f"{self.bone1}_twist")
         lower_twist_euler.input_quat.connect_from(lower_twist_quat)
         lower_twist_euler.output_rotate.x.connect_to(f"{self.lower_twist}.rotateX")
-        lower_twist_mid = QuatSlerpNode(f"{lower_twist_quat}_blend")
+        lower_twist_mid = QuatSlerpNode.create(f"{lower_twist_quat}_blend")
         lower_twist_mid.input2_quat.connect_from(lower_twist_quat)
         lower_twist_mid.input_t.set(0.5)
-        lower_twist_mid_euler = QuatToEulerNode(f"{lower_twist_mid}_euler")
+        lower_twist_mid_euler = QuatToEulerNode.create(f"{lower_twist_mid}_euler")
         lower_twist_mid.output_quat.connect_to(lower_twist_mid_euler.input_quat)
         lower_twist_mid_euler.output_rotate.x.connect_to(f"{self.lowerBendy_twist}.rotateX")
 

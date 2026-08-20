@@ -20,7 +20,8 @@
             "instance": "/transfer_skin_weights",
             "attrs": {
                 "transfer_mapping": {
-                    "value": "{\"apron_sim\": \"apron_geo\", \"belt_sim\": \"belt_geo\", \"clothes_sim\": \"clothes_geo\", \"clothes_geo\": \"clothingdetails_geo\"}"
+                    "type": "dict",
+                    "value": "{}"
                 }
             }
         },

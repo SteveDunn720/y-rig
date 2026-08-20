@@ -106,6 +106,15 @@
         "/root": {
             "start_point": false,
             "execute_in": "/shifter_component_build"
+        },
+        "/shifter_component_build/finger_meta_fix": {
+            "code": [
+                "for side in [\"L\", \"R\"]:",
+                "    for num in range(4):",
+                "        control_name = f\"meta_{side}0_meta{num}_ctl\"",
+                "        group_name = f\"finger_{side}{num}_root\"",
+                "        cmds.parent(group_name, control_name)"
+            ]
         }
     }
 }

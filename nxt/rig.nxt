@@ -110,7 +110,8 @@
                 }
             },
             "code": [
-                "cmds.dagPose(STAGE.control_list, name=\"${rest_pose}\", addToPose=True)"
+                "if STAGE.control_list:",
+                "    cmds.dagPose(STAGE.control_list, name=\"${rest_pose}\", addToPose=True)"
             ]
         },
         "/apply/skin": {

@@ -30,11 +30,11 @@ BUILD_STEPS: list[BuildStep] = [
 ]
 
 
-def _build_from_shifter_file(  # noqa: ANN202
+def build_from_shifter_file(  # noqa: ANN201
     file_path: Path,
     dev_build: bool,
-    no_components: bool = False,
     progress_callback: Callable[[float, str | None], None] | None = None,
+    components: bool = True,
 ):
     from mgear.core import curve
     from mgear.shifter import Rig, io
@@ -63,7 +63,7 @@ def _build_from_shifter_file(  # noqa: ANN202
         build_steps=BUILD_STEPS,
         post_steps=post_custom_steps,
         number_of_components=num_components,
-        no_components=no_components,
+        components=components,
         progress_callback=progress_callback,
     )
     with (
@@ -85,7 +85,7 @@ def _build_from_shifter_file(  # noqa: ANN202
         rig.from_dict_custom_step(merged_options, pre=True)
 
         # Just build a barebones rig with root if we're doing a custom step only build
-        if no_components:
+        if not components:
             rig.options = rig.guide.getMergedOptions()
             rig.guides = rig.guide.components
             rig.customStepDic["mgearRun"] = rig
@@ -98,21 +98,21 @@ def _build_from_shifter_file(  # noqa: ANN202
         # Check if build was cancelled
         if rig.stopBuild:
             mgear_api_logger.info("\n" + "= SHIFTER BUILD CANCELLED " + "=" * 40)
-            return None
+            return False
 
         rig.from_dict_custom_step(merged_options, pre=False)
 
         # Check if build was cancelled/failed during custom steps
         if rig.stopBuild:
             mgear_api_logger.info("\n" + "= SHIFTER BUILD CANCELLED " + "=" * 40)
-            return None
+            return False
 
         # controls shapes buffer
         if guide_data["ctl_buffers_dict"]:
             curve.update_curve_from_data(
                 guide_data["ctl_buffers_dict"], rplStr=["_controlBuffer", ""]
             )
-    return rig
+    return True
 
 
 def build_from_path(
@@ -127,8 +127,9 @@ def build_from_path(
         rig_root_path: Path to an a rig file structure.
         dev_build: When true the mGear shifter build will be set to WIP mode.
         progress_callback: A function to call at each step of the build.
-        build_scope: An optional BuildScope which will limit the build to that scope.
             It will be called with a float (overall progress from 0-1) and a string (the current step)
+        build_scope: An optional BuildScope which will limit the build to that scope.
+
 
     Returns:
         bool: True if the build was successful, else False
@@ -139,12 +140,12 @@ def build_from_path(
     with temp_asset_root(rig_root_path, dev_build), temp_build_scope(resolved_scope, dev_build):
         mgear_api_logger.info("Starting mGear Shifter build from file: %s", guide_path)
         try:
-            no_components = resolved_scope == BuildScope.FACE
-            build_result = _build_from_shifter_file(
+            components = resolved_scope != BuildScope.FACE
+            build_result = build_from_shifter_file(
                 guide_path,
                 dev_build,
-                no_components=no_components,
                 progress_callback=progress_callback,
+                components=components,
             )
         except Exception as e:
             mgear_api_logger.error("mGear build failed: %s", e)

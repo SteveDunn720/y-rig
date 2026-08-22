@@ -5,8 +5,6 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
-from yrig.build.context import temp_asset_root, temp_build_scope
-from yrig.build.core import resolve_build_scope
 from yrig.build.mgear_api.log import (
     ProgressLogHandler,
     _capture_mgear_logs,
@@ -15,7 +13,6 @@ from yrig.build.mgear_api.log import (
 )
 from yrig.build.mgear_api.step import BuildStep
 from yrig.build.progress import bind_progress_step
-from yrig.build.scope import BuildScope
 
 mgear_api_logger = logging.getLogger("yrig.build.mgear_api")
 
@@ -113,48 +110,3 @@ def build_from_shifter_file(  # noqa: ANN201
                 guide_data["ctl_buffers_dict"], rplStr=["_controlBuffer", ""]
             )
     return True
-
-
-def build_from_path(
-    rig_root_path: Path,
-    dev_build: bool = False,
-    build_scope: BuildScope | str | None = None,
-    progress_callback: Callable[[float, str | None], None] | None = None,
-) -> bool:
-    """Build an mGear Shifter rig from a rig path.
-
-    Args:
-        rig_root_path: Path to an a rig file structure.
-        dev_build: When true the mGear shifter build will be set to WIP mode.
-        progress_callback: A function to call at each step of the build.
-            It will be called with a float (overall progress from 0-1) and a string (the current step)
-        build_scope: An optional BuildScope which will limit the build to that scope.
-
-
-    Returns:
-        bool: True if the build was successful, else False
-    """
-
-    guide_path = rig_root_path / "data/guide.sgt"
-    resolved_scope = resolve_build_scope(build_scope)
-    with temp_asset_root(rig_root_path, dev_build), temp_build_scope(resolved_scope, dev_build):
-        mgear_api_logger.info("Starting mGear Shifter build from file: %s", guide_path)
-        try:
-            components = resolved_scope != BuildScope.FACE
-            build_result = build_from_shifter_file(
-                guide_path,
-                dev_build,
-                progress_callback=progress_callback,
-                components=components,
-            )
-        except Exception as e:
-            mgear_api_logger.error("mGear build failed: %s", e)
-            raise RuntimeError(f"mGear Shifter build failed for '{guide_path.name}': {e}") from e
-            return False
-
-        if build_result is not None:
-            mgear_api_logger.info("Build from file complete.")
-            return True
-        else:
-            mgear_api_logger.info("Build from file cancelled/failed.")
-            return False

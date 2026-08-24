@@ -37,13 +37,17 @@
                     "type": "raw",
                     "value": "rig_geo_grp"
                 },
+                "resolved_skin_directories": {
+                    "type": "raw",
+                    "value": "${filelist::${skin_directory}}"
+                },
                 "skin_directory": {
                     "type": "raw",
                     "value": "${file::data/skin}"
                 }
             },
             "code": [
-                "from yrig.skin import skin_and_apply_weights_from_directory",
+                "from yrig.skin import skin_and_apply_weights_from_directories",
                 "from yrig.skin.core import skin_geometry",
                 "def_in_set = cmds.sets(\"${def_set}\", query=True)",
                 "def_joints = cmds.ls(def_in_set, type=\"joint\")  # type: ignore    ",
@@ -54,8 +58,8 @@
                 "def _fallback_skin(geometry: str):",
                 "    skin_geometry(def_joints, geometry)",
                 "",
-                "skin_directory = Path(\"${skin_directory}\")",
-                "skin_and_apply_weights_from_directory(skin_directory, geo_to_skin, fallback_skinning=_fallback_skin)",
+                "skin_directories = [Path(dir) for dir in ${resolved_skin_directories}]",
+                "skin_and_apply_weights_from_directories(skin_directories, geo_to_skin, fallback_skinning=_fallback_skin)",
                 ""
             ]
         },

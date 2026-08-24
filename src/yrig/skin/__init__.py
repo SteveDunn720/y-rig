@@ -10,7 +10,7 @@ from . import apply, core, export, ng, serialize, split, visualize
 from .apply import (
     skin_and_apply_ng_weights,
     skin_and_apply_weights,
-    skin_and_apply_weights_from_directory,
+    skin_and_apply_weights_from_directories,
 )
 from .core import skin_geometry, transfer_skin_weights
 from .export import (
@@ -33,7 +33,7 @@ __all__ = [
     "serialize",
     "skin_and_apply_ng_weights",
     "skin_and_apply_weights",
-    "skin_and_apply_weights_from_directory",
+    "skin_and_apply_weights_from_directories",
     "skin_geometry",
     "split",
     "transfer_skin_weights",

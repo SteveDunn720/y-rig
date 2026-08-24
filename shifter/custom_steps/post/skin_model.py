@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import mgear.shifter.custom_step as cstp
 from maya import cmds
 
-from yrig.skin import skin_and_apply_weights_from_directory
+from yrig.skin import skin_and_apply_weights_from_directories
 from yrig.skin.core import remove_unused_influences, skin_geometry
 
 if TYPE_CHECKING:
@@ -68,8 +68,8 @@ class CustomShifterStep(cstp.customShifterMainStep):
             skin_geometry(def_joints, geometry)
             log.info(f"Default skinning bound {geometry} to {len(def_joints)} joint(s)")
 
-        skin_and_apply_weights_from_directory(
-            skin_path, geo_in_set, fallback_skinning=_fallback_skin
+        skin_and_apply_weights_from_directories(
+            (skin_path,), geo_in_set, fallback_skinning=_fallback_skin
         )
         for geo in geo_in_set:
             # If this is a non dev build we also remove influences with 0 weights for performance

@@ -1,6 +1,6 @@
 import logging
 import os
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -16,13 +16,14 @@ log = logging.getLogger(__name__)
 
 YRIG_NXT_DIR = (  # Get the path (resolve symlinks first though)
     Path(__file__).resolve().parents[3] / "nxt"
-)
-os.environ["YRIG_NXT_DIR"] = str(YRIG_NXT_DIR.resolve())
+).resolve()
+os.environ["YRIG_NXT_DIR"] = str(YRIG_NXT_DIR)
+os.environ["NXT_FILE_ROOTS"] = str(YRIG_NXT_DIR)
 
 
 @contextmanager
 def nxt_file_roots(
-    file_roots: Sequence[Path], restore: bool = False
+    file_roots: Iterable[Path], restore: bool = False
 ) -> Generator[None, None, None]:
     """Temporarily set the NXT_FILE_ROOTS env var, restoring it afterward if restore is True."""
     default_value = os.environ.get("NXT_FILE_ROOTS")

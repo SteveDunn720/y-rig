@@ -1,12 +1,12 @@
 {
     "version": "1.17",
-    "alias": "prop",
+    "alias": "mgear_prop",
     "color": "#7741c9",
     "mute": false,
     "solo": false,
     "references": [
-        "/users/guest/g/graphite/maya-python/y-rig/nxt/mgear.nxt",
-        "/users/guest/g/graphite/maya-python/y-rig/nxt/rig.nxt"
+        "util/mgear.nxt",
+        "archetype/anim_rig.nxt"
     ],
     "meta_data": {
         "positions": {

@@ -5,9 +5,9 @@
     "mute": false,
     "solo": false,
     "references": [
-        "$YRIG_NXT_DIR/face.nxt",
-        "$YRIG_NXT_DIR/body.nxt",
-        "$YRIG_NXT_DIR/rig.nxt"
+        "./face.nxt",
+        "./body.nxt",
+        "archetype/anim_rig.nxt"
     ],
     "meta_data": {
         "positions": {

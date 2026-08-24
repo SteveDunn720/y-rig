@@ -5,13 +5,13 @@
     "mute": false,
     "solo": false,
     "references": [
-        "$YRIG_NXT_DIR/components/face/eye.nxt",
-        "$YRIG_NXT_DIR/components/face/eyebrow.nxt",
-        "$YRIG_NXT_DIR/components/face/mouth.nxt",
-        "$YRIG_NXT_DIR/components/face/tongue.nxt",
-        "$YRIG_NXT_DIR/components/face/teeth.nxt",
-        "$YRIG_NXT_DIR/components/face/nose.nxt",
-        "$YRIG_NXT_DIR/components/face/ear.nxt"
+        "component/face/eye.nxt",
+        "component/face/eyebrow.nxt",
+        "component/face/mouth.nxt",
+        "component/face/tongue.nxt",
+        "component/face/teeth.nxt",
+        "component/face/nose.nxt",
+        "component/face/ear.nxt"
     ],
     "meta_data": {
         "positions": {

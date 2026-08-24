@@ -5,8 +5,8 @@
     "mute": false,
     "solo": false,
     "references": [
-        "$YRIG_NXT_DIR/skin.nxt",
-        "$YRIG_NXT_DIR/core.nxt"
+        "util/skin.nxt",
+        "core.nxt"
     ],
     "meta_data": {
         "positions": {

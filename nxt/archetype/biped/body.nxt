@@ -5,7 +5,7 @@
     "mute": false,
     "solo": false,
     "references": [
-        "$YRIG_NXT_DIR/mgear.nxt"
+        "util/mgear.nxt"
     ],
     "meta_data": {
         "positions": {

@@ -32,6 +32,7 @@ def build_from_shifter_file(  # noqa: ANN201
     dev_build: bool,
     progress_callback: Callable[[float, str | None], None] | None = None,
     components: bool = True,
+    custom_steps: bool = True,
 ):
     from mgear.core import curve
     from mgear.shifter import Rig, io
@@ -43,15 +44,33 @@ def build_from_shifter_file(  # noqa: ANN201
     # Set WIP mode in the mgear guide data if we're doing a dev build
     param_values["mode"] = 1 if dev_build else 0
 
-    # Get the relevant steps of the build (progress reporting)
-    pre_custom_step: dict = json.loads(param_values["preCustomStep"])
-    post_custom_step: dict = json.loads(param_values["postCustomStep"])
-    pre_custom_steps: list[BuildStep] = [
-        BuildStep(item["path"]) for item in pre_custom_step["items"]
-    ]
-    post_custom_steps: list[BuildStep] = [
-        BuildStep(item["path"]) for item in post_custom_step["items"]
-    ]
+    if custom_steps:
+        # Get the relevant steps of the build (progress reporting)
+        pre_custom_step_str = param_values["preCustomStep"]
+        post_custom_step_str = param_values["postCustomStep"]
+
+        if pre_custom_step_str:
+            pre_custom_step: dict = json.loads(param_values["preCustomStep"])
+            pre_custom_steps: list[BuildStep] = (
+                [BuildStep(item["path"]) for item in pre_custom_step["items"]]
+                if param_values["doPreCustomStep"]
+                else []
+            )
+        else:
+            pre_custom_steps = []
+        if post_custom_step_str:
+            post_custom_step: dict = json.loads(param_values["postCustomStep"])
+            post_custom_steps: list[BuildStep] = (
+                [BuildStep(item["path"]) for item in post_custom_step["items"]]
+                if param_values["doPostCustomStep"]
+                else []
+            )
+        else:
+            post_custom_steps = []
+    else:
+        pre_custom_steps = []
+        post_custom_steps = []
+
     num_components = len(guide_data["components_list"])
 
     rig = Rig()
@@ -79,7 +98,8 @@ def build_from_shifter_file(  # noqa: ANN201
         mgear_api_logger.info("\n" + "= BUILDING RIG " + "=" * 46)
         # Get merged options early so custom steps use blueprint values
         merged_options = rig.guide.getMergedOptions()
-        rig.from_dict_custom_step(merged_options, pre=True)
+        if custom_steps:
+            rig.from_dict_custom_step(merged_options, pre=True)
 
         # Just build a barebones rig with root if we're doing a custom step only build
         if not components:
@@ -97,7 +117,8 @@ def build_from_shifter_file(  # noqa: ANN201
             mgear_api_logger.info("\n" + "= SHIFTER BUILD CANCELLED " + "=" * 40)
             return False
 
-        rig.from_dict_custom_step(merged_options, pre=False)
+        if custom_steps:
+            rig.from_dict_custom_step(merged_options, pre=False)
 
         # Check if build was cancelled/failed during custom steps
         if rig.stopBuild:

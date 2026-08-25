@@ -1,0 +1,142 @@
+{
+    "version": "1.17",
+    "alias": "tools",
+    "color": "#465d17",
+    "mute": false,
+    "solo": false,
+    "references": [
+        "$NXT_BUILTINS/WidgetNodes.nxt"
+    ],
+    "meta_data": {
+        "positions": {
+            "/button": [
+                -3388.987124646572,
+                -1157.943561156741
+            ],
+            "/checkbox": [
+                -3388.987124646572,
+                -1097.943561156741
+            ],
+            "/dropDownMenu": [
+                -3388.987124646572,
+                -1037.943561156741
+            ],
+            "/gridLayout": [
+                -3388.987124646572,
+                -1217.9435611567415
+            ],
+            "/io_pair": [
+                -2898.54969360452,
+                -1396.497318751427
+            ],
+            "/itemSelector": [
+                -3388.987124646572,
+                -917.943561156741
+            ],
+            "/menuItem": [
+                -3388.987124646572,
+                -977.943561156741
+            ],
+            "/node": [
+                -2362.506127529898,
+                -1170.476720025339
+            ],
+            "/panel": [
+                -3388.987124646572,
+                -1277.9435611567415
+            ],
+            "/tab": [
+                -3388.987124646572,
+                -1337.9435611567415
+            ],
+            "/tools": [
+                -767.3666313064873,
+                -630.1766371433332
+            ],
+            "/tools_window": [
+                -2424.3160276274657,
+                -1400.7276109526683
+            ],
+            "/window": [
+                -3388.9871246465736,
+                -1399.0039277514006
+            ]
+        },
+        "collapse": {
+            "/tools_window/tools/layout": false,
+            "/workflow_tools/test_panel": false
+        }
+    },
+    "nodes": {
+        "/io_pair": {
+            "instance": "/gridLayout",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "pair_name": {
+                    "type": "raw",
+                    "value": "data"
+                },
+                "relative_filepath": {
+                    "type": "raw",
+                    "value": "data"
+                }
+            }
+        },
+        "/io_pair/export": {
+            "instance": "/button",
+            "attrs": {
+                "export_path": {
+                    "type": "raw",
+                    "value": "${export_root_path}/${relative_filepath}"
+                },
+                "export_root_path": {
+                    "type": "raw",
+                    "value": "${file::${rig_path}}"
+                },
+                "text": {
+                    "type": "raw",
+                    "value": "${_name} ${pair_name}"
+                }
+            },
+            "code": [
+                "export_root_path = Path(\"${export_root_path}\")",
+                "if not export_root_path.exists():",
+                "    raise NotADirectoryError",
+                "export_path = Path(\"${export_path}\")"
+            ]
+        },
+        "/io_pair/import": {
+            "instance": "/button",
+            "attrs": {
+                "import_filepath": {
+                    "type": "raw",
+                    "value": "${file::${rig_path}/${relative_filepath}}"
+                },
+                "text": {
+                    "type": "raw",
+                    "value": "${_name} ${pair_name}"
+                }
+            },
+            "code": [
+                "import_path = Path(\"${import_filepath}\")"
+            ]
+        },
+        "/tools_window": {
+            "instance": "/window",
+            "child_order": [
+                "tools"
+            ],
+            "attrs": {
+                "_widget_window": {
+                    "value": "True"
+                }
+            }
+        },
+        "/tools_window/tools": {
+            "instance": "/tab"
+        }
+    }
+}

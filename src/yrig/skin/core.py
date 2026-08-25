@@ -80,8 +80,9 @@ def skin_geometry(
     bind_joints: Iterable[str],
     geometry: str,
     name: str | None = None,
-    dual_quaternion: bool = False,
-    local: bool = True,
+    dual_quaternion: bool = True,
+    support_non_rigid: bool = True,
+    local: bool = False,
 ) -> str:
     """
     Creates a skinCluster on the given geometry using the specified bind joints.
@@ -116,6 +117,8 @@ def skin_geometry(
         skinMethod=1 if dual_quaternion else 0,
         name=name,
     )[0]
+    if support_non_rigid:
+        cmds.setAttr(f"{skin_cluster}.dqsSupportNonRigid", 1)  # type: ignore
     if local:
         cmds.setAttr(f"{skin_cluster}.relativeSpaceMode", 1)  # type: ignore
     return skin_cluster

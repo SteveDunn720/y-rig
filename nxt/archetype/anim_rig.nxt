@@ -78,10 +78,13 @@
                     "value": "full"
                 },
                 "dev_build": {
+                    "comment": "When True the rig should be built ready for publish",
                     "type": "bool",
                     "value": "False"
                 },
-                "rig_path": {}
+                "rig_path": {
+                    "comment": "The relative path to the main directory for this rig's build files"
+                }
             }
         },
         "/apply": {
@@ -177,10 +180,12 @@
             ],
             "attrs": {
                 "rig_root": {
+                    "comment": "Name for the root node that houses the entire rig.",
                     "type": "raw",
                     "value": "rig"
                 },
                 "rig_set": {
+                    "comment": "Name for the set that houses all the sets for this rig.",
                     "type": "raw",
                     "value": "${rig_root}_sets_grp"
                 }

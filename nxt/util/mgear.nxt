@@ -15,7 +15,13 @@
     "nodes": {
         "/shifter_build": {
             "attrs": {
+                "custom_steps": {
+                    "comment": "If True, run the defined custom steps, if False, don't.",
+                    "type": "bool",
+                    "value": "True"
+                },
                 "guide_filepath": {
+                    "comment": "Filepath to the .sgt file to build from.",
                     "type": "raw",
                     "value": "${file::guide.sgt}"
                 }
@@ -23,7 +29,7 @@
             "code": [
                 "guide_path = Path(\"${guide_filepath}\")",
                 "",
-                "yrig.build.mgear_api.build_from_shifter_file(guide_path, dev_build=${dev_build})"
+                "yrig.build.mgear_api.build_from_shifter_file(guide_path, dev_build=${dev_build}, custom_steps=${custom_steps})"
             ]
         }
     }

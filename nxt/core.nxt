@@ -27,21 +27,30 @@
         "/component": {
             "attrs": {
                 "component_group": {
+                    "comment": "Name of the group created to house this components internal logic nodes,",
                     "type": "raw",
                     "value": "${name}_${side}_root"
                 },
                 "control_parent": {
+                    "comment": "Parent for the controls of this component",
                     "type": "raw",
                     "value": "${component_group}"
                 },
-                "joint_parent": {},
-                "name": {},
-                "parent": {},
+                "joint_parent": {
+                    "comment": "Parent for the joints of this component."
+                },
+                "name": {
+                    "comment": "Name for this component"
+                },
+                "parent": {
+                    "comment": "Parent for the component's rig nodes."
+                },
                 "side": {
                     "type": "raw",
                     "value": "M"
                 },
                 "socket": {
+                    "comment": "The transform to physically attach this component to",
                     "type": "raw",
                     "value": "${pareent}"
                 }
@@ -56,18 +65,22 @@
         "/side": {
             "attrs": {
                 "control_color": {
+                    "comment": "RGB values for the control colors in this layer",
                     "type": "list",
                     "value": "[0.105, 0.247, 0.411]"
                 },
                 "control_layer": {
+                    "comment": "Name of the created control layer node that holds the control color.",
                     "type": "raw",
                     "value": "${side}_ControlLayer"
                 },
                 "side": {
+                    "comment": "The side token to use in child nodes.",
                     "type": "raw",
                     "value": "M"
                 },
                 "side_mult": {
+                    "comment": "Positive or negative 1, representing handedness of the space for the child components.",
                     "type": "int",
                     "value": "1"
                 }

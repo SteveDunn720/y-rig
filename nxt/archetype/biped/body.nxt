@@ -32,6 +32,9 @@
                 "attribute_defaults"
             ],
             "attrs": {
+                "custom_steps": {
+                    "value": "False"
+                },
                 "guide_filepath": {
                     "value": "${file::${rig_path}/data/guide.sgt}"
                 }

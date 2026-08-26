@@ -26,22 +26,27 @@
             "instance": "",
             "attrs": {
                 "def_set": {
+                    "comment": "The joints in this set will be what are used for fallback/default skinning.",
                     "type": "raw",
                     "value": "rig_deformers_grp"
                 },
                 "geo_list": {
+                    "comment": "Geometry will be skinned to the geometry in this list if defined. Otherwise it will skin to the geometry in the geo_set",
                     "type": "NoneType",
                     "value": "None"
                 },
                 "geo_set": {
+                    "comment": "Geometry will be skinned to the geometry in this set unless there's a manually defined geo_list,",
                     "type": "raw",
                     "value": "rig_geo_grp"
                 },
                 "resolved_skin_directories": {
+                    "comment": "Don't override this. This resolves the historical values of the skin_directory attribute to check through each for skinning files.",
                     "type": "raw",
                     "value": "${filelist::${skin_directory}}"
                 },
                 "skin_directory": {
+                    "comment": "Directory containing the skin files to apply",
                     "type": "raw",
                     "value": "${file::data/skin}"
                 }
@@ -66,6 +71,7 @@
         "/split_skin_weights": {
             "attrs": {
                 "geo_set": {
+                    "comment": "Geo in this set will automatically have skin weights split.",
                     "type": "raw",
                     "value": "rig_geo_grp"
                 }
@@ -80,6 +86,7 @@
         "/transfer_skin_weights": {
             "attrs": {
                 "transfer_mapping": {
+                    "comment": "A dictionary of source:target geometry name pairings. Skin weights will be trransfered from the source to the target for each pair.",
                     "type": "dict",
                     "value": "{}"
                 }

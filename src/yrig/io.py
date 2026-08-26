@@ -13,6 +13,8 @@ def confirm_overwrite(filepath: Path, force: bool = False) -> bool:
     If *filepath* already exists, show a confirmation dialogue and return
     ``True`` only if the user explicitly agrees to overwrite or if *force* is ``True``.
     """
+    if filepath.is_dir():
+        raise IsADirectoryError(f"Found directory instead of file at {filepath}")
     if force:
         return True
     if not filepath.exists():

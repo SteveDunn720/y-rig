@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class BuildScope(Enum):
+class BuildScope(StrEnum):
     FULL = "full"
     BODY = "body"
     FACE = "face"

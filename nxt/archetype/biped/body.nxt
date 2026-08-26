@@ -32,13 +32,50 @@
                 "attribute_defaults"
             ],
             "attrs": {
+                "body_rig_temp_filepath": {
+                    "type": "raw",
+                    "value": "${export_root_path}/${body_rig_temp_relative_filepath}"
+                },
+                "body_rig_temp_relative_filepath": {
+                    "type": "raw",
+                    "value": "assets/.temp/body.mb"
+                },
+                "build_caching": {
+                    "type": "bool",
+                    "value": "True"
+                },
                 "custom_steps": {
                     "value": "False"
+                },
+                "export_root_path": {
+                    "type": "raw",
+                    "value": "${file::${rig_path}}"
                 },
                 "guide_filepath": {
                     "value": "${file::${rig_path}/data/guide.sgt}"
                 }
-            }
+            },
+            "code": [
+                "guide_path = Path(\"${guide_filepath}\")",
+                "",
+                "run_shifter_build = True",
+                "body_rig_temp_filepath = Path(\"${body_rig_temp_filepath}\")",
+                "if ${build_caching}:",
+                "    if \"${build_scope}\" == \"face\":",
+                "        if body_rig_temp_filepath.exists():",
+                "            yrig.io.import_maya_file(body_rig_temp_filepath)",
+                "            run_shifter_build = False",
+                "        else:",
+                "            run_shifter_build = True",
+                "    else:",
+                "        run_shifter_build = True",
+                "        ",
+                "    ",
+                "if run_shifter_build:",
+                "    yrig.build.mgear_api.build_from_shifter_file(guide_path, dev_build=${dev_build}, custom_steps=${custom_steps})",
+                "    if ${build_caching}:",
+                "        yrig.io.export_maya_file(body_rig_temp_filepath, binary=True, force=True)"
+            ]
         },
         "/shifter_component_build/attribute_defaults": {
             "code": [

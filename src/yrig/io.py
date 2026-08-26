@@ -80,7 +80,11 @@ def export_maya_file(
     """
     if not confirm_overwrite(filepath, force):
         return False
+    export_suffix = ".mb" if binary else ".ma"
     export_type = "mayaBinary" if binary else "mayaAscii"
+
+    if export_suffix != filepath.suffix:
+        raise ValueError(f"Wrong file extension for {export_type}: {export_suffix} : {filepath}")
     if nodes is not None:
         with maintain_selection():
             cmds.select(*nodes, replace=True)
@@ -93,7 +97,7 @@ def export_maya_file(
     else:
         cmds.file(
             str(filepath),
-            exportSelected=False,
+            exportAll=True,
             type=export_type,
             force=True,
         )

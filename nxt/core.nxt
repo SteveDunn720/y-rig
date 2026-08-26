@@ -21,7 +21,9 @@
             "code": [
                 "import yrig",
                 "from maya import cmds",
-                "from pathlib import Path"
+                "",
+                "from pathlib import Path",
+                ""
             ]
         },
         "/component": {

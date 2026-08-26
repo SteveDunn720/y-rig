@@ -18,7 +18,11 @@ YRIG_NXT_DIR = (  # Get the path (resolve symlinks first though)
     Path(__file__).resolve().parents[3] / "nxt"
 ).resolve()
 os.environ["YRIG_NXT_DIR"] = str(YRIG_NXT_DIR)
-os.environ["NXT_FILE_ROOTS"] = str(YRIG_NXT_DIR)
+
+nxt_file_roots = os.environ.get("NXT_FILE_ROOTS", "").split(os.pathsep)
+if str(YRIG_NXT_DIR) not in nxt_file_roots:
+    nxt_file_roots.append(str(YRIG_NXT_DIR))
+    os.environ["NXT_FILE_ROOTS"] = os.pathsep.join(nxt_file_roots)
 
 
 @contextmanager

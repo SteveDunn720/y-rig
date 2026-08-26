@@ -274,6 +274,55 @@
                 "# Put the geo in the set.",
                 "yrig.sets.add_to_set(mesh_transforms, \"${model_set}\", parent=\"${rig_set}\")"
             ]
+        },
+        "/tools_window/tools/control_shapes": {
+            "instance": "/panel",
+            "child_order": [
+                "control_shapes_io"
+            ],
+            "attrs": {
+                "text": {
+                    "type": "raw",
+                    "value": "Control Shapes"
+                }
+            }
+        },
+        "/tools_window/tools/control_shapes/control_shapes_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "relative_filepath": {
+                    "value": "data/control_shapes.json"
+                }
+            }
+        },
+        "/tools_window/tools/control_shapes/control_shapes_io/export": {
+            "attrs": {
+                "text": {
+                    "value": "Export Control Shapes"
+                }
+            },
+            "code": [
+                "export_root_path = Path(\"${export_root_path}\")",
+                "if not export_root_path.exists():",
+                "    raise NotADirectoryError",
+                "export_path = Path(\"${export_path}\")",
+                "yrig.control.serialize.export_control_shapes_file(filepath=export_path, force=${force})"
+            ]
+        },
+        "/tools_window/tools/control_shapes/control_shapes_io/import": {
+            "attrs": {
+                "text": {
+                    "value": "Import Control Shapes"
+                }
+            },
+            "code": [
+                "import_path = Path(\"${import_filepath}\")",
+                "yrig.control.serialize.apply_control_shapes_file(import_path)"
+            ]
         }
     }
 }

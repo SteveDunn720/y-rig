@@ -117,7 +117,12 @@
             ]
         },
         "/tools_window/biped": {
-            "instance": "/tab"
+            "instance": "/tab",
+            "attrs": {
+                "text": {
+                    "value": "Biped"
+                }
+            }
         }
     }
 }

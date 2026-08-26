@@ -262,7 +262,12 @@
             "instance": "/panel",
             "child_order": [
                 "face_guides_io"
-            ]
+            ],
+            "attrs": {
+                "text": {
+                    "value": "Face"
+                }
+            }
         },
         "/tools_window/biped/face/face_guides_io": {
             "instance": "/io_pair",
@@ -291,7 +296,7 @@
                 "if not export_root_path.exists():",
                 "    raise NotADirectoryError",
                 "export_path = Path(\"${export_path}\")",
-                "exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), binary=true)",
+                "exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), binary=true, force=${force})",
                 ""
             ]
         },

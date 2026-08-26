@@ -96,6 +96,10 @@
                     "type": "raw",
                     "value": "${file::${rig_path}}"
                 },
+                "force": {
+                    "type": "bool",
+                    "value": "False"
+                },
                 "text": {
                     "type": "raw",
                     "value": "${_name} ${pair_name}"
@@ -136,7 +140,12 @@
             }
         },
         "/tools_window/tools": {
-            "instance": "/tab"
+            "instance": "/tab",
+            "attrs": {
+                "text": {
+                    "value": "Tools"
+                }
+            }
         }
     }
 }

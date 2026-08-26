@@ -16,8 +16,8 @@ from maya.api.OpenMaya import (
 )
 
 from yrig.control.utils import get_tagged_controls
+from yrig.io import confirm_overwrite
 from yrig.transform import create_transform, get_shapes
-from yrig.util import confirm_overwrite
 
 log = logging.getLogger(__name__)
 

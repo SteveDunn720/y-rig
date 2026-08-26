@@ -115,6 +115,9 @@
                 "        group_name = f\"finger_{side}{num}_root\"",
                 "        cmds.parent(group_name, control_name)"
             ]
+        },
+        "/tools_window/biped": {
+            "instance": "/tab"
         }
     }
 }

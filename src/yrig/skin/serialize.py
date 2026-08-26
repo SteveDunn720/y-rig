@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Self
 
+from yrig.io import confirm_overwrite
 from yrig.skin.core import (
     get_skin_cluster,
     get_skin_cluster_influences,
@@ -11,7 +12,6 @@ from yrig.skin.core import (
     set_skin_weights,
 )
 from yrig.transform import get_shape
-from yrig.util import confirm_overwrite
 
 log = logging.getLogger(__name__)
 

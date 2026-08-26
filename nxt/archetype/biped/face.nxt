@@ -257,6 +257,55 @@
             "code": [
                 "imported_nodes = cmds.file(\"${face_guides_filepath}\", i=True, defaultNamespace=True, returnNewNodes=True)"
             ]
+        },
+        "/tools_window/biped/face": {
+            "instance": "/panel",
+            "child_order": [
+                "face_guides_io"
+            ]
+        },
+        "/tools_window/biped/face/face_guides_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "relative_filepath": {
+                    "value": "data/face/guides.mb"
+                }
+            }
+        },
+        "/tools_window/biped/face/face_guides_io/export": {
+            "attrs": {
+                "face_guides_group": {
+                    "type": "raw",
+                    "value": "face_guide"
+                },
+                "text": {
+                    "value": "Export Face Guides"
+                }
+            },
+            "code": [
+                "export_root_path = Path(\"${export_root_path}\")",
+                "if not export_root_path.exists():",
+                "    raise NotADirectoryError",
+                "export_path = Path(\"${export_path}\")",
+                "exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), binary=true)",
+                ""
+            ]
+        },
+        "/tools_window/biped/face/face_guides_io/import": {
+            "attrs": {
+                "text": {
+                    "value": "Import Face Guides"
+                }
+            },
+            "code": [
+                "import_path = Path(\"${import_filepath}\")",
+                "imported_nodes = yrig.io.import_maya_file(import_path)",
+                "print(imported_nodes)"
+            ]
         }
     }
 }

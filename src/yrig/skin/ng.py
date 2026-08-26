@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from maya import cmds
 
-from yrig.util import confirm_overwrite
+from yrig.io import confirm_overwrite
 
 log = logging.getLogger(__name__)
 

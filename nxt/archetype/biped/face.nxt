@@ -247,7 +247,7 @@
             "attrs": {
                 "face_guides_filepath": {
                     "type": "raw",
-                    "value": "${file::${rig_path}/data/face/guides.mb}"
+                    "value": "${file::${rig_path}/data/face/guides.ma}"
                 },
                 "face_guides_group": {
                     "type": "raw",
@@ -277,7 +277,8 @@
             ],
             "attrs": {
                 "relative_filepath": {
-                    "value": "data/face/guides.mb"
+                    "type": "raw",
+                    "value": "data/face/guides.ma"
                 }
             }
         },
@@ -296,7 +297,7 @@
                 "if not export_root_path.exists():",
                 "    raise NotADirectoryError",
                 "export_path = Path(\"${export_path}\")",
-                "exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), binary=true, force=${force})",
+                "exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), force=${force})",
                 ""
             ]
         },

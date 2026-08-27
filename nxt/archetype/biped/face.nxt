@@ -293,9 +293,9 @@
                 }
             },
             "code": [
-                "export_root_path = Path(\"${export_root_path}\")",
-                "if not export_root_path.exists():",
-                "    raise NotADirectoryError",
+                "export_root_path = \"${export_root_path}\"",
+                "if not export_root_path or not Path(export_root_path).is_dir():",
+                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
                 "export_path = Path(\"${export_path}\")",
                 "exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), force=${force})",
                 ""

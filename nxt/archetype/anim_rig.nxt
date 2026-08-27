@@ -242,7 +242,9 @@
                 }
             },
             "code": [
-                "imported_nodes: list[str] = cmds.file(\"${model_filepath}\", i=True, defaultNamespace=True, returnNewNodes=True)",
+                "from yrig.io import import_maya_file",
+                "model_filepath = Path(\"${model_filepath}\")",
+                "imported_nodes: list[str] = import_maya_file(model_filepath)",
                 "",
                 "top_level_nodes: list[str] = cmds.ls(imported_nodes, assemblies=True)",
                 "",

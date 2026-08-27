@@ -5,6 +5,7 @@
     "mute": false,
     "solo": false,
     "references": [
+        "component/face/face_base.nxt",
         "component/face/eye.nxt",
         "component/face/eyebrow.nxt",
         "component/face/mouth.nxt",
@@ -15,6 +16,10 @@
     ],
     "meta_data": {
         "positions": {
+            "/cleanup": [
+                578.6271216105457,
+                41.68783296905949
+            ],
             "/ear": [
                 318.8538364053693,
                 142.4484541260124
@@ -42,6 +47,10 @@
             "/face": [
                 280,
                 20
+            ],
+            "/face_base_component": [
+                -1435.4748153869095,
+                341.9310107006777
             ],
             "/left": [
                 160.30801917363112,
@@ -112,10 +121,12 @@
         "collapse": {
             "/ear_component": true,
             "/eye_component": true,
+            "/face_base_component": true,
             "/left/ear": true,
             "/left/eye": true,
             "/left/eyebrow": true,
             "/look_component": true,
+            "/middle/face/base": true,
             "/middle/face/look": true,
             "/middle/face/mouth": true,
             "/middle/face/nose": true,
@@ -156,21 +167,42 @@
             ]
         },
         "/left/ear": {
-            "instance": "/ear_component"
+            "instance": "/ear_component",
+            "attrs": {
+                "control_parent": {
+                    "value": "face_muppet_M_ctl"
+                },
+                "joint_parent": {
+                    "value": "face_muppet_M_jnt"
+                }
+            }
         },
         "/left/eye": {
-            "instance": "/eye_component"
+            "instance": "/eye_component",
+            "attrs": {
+                "control_parent": {
+                    "value": "face_upper_M_ctl"
+                },
+                "joint_parent": {
+                    "value": "face_upper_M_jnt"
+                }
+            }
         },
         "/left/eyebrow": {
             "instance": "/simple_eyebrow",
             "attrs": {
+                "control_parent": {
+                    "value": "face_top_M_ctl"
+                },
                 "joint_parent": {
-                    "value": "face_jnt"
+                    "type": "raw",
+                    "value": "face_top_M_jnt"
                 }
             }
         },
         "/middle/face": {
             "child_order": [
+                "base",
                 "nose",
                 "mouth",
                 "tongue",
@@ -178,18 +210,18 @@
                 "look"
             ],
             "attrs": {
-                "joint_parent": {
+                "face_joint_parent": {
                     "type": "raw",
                     "value": "neck_M0_head_jnt"
                 },
-                "parent": {
+                "face_parent": {
                     "type": "raw",
                     "value": "neck_M0_head_ctl"
                 }
             },
             "code": [
-                "parent=\"${parent}\"",
-                "joint_parent=\"${joint_parent}\"",
+                "parent=\"${face_parent}\"",
+                "joint_parent=\"${face_joint_parent}\"",
                 "transform = \"face_M\" if cmds.objExists(\"face_M\") else None",
                 "",
                 "face_group = yrig.transform.create_transform(",
@@ -204,6 +236,18 @@
                 "    connect=False)"
             ]
         },
+        "/middle/face/base": {
+            "instance": "/face_base_component",
+            "attrs": {
+                "joint_parent": {
+                    "value": "face_jnt"
+                },
+                "parent": {
+                    "type": "raw",
+                    "value": "${face_parent}"
+                }
+            }
+        },
         "/middle/face/look": {
             "instance": "/look_component"
         },
@@ -215,9 +259,6 @@
             "attrs": {
                 "control_size": {
                     "value": "1"
-                },
-                "joint_parent": {
-                    "value": "face_jnt"
                 }
             }
         },

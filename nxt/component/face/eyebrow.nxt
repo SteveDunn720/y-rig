@@ -25,17 +25,19 @@
             "attrs": {
                 "control_parent": {
                     "type": "raw",
-                    "value": "${component_group}"
+                    "value": "face_top_M_ctl"
                 },
                 "control_size": {
                     "type": "float",
                     "value": "0.5"
                 },
+                "joint_parent": {
+                    "value": "face_top_M_jnt"
+                },
                 "name": {
                     "value": "eyebrow"
                 },
                 "parent": {
-                    "type": "raw",
                     "value": "face_grp"
                 }
             }

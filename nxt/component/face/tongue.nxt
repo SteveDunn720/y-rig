@@ -20,10 +20,12 @@
             ],
             "attrs": {
                 "control_parent": {
-                    "value": "jaw_M_ctl"
+                    "type": "raw",
+                    "value": "face_lower_M_ctl"
                 },
                 "joint_parent": {
-                    "value": "face_jnt"
+                    "type": "raw",
+                    "value": "face_lower_M_jnt"
                 },
                 "name": {
                     "type": "raw",

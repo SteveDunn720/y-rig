@@ -1,0 +1,55 @@
+{
+    "version": "1.17",
+    "alias": "face_base",
+    "color": "#cc704b",
+    "mute": false,
+    "solo": false,
+    "meta_data": {
+        "positions": {
+            "/face_base_component": [
+                -1346.6964062960003,
+                1060.749742372232
+            ]
+        }
+    },
+    "nodes": {
+        "/face_base_component": {
+            "instance": "/component",
+            "child_order": [
+                "build"
+            ],
+            "attrs": {
+                "control_size": {
+                    "type": "int",
+                    "value": "4"
+                },
+                "name": {
+                    "value": "face_base"
+                }
+            }
+        },
+        "/face_base_component/build": {
+            "code": [
+                "from yrig.component.face_base import FaceBase, FaceBaseGuides",
+                "",
+                "guides = FaceBaseGuides(",
+                "    lower = \"face_lower_M\",",
+                "    muppet = \"face_muppet_M\",",
+                "    upper = \"face_upper_M\",",
+                "    top = \"face_top_M\",",
+                ")",
+                "",
+                "with yrig.control.collect_controls() as component_controls:",
+                "    face_base = FaceBase(",
+                "        guides=guides, ",
+                "        parent=\"${component_group}\",",
+                "        control_parent=\"${control_parent}\", ",
+                "        joint_parent=\"${joint_parent}\", ",
+                "        control_size=${control_size}",
+                "    )",
+                "    ",
+                "STAGE.control_list.extend(component_controls)"
+            ]
+        }
+    }
+}

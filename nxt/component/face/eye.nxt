@@ -23,8 +23,12 @@
                 "build"
             ],
             "attrs": {
+                "control_parent": {
+                    "value": "face_upper_M_ctl"
+                },
                 "joint_parent": {
-                    "value": "face_jnt"
+                    "type": "raw",
+                    "value": "face_upper_M_jnt"
                 },
                 "look_parent": {
                     "type": "raw",

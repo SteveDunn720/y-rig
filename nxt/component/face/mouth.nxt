@@ -21,12 +21,14 @@
             ],
             "attrs": {
                 "control_parent": {
-                    "type": "raw",
-                    "value": "${component_group}"
+                    "value": "face_lower_M_ctl"
                 },
                 "control_size": {
                     "type": "int",
                     "value": "2"
+                },
+                "joint_parent": {
+                    "value": "face_lower_M_jnt"
                 },
                 "name": {
                     "value": "mouth"

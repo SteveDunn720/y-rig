@@ -19,8 +19,12 @@
                 "build"
             ],
             "attrs": {
+                "control_parent": {
+                    "value": "face_muppet_M_ctl"
+                },
                 "joint_parent": {
-                    "value": "face_jnt"
+                    "type": "raw",
+                    "value": "face_muppet_M_jnt"
                 },
                 "name": {
                     "type": "raw",

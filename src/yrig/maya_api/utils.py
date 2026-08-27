@@ -18,8 +18,8 @@ def ensure_plugin_loaded(plugin: str) -> None:
 
 def get_dag_path(node: str) -> MDagPath:
     selection = MSelectionList()
-    selection.add(node)
     try:
+        selection.add(node)
         dag_path: MDagPath = selection.getDagPath(0)
     except RuntimeError as exc:
         raise RuntimeError(f"Couldn't resolve an MDagPath for {node}") from exc
@@ -28,8 +28,8 @@ def get_dag_path(node: str) -> MDagPath:
 
 def get_depend_node(node: str) -> MObject:
     selection = MSelectionList()
-    selection.add(node)
     try:
+        selection.add(node)
         depend_node: MObject = selection.getDependNode(0)
     except RuntimeError as exc:
         raise RuntimeError(f"Couldn't resolve an MObject for {node}") from exc

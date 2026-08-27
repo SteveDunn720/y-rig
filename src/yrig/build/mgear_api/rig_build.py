@@ -27,13 +27,13 @@ BUILD_STEPS: list[BuildStep] = [
 ]
 
 
-def build_from_shifter_file(  # noqa: ANN201
+def build_from_shifter_file(
     file_path: Path,
     dev_build: bool,
     progress_callback: Callable[[float, str | None], None] | None = None,
     components: bool = True,
     custom_steps: bool = True,
-):
+) -> bool:
     from mgear.core import curve
     from mgear.shifter import Rig, io
 

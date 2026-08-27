@@ -11,12 +11,12 @@ from maya.api.OpenMaya import (
     MDoubleArray,
     MFnNurbsCurve,
     MPointArray,
-    MSelectionList,
     MSpace,
 )
 
 from yrig.control.utils import get_tagged_controls
 from yrig.io import confirm_overwrite
+from yrig.maya_api.utils import get_depend_node
 from yrig.transform import create_transform, get_shapes
 
 log = logging.getLogger(__name__)
@@ -101,9 +101,7 @@ def get_cv_data(curve_shape: str) -> tuple[list[tuple[float, float, float]], lis
             positions (list[tuple[float, float, float]]): List of CV positions
             weights (list[float]): List of CV weights
     """
-    sel: MSelectionList = MSelectionList()
-    sel.add(curve_shape)
-    curve_obj = sel.getDependNode(0)
+    curve_obj = get_depend_node(curve_shape)
     fn_curve: MFnNurbsCurve = MFnNurbsCurve(curve_obj)
 
     cv_positions: MPointArray = fn_curve.cvPositions(space=MSpace.kObject)
@@ -123,9 +121,7 @@ def get_knots(curve_shape: str) -> list[float]:
     Returns:
         list: A list of knot values. (aka knot vector)
     """
-    sel: MSelectionList = MSelectionList()
-    sel.add(curve_shape)
-    curve_obj = sel.getDependNode(0)
+    curve_obj = get_depend_node(curve_shape)
     fn_curve: MFnNurbsCurve = MFnNurbsCurve(curve_obj)
 
     knots_array: MDoubleArray = fn_curve.knots()

@@ -5,17 +5,16 @@ from typing import TYPE_CHECKING
 
 from maya import cmds
 from maya.api.OpenMaya import (
-    MDagPath,
     MFnDagNode,
     MMatrix,
     MPoint,
-    MSelectionList,
     MSpace,
     MTransformationMatrix,
 )
 
 from yrig.maya_api.attribute import MatrixAttribute, ScalarAttribute
 from yrig.maya_api.node import ConditionNode, DistanceBetweenNode, SubtractNode
+from yrig.maya_api.utils import get_dag_path
 from yrig.name import get_short_name
 from yrig.transform.matrix import (
     get_world_matrix,
@@ -30,9 +29,7 @@ if TYPE_CHECKING:
 
 def partial_path_name(transform: str) -> str:
     """Returns the minimum path string necessary to uniquely identify the object."""
-    sel = MSelectionList()
-    sel.add(transform)
-    dag_path: MDagPath = sel.getDagPath(0)
+    dag_path = get_dag_path(transform)
     mfn_dag = MFnDagNode(dag_path)
     return mfn_dag.partialPathName()
 

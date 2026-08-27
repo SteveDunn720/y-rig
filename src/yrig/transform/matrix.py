@@ -5,14 +5,11 @@ from typing import TypeAlias
 from maya import cmds
 from maya.api.OpenMaya import (
     MAngle,
-    MDagPath,
     MEulerRotation,
     MFnDependencyNode,
     MFnTransform,
     MMatrix,
-    MObject,
     MPlug,
-    MSelectionList,
     MSpace,
     MTransformationMatrix,
 )
@@ -26,6 +23,7 @@ from yrig.maya_api.node import (
     MultiplyVectorByMatrixNode,
     MultMatrixNode,
 )
+from yrig.maya_api.utils import get_dag_path, get_depend_node
 from yrig.name import get_short_name
 
 log = logging.getLogger(__name__)
@@ -85,9 +83,7 @@ def get_local_matrix(transform: str) -> MMatrix:
     """
     Returns the local matrix of a transform.
     """
-    selection = MSelectionList()
-    selection.add(transform)
-    dag_path: MDagPath = selection.getDagPath(0)
+    dag_path = get_dag_path(transform)
     mfn_transform: MFnTransform = MFnTransform(dag_path)
     transformation: MTransformationMatrix = mfn_transform.transformation()
     return transformation.asMatrix()
@@ -98,9 +94,7 @@ def get_parent_matrix(transform: str) -> MMatrix:
     Returns the full world matrix of a transform up to its parent, including rotateAxis, jointOrient, etc.
     Equivalent to Maya's internal parent matrix.
     """
-    selection = MSelectionList()
-    selection.add(transform)
-    dag_path: MDagPath = selection.getDagPath(0)
+    dag_path = get_dag_path(transform)
     return dag_path.exclusiveMatrix()
 
 
@@ -109,9 +103,7 @@ def get_parent_inverse_matrix(transform: str) -> MMatrix:
     Returns the full inverse world matrix of a transform up to its parent, including rotateAxis, jointOrient, etc.
     Equivalent to Maya's internal parentInverse matrix.
     """
-    selection = MSelectionList()
-    selection.add(transform)
-    dag_path: MDagPath = selection.getDagPath(0)
+    dag_path = get_dag_path(transform)
     return dag_path.exclusiveMatrixInverse()
 
 
@@ -120,9 +112,7 @@ def get_world_matrix(transform: str) -> MMatrix:
     Returns the full world matrix of a transform, including rotateAxis, jointOrient, etc.
     Equivalent to Maya's internal world matrix.
     """
-    selection = MSelectionList()
-    selection.add(transform)
-    dag_path: MDagPath = selection.getDagPath(0)
+    dag_path = get_dag_path(transform)
     return dag_path.inclusiveMatrix()
 
 
@@ -259,9 +249,7 @@ def localize_and_decompose_matrix(transform: str, parent: str) -> DecomposeMatri
 
 
 def _get_joint_orient_euler(joint: str) -> MEulerRotation:
-    sel: MSelectionList = MSelectionList()
-    sel.add(joint)
-    obj: MObject = sel.getDependNode(0)
+    obj = get_depend_node(joint)
     fn: MFnDependencyNode = MFnDependencyNode(obj)
     plug: MPlug = fn.findPlug("jointOrient", False)
     # Radians

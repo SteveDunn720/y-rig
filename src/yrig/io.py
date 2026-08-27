@@ -1,9 +1,12 @@
+import logging
 from collections.abc import Iterable
 from pathlib import Path
 
 from maya import cmds
 
 from yrig.select import maintain_selection
+
+log = logging.getLogger(__name__)
 
 
 def confirm_overwrite(filepath: Path, force: bool = False) -> bool:
@@ -60,6 +63,7 @@ def import_maya_file(filepath: Path, keep_namespace: bool = False) -> list[str]:
         )
     except RuntimeError as exc:
         raise RuntimeError(f"Failed to import the maya file at {filepath}") from exc
+    log.info(f"Imported Maya file from {filepath}")
     return imported_nodes
 
 
@@ -94,6 +98,7 @@ def export_maya_file(
                 type=export_type,
                 force=True,
             )
+            log.info(f"Exported {export_type} file to {filepath}")
     else:
         cmds.file(
             str(filepath),
@@ -101,4 +106,5 @@ def export_maya_file(
             type=export_type,
             force=True,
         )
+        log.info(f"Exported {export_type} file to {filepath}")
     return True

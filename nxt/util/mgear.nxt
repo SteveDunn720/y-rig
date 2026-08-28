@@ -31,6 +31,62 @@
                 "",
                 "yrig.build.mgear_api.build_from_shifter_file(guide_path, dev_build=${dev_build}, custom_steps=${custom_steps})"
             ]
+        },
+        "/tools_window/tools/mgear": {
+            "instance": "/panel",
+            "child_order": [
+                "shifter_guides_io"
+            ],
+            "attrs": {
+                "text": {
+                    "type": "raw",
+                    "value": "mGear"
+                }
+            }
+        },
+        "/tools_window/tools/mgear/shifter_guides_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "relative_filepath": {
+                    "value": "data/guide.sgt"
+                }
+            }
+        },
+        "/tools_window/tools/mgear/shifter_guides_io/export": {
+            "attrs": {
+                "text": {
+                    "value": "Export Shifter Guides"
+                }
+            },
+            "code": [
+                "from mgear.shifter.io import export_guide_template",
+                "",
+                "export_root_path = \"${export_root_path}\"",
+                "if not export_root_path or not Path(export_root_path).is_dir():",
+                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
+                "export_path = Path(\"${export_path}\")",
+                "",
+                "with yrig.select.maintain_selection():",
+                "    cmds.select(\"guide\")",
+                "    export_guide_template(str(export_path))"
+            ]
+        },
+        "/tools_window/tools/mgear/shifter_guides_io/import": {
+            "attrs": {
+                "text": {
+                    "value": "Import Shifter Guides"
+                }
+            },
+            "code": [
+                "from mgear.shifter.io import import_guide_template",
+                "",
+                "import_path = Path(\"${import_filepath}\")",
+                "import_guide_template(str(import_path))"
+            ]
         }
     }
 }

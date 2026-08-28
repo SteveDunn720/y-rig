@@ -21,11 +21,11 @@
             "attrs": {
                 "control_parent": {
                     "type": "raw",
-                    "value": "face_lower_M_ctl"
+                    "value": "jaw_M_ctl"
                 },
                 "joint_parent": {
                     "type": "raw",
-                    "value": "face_lower_M_jnt"
+                    "value": "jaw_M_jnt"
                 },
                 "name": {
                     "type": "raw",

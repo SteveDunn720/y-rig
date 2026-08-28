@@ -37,6 +37,7 @@
                 "    muppet = \"face_muppet_M\",",
                 "    upper = \"face_upper_M\",",
                 "    top = \"face_top_M\",",
+                "    jaw = \"jaw_M\",",
                 ")",
                 "",
                 "with yrig.control.collect_controls() as component_controls:",

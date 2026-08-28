@@ -3,8 +3,6 @@ from dataclasses import dataclass, field
 from maya import cmds
 
 from yrig.control import Control, ControlShape, create_control
-from yrig.joint import create_joint
-from yrig.maya_api.enum import RotateOrder
 from yrig.maya_api.node import UvPinNode
 from yrig.surface import get_surface_shapes, surface_slide_constraint
 from yrig.transform import create_transform, matrix_constraint
@@ -27,7 +25,6 @@ def _default_lip_guides(side: str) -> LipGuides:
 class MouthGuides:
     mouth: str = "mouth_M"
     mouth_surface: str = "face_surface"
-    jaw: str = "jaw_M"
     left_corner: str = "mouth_corner_L"
     right_corner: str = "mouth_corner_R"
     upper_lip: LipGuides = field(default_factory=lambda: _default_lip_guides(side="upper"))
@@ -42,6 +39,7 @@ class Mouth:
         parent: str,
         control_parent: Control | str,
         joint_parent: str,
+        jaw: str,
         control_size: float = 1,
     ):
         self.guides = guides
@@ -61,19 +59,8 @@ class Mouth:
             control_shape=ControlShape.LINE,
             direction="z",
         )
-        self.jaw_control = create_control(
-            "jaw_M",
-            transform=guides.jaw,
-            parent=control_parent,
-            size=control_size * 8,
-            control_shape=ControlShape.LINE,
-            direction="z",
-            rotation_order=RotateOrder.YZX,
-        )
-        self.jaw_joint = create_joint(name="jaw_M", transform=self.jaw_control, parent=joint_parent)
-        self.jaw_blend = create_transform(
-            "jaw_M_blend", parent=parent, transform=self.jaw_control.transform
-        )
+
+        self.jaw_blend = create_transform("jaw_M_blend", parent=parent, transform=jaw)
         self.mouth_slide = create_transform("mouth_M_slide", parent=self.mouth_control.transform)
         surface_slide_constraint(
             self.mouth_surface,
@@ -81,13 +68,13 @@ class Mouth:
             slider_transform=self.mouth_slide,
         )
         cmds.parentConstraint(
-            self.jaw_control.transform,
+            jaw,
             reference_space,
             self.jaw_blend,
             maintainOffset=True,
         )
         self.jaw_blend_local = create_transform(
-            "jaw_M_blend_local", parent=self.mouth_slide, transform=self.jaw_control.transform
+            "jaw_M_blend_local", parent=self.mouth_slide, transform=jaw
         )
         local_constraint(self.jaw_blend, self.jaw_blend_local, reference_space=reference_space)
 
@@ -152,6 +139,4 @@ class Mouth:
             control_size=control_size,
         )
 
-        local_constraint(
-            self.jaw_control.transform, self.lower_lip.lip_move, reference_space=reference_space
-        )
+        local_constraint(jaw, self.lower_lip.lip_move, reference_space=reference_space)

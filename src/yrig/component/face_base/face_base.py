@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from yrig.control import Control, ControlShape, create_control
 from yrig.joint import create_joint
+from yrig.maya_api.enum import RotateOrder
 from yrig.transform import create_transform, matrix_constraint
 from yrig.transform.matrix import local_constraint
 
@@ -12,6 +13,7 @@ class FaceBaseGuides:
     muppet: str = "face_muppet_M"
     upper: str = "face_upper_M"
     top: str = "face_top_M"
+    jaw: str = "jaw_M"
 
 
 class FaceBase:
@@ -36,6 +38,19 @@ class FaceBase:
         )
         self.lower_joint = create_joint(
             name="face_lower_M", transform=self.lower_control, parent=joint_parent
+        )
+
+        self.jaw_control = create_control(
+            "jaw_M",
+            transform=guides.jaw,
+            parent=self.lower_control,
+            size=control_size * 8,
+            control_shape=ControlShape.LINE,
+            direction="z",
+            rotation_order=RotateOrder.YZX,
+        )
+        self.jaw_joint = create_joint(
+            name="jaw_M", transform=self.jaw_control, parent=self.lower_joint
         )
 
         self.muppet_control = create_control(

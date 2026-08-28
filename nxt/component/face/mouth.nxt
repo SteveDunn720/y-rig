@@ -27,6 +27,10 @@
                     "type": "int",
                     "value": "2"
                 },
+                "jaw_transform": {
+                    "type": "raw",
+                    "value": "jaw_M_ctl"
+                },
                 "joint_parent": {
                     "value": "face_lower_M_jnt"
                 },
@@ -81,7 +85,6 @@
                 "mouth_guides = MouthGuides(",
                 "    mouth = \"mouth_M\",",
                 "    mouth_surface = \"face_surface\",",
-                "    jaw = \"jaw_M\",",
                 "    left_corner = left_corner_guide,",
                 "    right_corner = right_corner_guide,",
                 "    upper_lip = upper_lip_guides,",
@@ -95,6 +98,7 @@
                 "        parent=\"${component_group}\",",
                 "        control_parent=\"${control_parent}\", ",
                 "        joint_parent=\"${joint_parent}\", ",
+                "        jaw = \"${jaw_transform}\",",
                 "        control_size=${control_size}",
                 "    )",
                 "    ",

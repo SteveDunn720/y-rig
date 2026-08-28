@@ -9,6 +9,11 @@
         "./body.nxt",
         "archetype/anim_rig.nxt"
     ],
+    "comp_overrides": {
+        "./face.nxt": {
+            "solo": false
+        }
+    },
     "meta_data": {
         "positions": {
             "/apply": [
@@ -52,7 +57,13 @@
             "/left": false,
             "/right/ear": true,
             "/right/eye": true,
-            "/right/eyebrow": true
+            "/right/eyebrow": true,
+            "/root/guides/face": true,
+            "/tools_window/biped": false,
+            "/tools_window/biped/face": false,
+            "/tools_window/biped/face/face_guides_io": false,
+            "/tools_window/biped/face/face_guides_io/export": true,
+            "/tools_window/biped/face/face_guides_io/import": true
         }
     },
     "nodes": {

@@ -1,9 +1,13 @@
+import logging
 from collections.abc import Iterable
 from pathlib import Path
 
 from maya import cmds
 
+from yrig.name import get_short_name
 from yrig.select import maintain_selection
+
+log = logging.getLogger(__name__)
 
 SPLIT_PARENT_ATTR = "split_parent"
 
@@ -100,7 +104,7 @@ def export_maya_file(
     return True
 
 
-def add_split_parent_attr(node: str) -> None:
+def _add_split_parent_attr(node: str) -> None:
     """Store the node's parent name for later restoration."""
 
     parent = cmds.listRelatives(
@@ -130,9 +134,9 @@ def add_split_parent_attr(node: str) -> None:
     )
 
 
-def split_maya_file(
-    output_directory: Path,
-    split_objects: Iterable[str],
+def split_scene_to_files(
+    directory: Path,
+    objects: Iterable[str],
     remainder_name: str = "remainder",
     binary: bool = False,
     force: bool = False,
@@ -141,7 +145,7 @@ def split_maya_file(
 
     Args:
         output_directory: Path to the folder to export.
-        split_objects: Nodes to split.
+        objects: Nodes to split.
         remainder_name: what the main file export will be called
         binary: Whether to export as a Maya binary file. If False, exports
             as a Maya ASCII file.
@@ -155,13 +159,13 @@ def split_maya_file(
 
     try:
         # Validate split objects
-        for obj in split_objects:
+        for obj in objects:
             if not cmds.objExists(obj):
                 raise RuntimeError(f"Cannot split scene: '{obj}' does not exist.")
 
             exported_files: list[Path] = []
 
-            add_split_parent_attr(obj)
+            _add_split_parent_attr(obj)
 
             parent = cmds.listRelatives(
                 obj,
@@ -175,7 +179,7 @@ def split_maya_file(
 
             extension = ".mb" if binary else ".ma"
 
-            filepath = output_directory / f"{obj}{extension}"
+            filepath = directory / f"{obj}{extension}"
 
             export_maya_file(
                 filepath=filepath,
@@ -184,7 +188,7 @@ def split_maya_file(
                 force=force,
             )
 
-        cmds.delete(split_objects)  # type:ignore
+        cmds.delete(objects)  # type:ignore
         # Get everything remaining at the top level
         remaining_roots = (
             cmds.ls(
@@ -194,7 +198,7 @@ def split_maya_file(
             or []
         )
 
-        remainder_filepath = output_directory / f"{remainder_name}{extension}"
+        remainder_filepath = directory / f"{remainder_name}{extension}"
 
         exported = export_maya_file(
             filepath=remainder_filepath,
@@ -213,17 +217,17 @@ def split_maya_file(
     return True
 
 
-def import_split_maya_file(
-    output_directory: Path,
-    split_objects: Iterable[str],
+def import_split_scene_files(
+    directory: Path,
+    objects: Iterable[str],
     remainder_name: str = "remainder",
     binary: bool = False,
 ) -> bool:
     """Import a split Maya scene and restore the original hierarchy.
 
     Args:
-        output_directory: Path to the folder containing the split files.
-        split_objects: Names of the split objects/files to import.
+        directory: Path to the folder containing the split files.
+        objects: Names of the split objects/files to import.
         remainder_name: Name of the main Maya file.
         binary: Whether the files are Maya binary files.
 
@@ -234,15 +238,15 @@ def import_split_maya_file(
     extension = ".mb" if binary else ".ma"
 
     # Import the main scene first
-    remainder_filepath = output_directory / f"{remainder_name}{extension}"
+    remainder_filepath = directory / f"{remainder_name}{extension}"
 
     import_maya_file(
         filepath=remainder_filepath,
     )
 
     # Import each split object
-    for obj in split_objects:
-        filepath = output_directory / f"{obj}{extension}"
+    for obj in objects:
+        filepath = directory / f"{obj}{extension}"
 
         imported_nodes = import_maya_file(
             filepath=filepath,
@@ -250,10 +254,7 @@ def import_split_maya_file(
 
         # Find the imported node carrying our split metadata
         for node in imported_nodes:
-            node = node.rsplit("|", 1)[-1]
-
-            if not cmds.objExists(node):
-                continue
+            node = get_short_name(node)
 
             if not cmds.attributeQuery(
                 SPLIT_PARENT_ATTR,
@@ -268,7 +269,7 @@ def import_split_maya_file(
                 if cmds.objExists(parent):
                     cmds.parent(node, parent)
                 else:
-                    cmds.warning(
+                    log.warning(
                         f"Could not restore parent for '{node}'. Parent '{parent}' does not exist."
                     )
 

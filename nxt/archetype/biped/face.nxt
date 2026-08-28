@@ -255,7 +255,30 @@
                 }
             },
             "code": [
-                "imported_nodes = cmds.file(\"${face_guides_filepath}\", i=True, defaultNamespace=True, returnNewNodes=True)"
+                "import_path = Path(\"${face_guides_filepath}\")",
+                "#imported_nodes = yrig.io.import_maya_file(import_path)",
+                "#print(imported_nodes)",
+                "",
+                "",
+                "from pathlib import Path",
+                "",
+                "from yrig.io import import_split_scene_files",
+                "",
+                "",
+                "export_root_path = Path(\"\")",
+                "",
+                "if not export_root_path.is_dir():",
+                "    raise NotADirectoryError(",
+                "        f\"Export root does not exist: {export_root_path}\"",
+                "    )",
+                "",
+                "folder = export_root_path / import_path.parent",
+                "",
+                "imported = import_split_scene_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                ")"
             ]
         },
         "/tools_window/biped/face": {
@@ -297,8 +320,28 @@
                 "if not export_root_path.exists():",
                 "    raise NotADirectoryError",
                 "export_path = Path(\"${export_path}\")",
-                "exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), force=${force})",
-                ""
+                "#exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), force=${force})",
+                "from pathlib import Path",
+                "",
+                "from yrig.io import split_scene_to_files",
+                "",
+                "",
+                "export_root_path = Path(\"${export_root_path}\")",
+                "",
+                "if not export_root_path.is_dir():",
+                "    raise NotADirectoryError(",
+                "        f\"Export root does not exist: {export_root_path}\"",
+                "    )",
+                "",
+                "export_path = Path(\"${export_path}\")",
+                "",
+                "folder = export_root_path / export_path.parent",
+                "",
+                "exported = split_scene_to_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                ")"
             ]
         },
         "/tools_window/biped/face/face_guides_io/import": {
@@ -309,8 +352,31 @@
             },
             "code": [
                 "import_path = Path(\"${import_filepath}\")",
-                "imported_nodes = yrig.io.import_maya_file(import_path)",
-                "print(imported_nodes)"
+                "#imported_nodes = yrig.io.import_maya_file(import_path)",
+                "#print(imported_nodes)",
+                "",
+                "",
+                "from pathlib import Path",
+                "",
+                "from yrig.io import import_split_scene_files",
+                "",
+                "",
+                "export_root_path = Path(\"${export_root_path}\")",
+                "",
+                "if not export_root_path.is_dir():",
+                "    raise NotADirectoryError(",
+                "        f\"Export root does not exist: {export_root_path}\"",
+                "    )",
+                "",
+                "import_path = Path(\"${import_filepath}\")",
+                "",
+                "folder = export_root_path / import_path.parent",
+                "",
+                "imported = import_split_scene_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                ")"
             ]
         }
     }

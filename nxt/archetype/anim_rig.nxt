@@ -279,7 +279,9 @@
                 "# remove duplicates",
                 "mesh_transforms: list[str] = list(set(mesh_transforms))",
                 "# Put the geo in the set.",
-                "yrig.sets.add_to_set(mesh_transforms, \"${model_set}\", parent=\"${rig_set}\")"
+                "yrig.sets.add_to_set(mesh_transforms, \"${model_set}\", parent=\"${rig_set}\")",
+                "cmds.viewFit()",
+                ""
             ]
         },
         "/tools_window/tools/control_shapes": {

@@ -74,29 +74,37 @@ def skin_and_apply_weights_from_directories(
     geometry: Sequence[str],
     skip_skinned_geometry: bool = True,
     fallback_skinning: Callable[[str], Any] | None = None,
+    map_geo_to_file: Callable[[str], str] | None = None,
 ) -> None:
     """
-    Skin geometry and apply saved weights from a directory.
+    Skin geometry and apply saved weights from one or more directories.
+    For each geometry, searches the directories for a matching ``.json`` or ``.yskin`` weight file.
+    If no weight file is found, optionally calls ``fallback_skinning``.
 
-    For each geometry name, loads either ``.json`` ngSkinTools weights or
-    ``.yskin`` weights if present. If no weight file exists, optionally calls
-    ``fallback_skinning``.
+    Args:
+        directories: Directories to search for weight files, in search order.
+        geometry: Geometry to skin and apply weights to.
+        skip_skinned_geometry: Whether to skip geometry that already has a skin cluster.
+        fallback_skinning: Optional function called for geometry with no saved weight file.
+        map_geo_to_file: Optional function that maps a geometry name to the corresponding weight file name.
     """
-    with progress_step("Skin Models") as progress:
-        total = len(geometry)
-        for i, geo in enumerate(geometry):
-            if skip_skinned_geometry and get_skin_clusters(geo):
-                continue
-            skinned: bool = False
-            for directory in directories:
-                ng_skin_filepath: Path = directory / f"{geo}.json"
-                yskin_filepath: Path = directory / f"{geo}.yskin"
-                if ng_skin_filepath.exists():
-                    skin_and_apply_ng_weights(ng_skin_filepath, geo)
-                    skinned = True
-                elif yskin_filepath.exists():
-                    skin_and_apply_weights(yskin_filepath, geo)
-                    skinned = True
-            if not skinned and fallback_skinning is not None:
-                fallback_skinning(geo)
-            progress.update_progress(i / total)
+    with progress_step("Skin Models", total=len(geometry)) as progress:
+        for geo in geometry:
+            with progress_step(geo):
+                if skip_skinned_geometry and get_skin_clusters(geo):
+                    continue
+                skinned: bool = False
+                for directory in directories:
+                    geo_mapped_file = map_geo_to_file(geo) if map_geo_to_file is not None else geo
+                    ng_skin_filepath: Path = directory / f"{geo_mapped_file}.json"
+                    yskin_filepath: Path = directory / f"{geo_mapped_file}.yskin"
+                    if ng_skin_filepath.exists():
+                        skin_and_apply_ng_weights(ng_skin_filepath, geo)
+                        skinned = True
+                        break
+                    elif yskin_filepath.exists():
+                        skin_and_apply_weights(yskin_filepath, geo)
+                        skinned = True
+                        break
+                if not skinned and fallback_skinning is not None:
+                    fallback_skinning(geo)

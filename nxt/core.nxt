@@ -23,7 +23,8 @@
                 "from maya import cmds",
                 "",
                 "from pathlib import Path",
-                ""
+                "import logging",
+                "self.log = logging.getLogger(\"yrig.nxt.build\")"
             ]
         },
         "/component": {

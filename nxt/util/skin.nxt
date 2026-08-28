@@ -30,6 +30,11 @@
                     "type": "raw",
                     "value": "rig_deformers_grp"
                 },
+                "fallback_skinning": {
+                    "comment": "When True geometry will be skinned to the gfiven joints even if no skin file is found.",
+                    "type": "bool",
+                    "value": "True"
+                },
                 "geo_list": {
                     "comment": "Geometry will be skinned to the geometry in this list if defined. Otherwise it will skin to the geometry in the geo_set",
                     "type": "NoneType",
@@ -49,6 +54,9 @@
                     "comment": "Directory containing the skin files to apply",
                     "type": "raw",
                     "value": "${file::data/skin}"
+                },
+                "strip_suffix": {
+                    "comment": "If set, the suffix will be striiped from geo names when searching for the skin files."
                 }
             },
             "code": [
@@ -62,9 +70,19 @@
                 "",
                 "def _fallback_skin(geometry: str):",
                 "    skin_geometry(def_joints, geometry)",
+                "    STAGE.log.info(f\"Default skinned {geometry}\")",
+                "",
+                "strip_suffix = \"${strip_suffix}\"",
+                "def _map_geo_to_file(geometry: str):",
+                "    geometry.removesuffix(strip_suffix)",
+                "",
                 "",
                 "skin_directories = [Path(dir) for dir in ${resolved_skin_directories}]",
-                "skin_and_apply_weights_from_directories(skin_directories, geo_to_skin, fallback_skinning=_fallback_skin)",
+                "skin_and_apply_weights_from_directories(",
+                "    skin_directories, ",
+                "    geo_to_skin, ",
+                "    fallback_skinning=_fallback_skin if ${fallback_skinning} else None, ",
+                "    map_geo_to_file=_map_geo_to_file if strip_suffix else None)",
                 ""
             ]
         },

@@ -41,7 +41,6 @@ class Mouth:
         control_parent: Control | str,
         joint_parent: str,
         jaw: str,
-        jaw_rest_space: str,
         face_mid: str,
         control_size: float = 1,
     ):
@@ -67,7 +66,7 @@ class Mouth:
             direction="z",
         )
 
-        self.jaw_blend = create_transform("jaw_M_blend", parent=parent, transform=jaw)
+        self.jaw_blend = create_transform("jaw_M_blend", parent=str(control_parent), transform=jaw)
         cmds.parentConstraint(
             jaw,
             face_mid,
@@ -96,7 +95,7 @@ class Mouth:
 
         self.jaw_local_npo = create_transform("jaw_M_local_npo", parent=parent, transform=jaw)
         self.jaw_local = create_transform("jaw_M_local", parent=parent, transform=jaw)
-        local_constraint(jaw, self.jaw_local, reference_space=jaw_rest_space)
+        local_constraint(jaw, self.jaw_local, reference_space=reference_space)
         self.jaw_blend_local = create_transform("jaw_M_blend_local", parent=parent, transform=jaw)
         cmds.parentConstraint(
             self.jaw_local,
@@ -132,27 +131,32 @@ class Mouth:
         self.upper_lip = Lip(
             upper=True,
             guides=guides.upper_lip,
-            mouth_surface=self.mouth_surface_local,
+            mouth_surface=self.mouth_surface,
+            mouth_surface_local=self.mouth_surface_local,
             left_corner=self.left_corner,
             right_corner=self.right_corner,
-            parent=parent,
+            parent=self.mouth_slide_local,
             joint_parent=joint_parent,
-            control_parent=self.mouth_slide_local,
+            control_parent=self.mouth_slide,
             control_size=control_size,
             uv_pin_node=mouth_uv_pin,
         )
+        local_constraint(face_mid, self.upper_lip.lip_move_npo, reference_space=self.mouth_slide)
+
         self.lower_lip = Lip(
             upper=False,
             guides=guides.lower_lip,
-            mouth_surface=self.mouth_surface_local,
+            mouth_surface=self.mouth_surface,
+            mouth_surface_local=self.mouth_surface_local,
             left_corner=self.left_corner,
             right_corner=self.right_corner,
-            parent=parent,
+            parent=self.mouth_slide_local,
             joint_parent=joint_parent,
-            control_parent=self.mouth_slide_local,
+            control_parent=self.mouth_slide,
             control_size=control_size,
             uv_pin_node=mouth_uv_pin,
         )
+        local_constraint(jaw, self.lower_lip.lip_move_npo, reference_space=self.mouth_slide)
 
         self.cheek_interpolate = CheekInterpolate(
             guides=self.guides.cheek_interpolate,

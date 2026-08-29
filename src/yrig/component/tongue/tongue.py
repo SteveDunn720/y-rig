@@ -52,7 +52,7 @@ class Tongue:
 
         self.control_grp = create_transform(
             name=f"tongue_control_{self.side}",
-            parent=self.main_grp,
+            parent=self.control_parent,
         )
 
     def create_controls(self) -> None:

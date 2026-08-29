@@ -27,6 +27,14 @@
                     "type": "int",
                     "value": "2"
                 },
+                "face_mid": {
+                    "type": "raw",
+                    "value": "face_mid_M_driven"
+                },
+                "jaw_rest_space": {
+                    "type": "raw",
+                    "value": "jaw_M_npo"
+                },
                 "jaw_transform": {
                     "type": "raw",
                     "value": "jaw_M_ctl"
@@ -99,7 +107,9 @@
                 "        control_parent=\"${control_parent}\", ",
                 "        joint_parent=\"${joint_parent}\", ",
                 "        jaw = \"${jaw_transform}\",",
-                "        control_size=${control_size}",
+                "        jaw_rest_space = \"${jaw_rest_space}\",",
+                "        face_mid = \"${face_mid}\",",
+                "        control_size=${control_size},",
                 "    )",
                 "    ",
                 "STAGE.control_list.extend(component_controls)"

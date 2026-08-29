@@ -6,6 +6,8 @@ from yrig.control import Control, create_control
 from yrig.maya_api.attribute import BooleanAttribute, ScalarAttribute
 from yrig.maya_api.node import MultiplyNode
 from yrig.surface import surface_slide_constraint
+from yrig.transform import create_transform
+from yrig.transform.utils import connect_transform
 
 
 class MouthCorner:
@@ -14,7 +16,9 @@ class MouthCorner:
         side: Literal["L", "R"],
         guide: str,
         mouth_surface: str,
+        mouth_surface_local: str,
         control_parent: Control | str,
+        parent: str,
         control_size: float = 1,
         sub_control_vis_attr: BooleanAttribute | None = None,
     ):
@@ -25,17 +29,23 @@ class MouthCorner:
             size=control_size,
             direction="z",
         )
+        self.main_local_npo = create_transform(
+            f"mouth_corner_{side}_local_npo", transform=self.main_control.transform, parent=parent
+        )
+        self.main_local = create_transform(f"mouth_corner_{side}_local", parent=self.main_local_npo)
+        connect_transform(self.main_control.transform, self.main_local)
+
         self.sub_control = create_control(
             f"mouth_corner_{side}_sub",
             transform=guide,
-            parent=self.main_control,
+            parent=self.main_local,
             size=control_size * 0.5,
             direction="z",
         )
 
         surface_slide_constraint(
-            mouth_surface,
-            driver_transform=self.main_control.transform,
+            mouth_surface_local,
+            driver_transform=self.main_local,
             slider_transform=self.sub_control.offset,
         )
 
@@ -85,7 +95,7 @@ class MouthCorner:
             direction="z",
         )
         surface_slide_constraint(
-            mouth_surface, self.upper_control.transform, self.upper_sub_control.offset
+            mouth_surface_local, self.upper_control.transform, self.upper_sub_control.offset
         )
         self.lower_sub_control = create_control(
             f"mouth_corner_{side}_lo_sub",
@@ -95,7 +105,7 @@ class MouthCorner:
             direction="z",
         )
         surface_slide_constraint(
-            mouth_surface, self.lower_control.transform, self.lower_sub_control.offset
+            mouth_surface_local, self.lower_control.transform, self.lower_sub_control.offset
         )
 
         self.sub_controls: list[Control] = [

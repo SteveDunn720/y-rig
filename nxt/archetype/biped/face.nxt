@@ -140,6 +140,49 @@
         }
     },
     "nodes": {
+        "/apply/deformation": {
+            "child_order": [
+                "face",
+                "main"
+            ]
+        },
+        "/apply/deformation/face": {
+            "child_order": [
+                "skin"
+            ],
+            "attrs": {
+                "def_layer_group": {
+                    "type": "raw",
+                    "value": "${/setup/root/deformation/face.def_layer_group}"
+                },
+                "def_layer_name": {
+                    "type": "raw",
+                    "value": "face"
+                }
+            }
+        },
+        "/apply/deformation/face/skin": {
+            "instance": "/skin_geometry",
+            "child_order": [
+                "split"
+            ],
+            "attrs": {
+                "geo_list": {
+                    "value": "${/setup/root/deformation/face/duplicate_geo.duplicated_geo}"
+                },
+                "skin_directory": {
+                    "type": "raw",
+                    "value": "${file::${rig_path}/data/face/skin}"
+                },
+                "strip_suffix": {
+                    "type": "raw",
+                    "value": "_${def_layer_group}"
+                }
+            }
+        },
+        "/apply/deformation/face/skin/split": {
+            "instance": "/split_skin_weights"
+        },
         "/cleanup": {
             "child_order": [
                 "delete_face_guides",
@@ -152,7 +195,7 @@
             "attrs": {
                 "face_guides_group": {
                     "type": "raw",
-                    "value": "${/root/guides/face.face_guides_group}"
+                    "value": "${/setup/root/guides/face.face_guides_group}"
                 }
             },
             "code": [
@@ -259,12 +302,19 @@
             "attrs": {
                 "control_size": {
                     "value": "1"
+                },
+                "joint_parent": {
+                    "value": "${/setup/root/deformation/face.def_layer_group}"
+                },
+                "parent": {
+                    "value": "${/setup/root/deformation/face.def_layer_group}"
                 }
             }
         },
         "/middle/face/mouth/skin_surface": {
             "attrs": {
                 "mouth_surface_skin_filepath": {
+                    "type": "raw",
                     "value": "${file::${rig_path}/data/face/mouth_surface.yskin}"
                 }
             }
@@ -284,7 +334,58 @@
         "/middle/face/tongue": {
             "instance": "/tongue_component"
         },
-        "/root/guides/face": {
+        "/setup/root/deformation/face": {
+            "child_order": [
+                "duplicate_geo"
+            ],
+            "attrs": {
+                "def_layer_group": {
+                    "type": "raw",
+                    "value": "${def_layer_name}_setup"
+                },
+                "def_layer_name": {
+                    "type": "raw",
+                    "value": "face"
+                },
+                "parent": {
+                    "type": "raw",
+                    "value": "setup"
+                }
+            },
+            "code": [
+                "def_layer_group = yrig.transform.create_transform(\"${def_layer_group}\", parent=\"${parent}\")",
+                "cmds.hide(def_layer_group)"
+            ]
+        },
+        "/setup/root/deformation/face/duplicate_geo": {
+            "attrs": {
+                "duplicated_geo": {
+                    "type": "list",
+                    "value": "[]"
+                },
+                "geo_to_duplicate": {
+                    "type": "list",
+                    "value": "[\"body_geo\"]"
+                }
+            },
+            "code": [
+                "from yrig.transform import get_shape",
+                "",
+                "geo_to_duplicate = ${geo_to_duplicate}",
+                "for geo in geo_to_duplicate:",
+                "    duplicated = cmds.duplicate(geo, name=f\"{geo}_${def_layer_group}\")[0]",
+                "    cmds.parent(duplicated, \"${def_layer_group}\")",
+                "    geo_shape = get_shape(geo)",
+                "    geo_input = cmds.deformableShape(geo_shape, frontOfChain=True)[0] or f\"{geo_shape}.{cmds.deformableShape(geo_shape, localShapeInAttr=True)[0]}\"",
+                "    print(geo_input)",
+                "    duplicated_shape = get_shape(duplicated)",
+                "    duplicated_output = cmds.deformableShape(duplicated_shape, localShapeOutAttr=True)[0]",
+                "    cmds.connectAttr(f\"{duplicated_shape}.{duplicated_output}\", geo_input)",
+                "    cmds.sets(duplicated, remove=\"${model_set}\")",
+                "    self.duplicated_geo.append(duplicated)"
+            ]
+        },
+        "/setup/root/guides/face": {
             "attrs": {
                 "face_guides_filepath": {
                     "type": "raw",

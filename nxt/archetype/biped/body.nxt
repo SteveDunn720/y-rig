@@ -16,7 +16,7 @@
         }
     },
     "nodes": {
-        "/apply/skin/transfer_sim_weights": {
+        "/apply/deformation/main/skin/transfer_sim_weights": {
             "instance": "/transfer_skin_weights",
             "attrs": {
                 "transfer_mapping": {
@@ -25,11 +25,18 @@
                 }
             }
         },
-        "/shifter_component_build": {
-            "start_point": true,
+        "/setup": {
+            "child_order": [
+                "shifter_component_build",
+                "root"
+            ]
+        },
+        "/setup/shifter_component_build": {
+            "start_point": false,
             "instance": "/shifter_build",
             "child_order": [
-                "attribute_defaults"
+                "attribute_defaults",
+                "finger_meta_fix"
             ],
             "attrs": {
                 "body_rig_temp_filepath": {
@@ -80,13 +87,22 @@
                 "        yrig.io.export_maya_file(body_rig_temp_filepath, binary=True, force=True)"
             ]
         },
-        "/shifter_component_build/attribute_defaults": {
+        "/setup/shifter_component_build/attribute_defaults": {
             "code": [
                 "for control in [\"armUI_L0_ctl\", \"armUI_R0_ctl\"]:",
                 "    cmds.setAttr(f\"{control}.arm_ikref\", 5)",
                 "",
                 "for control in [\"legUI_L0_ctl\", \"legUI_R0_ctl\"]:",
                 "    cmds.setAttr(f\"{control}.foot_angle_1\", -40)"
+            ]
+        },
+        "/setup/shifter_component_build/finger_meta_fix": {
+            "code": [
+                "for side in [\"L\", \"R\"]:",
+                "    for num in range(4):",
+                "        control_name = f\"meta_{side}0_meta{num}_ctl\"",
+                "        group_name = f\"finger_{side}{num}_root\"",
+                "        cmds.parent(group_name, control_name)"
             ]
         }
     }

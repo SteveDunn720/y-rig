@@ -74,7 +74,7 @@
                 "",
                 "strip_suffix = \"${strip_suffix}\"",
                 "def _map_geo_to_file(geometry: str):",
-                "    geometry.removesuffix(strip_suffix)",
+                "    return geometry.removesuffix(strip_suffix)",
                 "",
                 "",
                 "skin_directories = [Path(dir) for dir in ${resolved_skin_directories}]",
@@ -97,8 +97,9 @@
             "code": [
                 "from yrig.skin.split import auto_split_weights",
                 "",
-                "geo_in_set: list[str] = cmds.sets(\"${geo_set}\", query=True)  # type: ignore",
-                "auto_split_weights(geo_in_set)"
+                "geo_list = ${geo_list}",
+                "geo_to_split = geo_list if geo_list else cmds.sets(\"${geo_set}\", query=True)",
+                "auto_split_weights(geo_to_split)"
             ]
         },
         "/transfer_skin_weights": {

@@ -47,7 +47,7 @@
                 "rotate_order = yrig.maya_api.enum.RotateOrder.XYZ",
                 "",
                 "with yrig.control.collect_controls() as component_controls:",
-                "    control_parent = \"${control_parent}\"",
+                "    control_parent = \"${control_group}\"",
                 "    ",
                 "    main_guide = \"${name}_${side}\"",
                 "    inner_guide = \"${name}_inner_${side}\"",

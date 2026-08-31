@@ -44,7 +44,7 @@
                 "    face_base = FaceBase(",
                 "        guides=guides, ",
                 "        parent=\"${component_group}\",",
-                "        control_parent=\"${control_parent}\", ",
+                "        control_parent=\"${control_group}\", ",
                 "        joint_parent=\"${joint_parent}\", ",
                 "        control_size=${control_size}",
                 "    )",

@@ -33,13 +33,7 @@
                 "parent": {
                     "value": "face_grp"
                 }
-            },
-            "code": [
-                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
-                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
-                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
-                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
-            ]
+            }
         },
         "/ear_component/build": {
             "code": [
@@ -49,7 +43,7 @@
                 "    part=\"${name}\",",
                 "    side=\"${side}\",",
                 "    parent=\"${component_group}\",",
-                "    control_parent=\"${control_parent}\",",
+                "    control_parent=\"${control_group}\",",
                 "    parent_jnt=\"${joint_parent}\",",
                 "    control_size=1,",
                 ")",

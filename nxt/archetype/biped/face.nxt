@@ -320,13 +320,7 @@
             }
         },
         "/middle/face/nose": {
-            "instance": "/nose_component",
-            "code": [
-                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
-                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
-                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
-                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
-            ]
+            "instance": "/nose_component"
         },
         "/middle/face/teeth": {
             "instance": "/teeth_component"

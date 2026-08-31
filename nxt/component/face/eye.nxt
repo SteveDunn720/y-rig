@@ -50,7 +50,7 @@
                 "    part=\"${name}\",",
                 "    side=\"${side}\",",
                 "    parent=\"${component_group}\",",
-                "    control_parent=\"${control_parent}\",",
+                "    control_parent=\"${control_group}\",",
                 "    parent_jnt=\"${joint_parent}\",",
                 "    control_size=1,",
                 "    look_parent='${look_parent}'",
@@ -94,7 +94,7 @@
                 "    parent = \"${component_group}\",",
                 "    part=\"${name}\",",
                 "    side=\"${side}\",",
-                "    control_parent=\"${control_parent}\",",
+                "    control_parent=\"${control_group}\",",
                 "    parent_spaces=parent_spaces,",
                 ")",
                 "look_rig.build()"

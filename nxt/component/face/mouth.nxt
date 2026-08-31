@@ -100,7 +100,7 @@
                 "    mouth = Mouth(",
                 "        guides=mouth_guides, ",
                 "        parent=\"${component_group}\",",
-                "        control_parent=\"${control_parent}\", ",
+                "        control_parent=\"${control_group}\", ",
                 "        joint_parent=\"${joint_parent}\", ",
                 "        jaw = \"${jaw_transform}\",",
                 "        face_mid = \"${face_mid}\",",

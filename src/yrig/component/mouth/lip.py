@@ -14,7 +14,7 @@ from yrig.spline import generate_knots
 from yrig.spline.curve import bound_curve_from_transforms, pin_to_curve_with_motion_path
 from yrig.surface import closest_point_on_surface_reader, surface_slide_constraint, uv_pin
 from yrig.transform import create_transform, matrix_constraint
-from yrig.transform.matrix import local_constraint
+from yrig.transform.constraint import local_constraint
 from yrig.transform.utils import connect_transform, distance_reader
 
 from .corner import MouthCorner

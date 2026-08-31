@@ -18,10 +18,10 @@ from yrig.maya_api.node import (
 from yrig.maya_api.utils import get_dag_path
 from yrig.name import get_short_name
 from yrig.transform import get_shape
+from yrig.transform.constraint import matrix_normal_orient_constraint
 from yrig.transform.matrix import (
     drive_transform_with_matrix,
     get_world_matrix,
-    matrix_normal_orient_constraint,
     multiply_matrices,
 )
 from yrig.transform.utils import get_position

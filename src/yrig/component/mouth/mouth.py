@@ -6,7 +6,7 @@ from yrig.control import Control, ControlShape, create_control
 from yrig.maya_api.node import UvPinNode
 from yrig.surface import get_surface_shapes, surface_slide_constraint
 from yrig.transform import create_transform, matrix_constraint
-from yrig.transform.matrix import local_constraint
+from yrig.transform.constraint import local_constraint
 from yrig.transform.utils import connect_transform
 
 from .cheek import CheekInterpolate, CheekInterpolateGuides

@@ -4,7 +4,7 @@ from yrig.control import Control, ControlShape, create_control
 from yrig.joint import create_joint
 from yrig.maya_api.enum import RotateOrder
 from yrig.transform import create_transform, matrix_constraint
-from yrig.transform.matrix import local_constraint
+from yrig.transform.constraint import local_constraint
 
 
 @dataclass

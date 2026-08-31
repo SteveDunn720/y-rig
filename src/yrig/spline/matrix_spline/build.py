@@ -8,7 +8,7 @@ from yrig.spline.math import generate_knots
 from yrig.spline.matrix_spline.core import MatrixSpline
 from yrig.spline.matrix_spline.pin import pin_transforms_to_matrix_spline
 from yrig.transform import create_transform
-from yrig.transform.matrix import matrix_constraint
+from yrig.transform.constraint import matrix_constraint
 
 
 @dataclass

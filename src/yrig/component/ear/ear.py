@@ -35,7 +35,9 @@ class Ear:
             name=f"ear_component_{self.side}", parent=self.main_grp
         )
         cmds.hide(self.component_grp)
-        self.control_grp = create_transform(name=f"ear_control_{self.side}", parent=self.main_grp)
+        self.control_grp = create_transform(
+            name=f"ear_control_{self.side}", parent=self.control_parent
+        )
 
     def create_controls(self) -> None:
         self.main_ctrl = create_control(

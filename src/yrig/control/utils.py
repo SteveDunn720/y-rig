@@ -16,11 +16,12 @@ def get_tagged_controls(side: str | None = None) -> list[str]:
         connected: list[str] = cmds.listConnections(
             f"{control_node}.controllerObject", source=True, destination=False
         )
-        control = connected[0]
-        if side:
-            if get_side(control_node) == side:
+        if connected:
+            control = connected[0]
+            if side:
+                if get_side(control_node) == side:
+                    tagged_controls.append(control)
+            else:
                 tagged_controls.append(control)
-        elif connected:
-            tagged_controls.append(control)
 
     return tagged_controls

@@ -19,17 +19,49 @@
                 1296.6643526537218,
                 -15.594755912117055
             ],
+            "/component": [
+                -871.1745871252489,
+                -1125.2381176092777
+            ],
             "/deformation": [
                 856.0087940139424,
                 -9.668699423947338
+            ],
+            "/ear_component": [
+                -849.5507090116776,
+                -365.5183048649902
+            ],
+            "/eye_component": [
+                -857.6859635911101,
+                -761.9860552804687
+            ],
+            "/eye_def": [
+                -855.304547848069,
+                -701.6364080255946
+            ],
+            "/face_base_component": [
+                -866.1340283878521,
+                -974.9116258957818
             ],
             "/left": [
                 18.209666557736483,
                 -12.063569759815769
             ],
+            "/look_component": [
+                -853.3603880127753,
+                -636.7830673903558
+            ],
             "/middle": [
                 -396.0467648945946,
                 -12.903779307342678
+            ],
+            "/mouth_component": [
+                -864.3952489745639,
+                -908.067517878749
+            ],
+            "/nose_component": [
+                -849.4954333098872,
+                -574.777657650386
             ],
             "/right": [
                 419.19959226227263,
@@ -40,15 +72,49 @@
                 -13.679528134599906
             ],
             "/shifter_build": [
-                -1328.4283558944185,
-                -109.8002192791547
+                -1450.4047765525336,
+                49.58230371411526
             ],
             "/shifter_component_build": [
                 -1333.8722592666647,
                 -13.21855392066065
+            ],
+            "/shifter_component_build_pasted": [
+                -1216.6259972304554,
+                54.15622969038259
+            ],
+            "/side": [
+                -867.8719860022462,
+                -1054.7293578480908
+            ],
+            "/simple_eyebrow": [
+                -863.6678902886301,
+                -841.6006521236975
+            ],
+            "/skin_geometry": [
+                860.1225287185864,
+                -263.3559470406896
+            ],
+            "/split_skin_weights": [
+                855.8232656330174,
+                -319.5965655011383
+            ],
+            "/teeth_component": [
+                -844.5785455250948,
+                -503.15705362133156
+            ],
+            "/tongue_component": [
+                -853.2658834507188,
+                -429.3013749665338
+            ],
+            "/transfer_skin_weights": [
+                862.0089522432202,
+                -212.17592278220042
             ]
         },
         "collapse": {
+            "/apply/deformation/face": false,
+            "/apply/deformation/face/duplicate_geo": false,
             "/left": false,
             "/right/ear": true,
             "/right/eye": true,
@@ -102,19 +168,6 @@
                     "value": "-1"
                 }
             }
-        },
-        "/root": {
-            "start_point": false,
-            "execute_in": "/shifter_component_build"
-        },
-        "/shifter_component_build/finger_meta_fix": {
-            "code": [
-                "for side in [\"L\", \"R\"]:",
-                "    for num in range(4):",
-                "        control_name = f\"meta_{side}0_meta{num}_ctl\"",
-                "        group_name = f\"finger_{side}{num}_root\"",
-                "        cmds.parent(group_name, control_name)"
-            ]
         },
         "/tools_window/biped": {
             "instance": "/tab",

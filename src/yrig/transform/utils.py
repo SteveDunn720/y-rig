@@ -252,6 +252,25 @@ def clean_parent(transform: str, parent: str, joint_orient: bool = True) -> None
     set_world_matrix(transform, object_world_matrix, use_joint_orient=joint_orient)
 
 
+def connect_transform(
+    source: str,
+    driven: str,
+    translate: bool = True,
+    rotate: bool = True,
+    scale: bool = True,
+    shear: bool = False,
+) -> None:
+    if translate:
+        cmds.connectAttr(f"{source}.translate", f"{driven}.translate")
+    if rotate:
+        cmds.connectAttr(f"{source}.rotate", f"{driven}.rotate")
+        cmds.connectAttr(f"{source}.rotateOrder", f"{driven}.rotateOrder")
+    if scale:
+        cmds.connectAttr(f"{source}.scale", f"{driven}.scale")
+    if shear:
+        cmds.connectAttr(f"{source}.shear", f"{driven}.shear")
+
+
 def distance_reader(
     transform1: str,
     transform2: str,

@@ -5,7 +5,7 @@ from maya import cmds
 from yrig.control import create_control
 from yrig.joint import create_joint
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
-from yrig.transform import create_transform
+from yrig.transform import create_transform, matrix_constraint
 
 
 def get_teeth_locator_indices(cvs_count: int) -> list[int]:
@@ -64,12 +64,10 @@ class TeethSpline:
             name=f"{guide_name}_ofst_grp",
             parent=self.control_grp,
         )
+        if num == 0:
+            matrix_constraint("face_mid_M_driven", group)
         if num == 1:
-            cmds.parentConstraint(
-                "jaw_M_ctl",
-                group,
-                maintainOffset=True,
-            )
+            matrix_constraint("jaw_M_ctl", group)
 
         main_control = create_control(
             name=f"{guide_name}_main",

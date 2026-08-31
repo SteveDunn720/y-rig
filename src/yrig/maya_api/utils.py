@@ -22,7 +22,14 @@ def get_dag_path(node: str) -> MDagPath:
         selection.add(node)
         dag_path: MDagPath = selection.getDagPath(0)
     except RuntimeError as exc:
-        raise RuntimeError(f"Couldn't resolve an MDagPath for {node}") from exc
+        found_nodes = cmds.ls(node)
+        if found_nodes:
+            raise RuntimeError(
+                f"Couldn't resolve an MDagPath for '{node}' as there were multiple nodes with that name: "
+                f"{', '.join(found_nodes)}"
+            ) from exc
+        else:
+            raise RuntimeError(f"Couldn't resolve an MDagPath for {node}") from exc
     return dag_path
 
 

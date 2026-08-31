@@ -21,12 +21,22 @@
             ],
             "attrs": {
                 "control_parent": {
-                    "type": "raw",
-                    "value": "${component_group}"
+                    "value": "face_lower_M_ctl"
                 },
                 "control_size": {
                     "type": "int",
                     "value": "2"
+                },
+                "face_mid": {
+                    "type": "raw",
+                    "value": "face_mid_M_driven"
+                },
+                "jaw_transform": {
+                    "type": "raw",
+                    "value": "jaw_M_ctl"
+                },
+                "joint_parent": {
+                    "value": "face_lower_M_jnt"
                 },
                 "name": {
                     "value": "mouth"
@@ -79,7 +89,6 @@
                 "mouth_guides = MouthGuides(",
                 "    mouth = \"mouth_M\",",
                 "    mouth_surface = \"face_surface\",",
-                "    jaw = \"jaw_M\",",
                 "    left_corner = left_corner_guide,",
                 "    right_corner = right_corner_guide,",
                 "    upper_lip = upper_lip_guides,",
@@ -91,9 +100,11 @@
                 "    mouth = Mouth(",
                 "        guides=mouth_guides, ",
                 "        parent=\"${component_group}\",",
-                "        control_parent=\"${control_parent}\", ",
+                "        control_parent=\"${control_group}\", ",
                 "        joint_parent=\"${joint_parent}\", ",
-                "        control_size=${control_size}",
+                "        jaw = \"${jaw_transform}\",",
+                "        face_mid = \"${face_mid}\",",
+                "        control_size=${control_size},",
                 "    )",
                 "    ",
                 "STAGE.control_list.extend(component_controls)"

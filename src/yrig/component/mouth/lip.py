@@ -13,7 +13,8 @@ from yrig.skin.split import tag_for_weight_split
 from yrig.spline import generate_knots
 from yrig.spline.curve import bound_curve_from_transforms, pin_to_curve_with_motion_path
 from yrig.surface import closest_point_on_surface_reader, surface_slide_constraint, uv_pin
-from yrig.transform import create_transform
+from yrig.transform import create_transform, matrix_constraint
+from yrig.transform.matrix import local_constraint
 from yrig.transform.utils import connect_transform, distance_reader
 
 from .corner import MouthCorner
@@ -223,6 +224,9 @@ class Lip:
         parent: str,
         joint_parent: str,
         control_parent: Control | str,
+        control_follow: Control | str,
+        mouth_slide: str,
+        mouth_slide_ref: str,
         control_size: float = 1,
         sub_control_vis_attr: BooleanAttribute | None = None,
         uv_pin_node: UvPinNode | None = None,
@@ -232,9 +236,17 @@ class Lip:
         self.name = f"{side_string}_lip"
         self.group = create_transform(self.name, parent=parent)
 
+        self.lip_follow_space = create_transform(
+            f"{self.name}_follow_space", parent=str(control_parent)
+        )
+        matrix_constraint(str(control_follow), self.lip_follow_space, keep_offset=False)
+        self.lip_follow = create_transform(f"{self.name}_follow", self.lip_follow_space)
+        local_constraint(mouth_slide, self.lip_follow, reference_space=mouth_slide_ref)
+
         self.lip_move_npo = create_transform(
             f"{self.name}_move_npo", transform=self.guides.lip_mid, parent=str(control_parent)
         )
+        matrix_constraint(self.lip_follow, self.lip_move_npo)
         self.lip_move = create_transform(f"{self.name}_move", parent=self.lip_move_npo)
         self.lip_move_local_npo = create_transform(
             f"{self.name}_move_local_npo", transform=self.lip_move, parent=parent

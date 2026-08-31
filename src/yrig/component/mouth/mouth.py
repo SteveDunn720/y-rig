@@ -75,6 +75,15 @@ class Mouth:
         )
         matrix_constraint(self.jaw_blend, self.mouth_control.offset)
 
+        self.mouth_slide_reference = create_transform(
+            "mouth_M_slide_ref", parent=str(control_parent)
+        )
+        surface_slide_constraint(
+            self.mouth_surface,
+            driver_transform=self.mouth_control.offset,
+            slider_transform=self.mouth_slide_reference,
+        )
+
         self.mouth_slide = create_transform("mouth_M_slide", parent=self.mouth_control.transform)
         surface_slide_constraint(
             self.mouth_surface,
@@ -138,10 +147,12 @@ class Mouth:
             parent=self.mouth_slide_local,
             joint_parent=joint_parent,
             control_parent=self.mouth_slide,
+            control_follow=face_mid,
+            mouth_slide=self.mouth_slide,
+            mouth_slide_ref=self.mouth_slide_reference,
             control_size=control_size,
             uv_pin_node=mouth_uv_pin,
         )
-        local_constraint(face_mid, self.upper_lip.lip_move_npo, reference_space=self.mouth_slide)
 
         self.lower_lip = Lip(
             upper=False,
@@ -153,10 +164,12 @@ class Mouth:
             parent=self.mouth_slide_local,
             joint_parent=joint_parent,
             control_parent=self.mouth_slide,
+            control_follow=jaw,
+            mouth_slide=self.mouth_slide,
+            mouth_slide_ref=self.mouth_slide_reference,
             control_size=control_size,
             uv_pin_node=mouth_uv_pin,
         )
-        local_constraint(jaw, self.lower_lip.lip_move_npo, reference_space=self.mouth_slide)
 
         self.cheek_interpolate = CheekInterpolate(
             guides=self.guides.cheek_interpolate,

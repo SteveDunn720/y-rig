@@ -51,7 +51,7 @@ class MouthCorner:
         self.sub_local_npo = create_transform(
             f"mouth_corner_{side}_sub_local_npo",
             transform=guide,
-            parent=parent,
+            parent=self.main_local,
         )
         self.sub_local = create_transform(
             f"mouth_corner_{side}_sub_local",

@@ -5,17 +5,16 @@ from typing import TYPE_CHECKING
 
 from maya import cmds
 from maya.api.OpenMaya import (
-    MDagPath,
     MFnDagNode,
     MMatrix,
     MPoint,
-    MSelectionList,
     MSpace,
     MTransformationMatrix,
 )
 
 from yrig.maya_api.attribute import MatrixAttribute, ScalarAttribute
 from yrig.maya_api.node import ConditionNode, DistanceBetweenNode, SubtractNode
+from yrig.maya_api.utils import get_dag_path
 from yrig.name import get_short_name
 from yrig.transform.matrix import (
     get_world_matrix,
@@ -30,9 +29,7 @@ if TYPE_CHECKING:
 
 def partial_path_name(transform: str) -> str:
     """Returns the minimum path string necessary to uniquely identify the object."""
-    sel = MSelectionList()
-    sel.add(transform)
-    dag_path: MDagPath = sel.getDagPath(0)
+    dag_path = get_dag_path(transform)
     mfn_dag = MFnDagNode(dag_path)
     return mfn_dag.partialPathName()
 
@@ -253,6 +250,25 @@ def clean_parent(transform: str, parent: str, joint_orient: bool = True) -> None
     object_world_matrix: MMatrix = get_world_matrix(transform)
     cmds.parent(transform, parent, relative=True)
     set_world_matrix(transform, object_world_matrix, use_joint_orient=joint_orient)
+
+
+def connect_transform(
+    source: str,
+    driven: str,
+    translate: bool = True,
+    rotate: bool = True,
+    scale: bool = True,
+    shear: bool = False,
+) -> None:
+    if translate:
+        cmds.connectAttr(f"{source}.translate", f"{driven}.translate")
+    if rotate:
+        cmds.connectAttr(f"{source}.rotate", f"{driven}.rotate")
+        cmds.connectAttr(f"{source}.rotateOrder", f"{driven}.rotateOrder")
+    if scale:
+        cmds.connectAttr(f"{source}.scale", f"{driven}.scale")
+    if shear:
+        cmds.connectAttr(f"{source}.shear", f"{driven}.shear")
 
 
 def distance_reader(

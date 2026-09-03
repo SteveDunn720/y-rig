@@ -14,7 +14,9 @@ Your future coworkers will thank you.
 ## A computer can never be held accountable
 
 "A computer can never be held accountable, therefore a computer must never make a management decision." -IBM Training Manual from 1979  
-LLMs and other forms of AI are useful tools for writing code and learning to do so, but they are still only advanced prediction models.
-The code you write is _yours_ and what you submit with your name on it should be something you take responsibility for.
-If you choose to use AI models you should make sure to understand every line of its output if you use it. You are the author and decision maker.  
+
+LLMs and other forms of AI can be useful tools for writing code and learning to do so, but they are still only advanced prediction models.
+The code you write is _yours_ and what you submit with your name on it should be something you feel confident taking responsibility for as _your work_. 
+
+If you wouldn't write it yourself, don't submit it. If you do occasionally find output from an LLM helpful, you must ensure you understand every line and are confident defending it with your name.
 Your future coworkers will thank you.

@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from itertools import zip_longest
 
 from maya import cmds
-from maya.api.OpenMaya import MDagPath, MFnNurbsSurface, MMatrix, MPoint, MSelectionList, MSpace
+from maya.api.OpenMaya import MFnNurbsSurface, MMatrix, MPoint, MSpace
 
 from yrig.math import remap
 from yrig.maya_api.attribute import (
@@ -15,12 +15,13 @@ from yrig.maya_api.node import (
     MultiplyPointByMatrixNode,
     UvPinNode,
 )
+from yrig.maya_api.utils import get_dag_path
 from yrig.name import get_short_name
 from yrig.transform import get_shape
+from yrig.transform.constraint import matrix_normal_orient_constraint
 from yrig.transform.matrix import (
     drive_transform_with_matrix,
     get_world_matrix,
-    matrix_normal_orient_constraint,
     multiply_matrices,
 )
 from yrig.transform.utils import get_position
@@ -40,9 +41,9 @@ def closest_point_on_surface(
         Tuple of (closest point, (u, v)).
     """
     shape = get_shape(surface)
-    msel: MSelectionList = MSelectionList()
-    msel.add(shape)
-    surface_dag: MDagPath = msel.getDagPath(0)
+    if shape is None:
+        raise RuntimeError(f"{surface} has no shape node.")
+    surface_dag = get_dag_path(shape)
     fn_surface: MFnNurbsSurface = MFnNurbsSurface(surface_dag)
 
     test_point: MPoint = position if isinstance(position, MPoint) else MPoint(*position)
@@ -65,9 +66,9 @@ def surface_uv_domain(surface: str) -> tuple[tuple[float, float], tuple[float, f
         Tuple of ((u_min, u_max), (v_min, v_max)).
     """
     shape = get_shape(surface)
-    msel: MSelectionList = MSelectionList()
-    msel.add(shape)
-    surface_dag: MDagPath = msel.getDagPath(0)
+    if shape is None:
+        raise RuntimeError(f"{surface} has no shape node.")
+    surface_dag = get_dag_path(shape)
     fn_surface: MFnNurbsSurface = MFnNurbsSurface(surface_dag)
     return (fn_surface.knotDomainInU, fn_surface.knotDomainInV)
 

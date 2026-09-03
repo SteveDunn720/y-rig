@@ -13,8 +13,9 @@ from yrig.skin.split import tag_for_weight_split
 from yrig.spline import generate_knots
 from yrig.spline.curve import bound_curve_from_transforms, pin_to_curve_with_motion_path
 from yrig.surface import closest_point_on_surface_reader, surface_slide_constraint, uv_pin
-from yrig.transform import create_transform
-from yrig.transform.utils import distance_reader
+from yrig.transform import create_transform, matrix_constraint
+from yrig.transform.constraint import local_constraint
+from yrig.transform.utils import connect_transform, distance_reader
 
 from .corner import MouthCorner
 
@@ -32,10 +33,12 @@ class LipMidpoint:
         name: str,
         guide: str,
         mouth_surface: str,
+        mouth_surface_local: str,
         corner: MouthCorner,
         control_parent: Control | str,
         parent: str,
         distance_transform: str,
+        distance_transform_local: str,
         control_size: float = 1,
         mirror: bool = False,
     ):
@@ -49,16 +52,38 @@ class LipMidpoint:
             limit_min_scale=False,
         )
         cmds.setAttr(f"{self.main_control.transform}.translateZ", lock=True)
+
+        self.main_local_npo = create_transform(
+            f"{name}_local_npo",
+            parent=parent,
+            transform=guide,
+        )
+        self.main_local = create_transform(
+            f"{name}_local",
+            parent=self.main_local_npo,
+        )
+        connect_transform(self.main_control.transform, self.main_local)
+
         self.main_control_rest = create_transform(
             f"{name}_rest",
-            parent=parent,
-            transform=self.main_control.transform,
+            parent=str(control_parent),
+            transform=self.main_control.offset,
         )
+        self.main_local_rest = create_transform(
+            f"{name}_local_rest",
+            parent=parent,
+            transform=self.main_local_npo,
+        )
+
         self.main_control_driven = create_transform(f"{name}_driven", parent=self.main_control_rest)
+        self.main_local_driven = create_transform(
+            f"{name}_local_driven", parent=self.main_local_rest
+        )
+
         corner_distance = distance_reader(
             corner.sub_control.offset,
             distance_transform,
-            space=parent,
+            space=str(control_parent),
             zero_at_rest=True,
             axes=(True, False, False),
         )
@@ -67,11 +92,30 @@ class LipMidpoint:
         corner_distance_scale.input[1].set(0.75)
         corner_distance_scale.output.connect_to(f"{self.main_control_driven}.translateX")
 
-        self.main_control_slide = create_transform(f"{name}_slide", parent=parent)
+        corner_distance_local = distance_reader(
+            corner.sub_local_npo,
+            distance_transform_local,
+            space=parent,
+            zero_at_rest=True,
+            axes=(True, False, False),
+        )
+        corner_distance_scale = MultiplyNode.create(f"{name}_distance_scale_local")
+        corner_distance_scale.input[0].connect_from(corner_distance_local)
+        corner_distance_scale.input[1].set(0.75)
+        corner_distance_scale.output.connect_to(f"{self.main_local_driven}.translateX")
+
+        self.main_control_slide = create_transform(f"{name}_slide", parent=str(control_parent))
         surface_slide_constraint(
             mouth_surface,
             driver_transform=self.main_control_driven,
             slider_transform=self.main_control.offset,
+        )
+
+        self.main_local_slide = create_transform(f"{name}_local_slide", parent=parent)
+        surface_slide_constraint(
+            mouth_surface_local,
+            driver_transform=self.main_local_driven,
+            slider_transform=self.main_local_npo,
         )
 
         self.sub_control = create_control(
@@ -85,6 +129,20 @@ class LipMidpoint:
             mouth_surface,
             driver_transform=self.main_control.transform,
             slider_transform=self.sub_control.offset,
+        )
+        self.sub_local_npo = create_transform(
+            f"{name}_mid_L_sub_local_npo", transform=guide, parent=self.main_local
+        )
+
+        self.sub_local = create_transform(
+            f"{name}_mid_L_sub_local",
+            parent=self.sub_local_npo,
+        )
+        connect_transform(self.sub_control.transform, self.sub_local)
+        surface_slide_constraint(
+            mouth_surface_local,
+            driver_transform=self.main_local,
+            slider_transform=self.sub_local_npo,
         )
 
         if mirror:
@@ -160,11 +218,15 @@ class Lip:
         upper: bool,
         guides: LipGuides,
         mouth_surface: str,
+        mouth_surface_local: str,
         left_corner: MouthCorner,
         right_corner: MouthCorner,
         parent: str,
         joint_parent: str,
         control_parent: Control | str,
+        control_follow: Control | str,
+        mouth_slide: str,
+        mouth_slide_ref: str,
         control_size: float = 1,
         sub_control_vis_attr: BooleanAttribute | None = None,
         uv_pin_node: UvPinNode | None = None,
@@ -173,11 +235,43 @@ class Lip:
         side_string = "upper" if upper else "lower"
         self.name = f"{side_string}_lip"
         self.group = create_transform(self.name, parent=parent)
-        reference_space = str(control_parent)
-        self.lip_move = create_transform(f"{self.name}_move", parent=reference_space)
+
+        self.lip_follow_space = create_transform(
+            f"{self.name}_follow_space", parent=str(control_parent)
+        )
+        matrix_constraint(str(control_follow), self.lip_follow_space, keep_offset=False)
+        self.lip_follow = create_transform(f"{self.name}_follow", self.lip_follow_space)
+        local_constraint(mouth_slide, self.lip_follow, reference_space=mouth_slide_ref)
+
+        self.lip_move_npo = create_transform(
+            f"{self.name}_move_npo", transform=self.guides.lip_mid, parent=str(control_parent)
+        )
+        matrix_constraint(self.lip_follow, self.lip_move_npo)
+        self.lip_move = create_transform(f"{self.name}_move", parent=self.lip_move_npo)
+        self.lip_move_local_npo = create_transform(
+            f"{self.name}_move_local_npo", transform=self.lip_move, parent=parent
+        )
+        self.lip_move_local = create_transform(
+            f"{self.name}_move_local", parent=self.lip_move_local_npo
+        )
+        connect_transform(self.lip_move, self.lip_move_local)
+
         self.slider = create_transform(f"{self.name}_slide", parent=str(control_parent))
+        self.slider_local_npo = create_transform(
+            f"{self.name}_slide_local_npo", transform=self.slider, parent=parent
+        )
+        self.slider_local = create_transform(
+            f"{self.name}_slide_local", transform=self.slider, parent=self.slider_local_npo
+        )
+
         surface_slide_constraint(
             mouth_surface, driver_transform=self.lip_move, slider_transform=self.slider
+        )
+
+        surface_slide_constraint(
+            mouth_surface_local,
+            driver_transform=self.lip_move_local,
+            slider_transform=self.slider_local,
         )
 
         self.left_corner = left_corner
@@ -187,10 +281,12 @@ class Lip:
             name=f"{self.name}_mid_L",
             guide=guides.lip_mid_left,
             mouth_surface=mouth_surface,
+            mouth_surface_local=mouth_surface_local,
             corner=self.left_corner,
-            control_parent=control_parent,
-            parent=self.slider,
+            control_parent=self.slider,
+            parent=self.slider_local,
             distance_transform=self.slider,
+            distance_transform_local=self.slider_local,
         )
         self.mid_control = create_control(
             f"{self.name}_mid_M",
@@ -199,6 +295,17 @@ class Lip:
             size=control_size,
             direction="z",
         )
+        self.mid_local_npo = create_transform(
+            f"{self.name}_mid_M_local_npo",
+            transform=guides.lip_mid,
+            parent=self.slider_local,
+        )
+        self.mid_local = create_transform(
+            f"{self.name}_mid_M_local",
+            parent=self.mid_local_npo,
+        )
+        connect_transform(self.mid_control.transform, self.mid_local)
+
         self.mid_sub_control = create_control(
             f"{self.name}_mid_M_sub",
             transform=guides.lip_mid,
@@ -206,19 +313,38 @@ class Lip:
             size=control_size * 0.5,
             direction="z",
         )
+        self.mid_sub_local_npo = create_transform(
+            f"{self.name}_mid_M_sub_local_npo",
+            transform=guides.lip_mid,
+            parent=self.mid_local,
+        )
+        self.mid_sub_local = create_transform(
+            f"{self.name}_mid_M_sub_local",
+            parent=self.mid_sub_local_npo,
+        )
+        connect_transform(self.mid_sub_control.transform, self.mid_sub_local)
+
         surface_slide_constraint(
             mouth_surface,
             driver_transform=self.mid_control.transform,
             slider_transform=self.mid_sub_control.offset,
         )
+        surface_slide_constraint(
+            mouth_surface_local,
+            driver_transform=self.mid_local,
+            slider_transform=self.mid_sub_local_npo,
+        )
+
         self.mid_right = LipMidpoint(
             name=f"{self.name}_mid_R",
             guide=guides.lip_mid_right,
             mouth_surface=mouth_surface,
+            mouth_surface_local=mouth_surface_local,
             corner=self.right_corner,
-            control_parent=control_parent,
-            parent=self.slider,
+            control_parent=self.slider,
+            parent=self.slider_local,
             distance_transform=self.slider,
+            distance_transform_local=self.slider_local,
             mirror=True,
         )
 
@@ -232,21 +358,21 @@ class Lip:
             for control in self.sub_controls:
                 sub_control_vis_attr.connect_to(f"{control.transform}.visibility")
 
-        lip_cvs: tuple[Control, ...] = (
-            self.mid_left.sub_control,
-            self.mid_sub_control,
-            self.mid_right.sub_control,
+        lip_cvs: tuple[tuple[str, str], ...] = (
+            (self.mid_left.sub_local, self.mid_left.sub_local_npo),
+            (self.mid_sub_local, self.mid_sub_local_npo),
+            (self.mid_right.sub_local, self.mid_right.sub_local_npo),
         )
 
-        raw_left_corner_cvs: tuple[Control, ...] = (
-            self.left_corner.lower_sub_control,
-            self.left_corner.sub_control,
-            self.left_corner.upper_sub_control,
+        raw_left_corner_cvs: tuple[tuple[str, str], ...] = (
+            (self.left_corner.lower_sub_local, self.left_corner.lower_sub_local_npo),
+            (self.left_corner.sub_local, self.left_corner.sub_local_npo),
+            (self.left_corner.upper_sub_local, self.left_corner.upper_sub_local_npo),
         )
-        raw_right_corner_cvs: tuple[Control, ...] = (
-            self.right_corner.upper_sub_control,
-            self.right_corner.sub_control,
-            self.right_corner.lower_sub_control,
+        raw_right_corner_cvs: tuple[tuple[str, str], ...] = (
+            (self.right_corner.upper_sub_local, self.right_corner.upper_sub_local_npo),
+            (self.right_corner.sub_local, self.right_corner.sub_local_npo),
+            (self.right_corner.lower_sub_local, self.right_corner.lower_sub_local_npo),
         )
 
         if upper:
@@ -265,19 +391,19 @@ class Lip:
 
         self.left_main_spline = LipSpline(
             f"{self.name}_L_main_spline",
-            [control.offset for control in left_lip_cvs],
+            [cv[1] for cv in left_lip_cvs],
             parent=self.group,
             joint_parent=self.main_joint,
-            surface=mouth_surface,
+            surface=mouth_surface_local,
             orient=False,
             uv_pin_node=uv_pin_node,
         )
         self.right_main_spline = LipSpline(
             f"{self.name}_R_main_spline",
-            [control.offset for control in right_lip_cvs],
+            [cv[1] for cv in right_lip_cvs],
             parent=self.group,
             joint_parent=self.main_joint,
-            surface=mouth_surface,
+            surface=mouth_surface_local,
             orient=False,
             uv_pin_node=uv_pin_node,
         )
@@ -290,17 +416,17 @@ class Lip:
 
         self.left_sub_spline = LipSpline(
             f"{self.name}_L_sub_spline",
-            [control.transform for control in left_lip_cvs],
+            [cv[0] for cv in left_lip_cvs],
             parent=self.group,
             joint_parent=self.sub_joint,
-            surface=mouth_surface,
+            surface=mouth_surface_local,
         )
         self.right_sub_spline = LipSpline(
             f"{self.name}_R_sub_spline",
-            [control.transform for control in right_lip_cvs],
+            [cv[0] for cv in right_lip_cvs],
             parent=self.group,
             joint_parent=self.sub_joint,
-            surface=mouth_surface,
+            surface=mouth_surface_local,
         )
         tag_for_weight_split(
             self.sub_joint,

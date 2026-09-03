@@ -26,24 +26,37 @@
             "instance": "",
             "attrs": {
                 "def_set": {
+                    "comment": "The joints in this set will be what are used for fallback/default skinning.",
                     "type": "raw",
                     "value": "rig_deformers_grp"
                 },
+                "fallback_skinning": {
+                    "comment": "When True geometry will be skinned to the gfiven joints even if no skin file is found.",
+                    "type": "bool",
+                    "value": "True"
+                },
                 "geo_list": {
+                    "comment": "Geometry will be skinned to the geometry in this list if defined. Otherwise it will skin to the geometry in the geo_set",
                     "type": "NoneType",
                     "value": "None"
                 },
                 "geo_set": {
+                    "comment": "Geometry will be skinned to the geometry in this set unless there's a manually defined geo_list,",
                     "type": "raw",
                     "value": "rig_geo_grp"
                 },
                 "resolved_skin_directories": {
+                    "comment": "Don't override this. This resolves the historical values of the skin_directory attribute to check through each for skinning files.",
                     "type": "raw",
                     "value": "${filelist::${skin_directory}}"
                 },
                 "skin_directory": {
+                    "comment": "Directory containing the skin files to apply",
                     "type": "raw",
                     "value": "${file::data/skin}"
+                },
+                "strip_suffix": {
+                    "comment": "If set, the suffix will be striiped from geo names when searching for the skin files."
                 }
             },
             "code": [
@@ -57,15 +70,26 @@
                 "",
                 "def _fallback_skin(geometry: str):",
                 "    skin_geometry(def_joints, geometry)",
+                "    STAGE.log.info(f\"Default skinned {geometry}\")",
+                "",
+                "strip_suffix = \"${strip_suffix}\"",
+                "def _map_geo_to_file(geometry: str):",
+                "    return geometry.removesuffix(strip_suffix)",
+                "",
                 "",
                 "skin_directories = [Path(dir) for dir in ${resolved_skin_directories}]",
-                "skin_and_apply_weights_from_directories(skin_directories, geo_to_skin, fallback_skinning=_fallback_skin)",
+                "skin_and_apply_weights_from_directories(",
+                "    skin_directories, ",
+                "    geo_to_skin, ",
+                "    fallback_skinning=_fallback_skin if ${fallback_skinning} else None, ",
+                "    map_geo_to_file=_map_geo_to_file if strip_suffix else None)",
                 ""
             ]
         },
         "/split_skin_weights": {
             "attrs": {
                 "geo_set": {
+                    "comment": "Geo in this set will automatically have skin weights split.",
                     "type": "raw",
                     "value": "rig_geo_grp"
                 }
@@ -73,13 +97,15 @@
             "code": [
                 "from yrig.skin.split import auto_split_weights",
                 "",
-                "geo_in_set: list[str] = cmds.sets(\"${geo_set}\", query=True)  # type: ignore",
-                "auto_split_weights(geo_in_set)"
+                "geo_list = ${geo_list}",
+                "geo_to_split = geo_list if geo_list else cmds.sets(\"${geo_set}\", query=True)",
+                "auto_split_weights(geo_to_split)"
             ]
         },
         "/transfer_skin_weights": {
             "attrs": {
                 "transfer_mapping": {
+                    "comment": "A dictionary of source:target geometry name pairings. Skin weights will be trransfered from the source to the target for each pair.",
                     "type": "dict",
                     "value": "{}"
                 }

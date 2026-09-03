@@ -2,9 +2,10 @@ import logging
 
 import maya.api.OpenMaya as om2
 from maya import cmds
-from maya.api.OpenMaya import MColor, MFnMesh, MSelectionList
+from maya.api.OpenMaya import MColor, MFnMesh
 
 from yrig.color.convert import linear_srgb_to_rec2020, srgb_to_linear_color
+from yrig.maya_api.utils import get_dag_path
 
 log = logging.getLogger(__name__)
 
@@ -118,9 +119,7 @@ def face_color_from_texture(mesh: str, anti_alias: bool = True) -> None:
     shape: str = shapes[0]
 
     # Prepare mesh function set
-    sel: MSelectionList = om2.MSelectionList()
-    sel.add(shape)
-    dag = sel.getDagPath(0)
+    dag = get_dag_path(shape)
     fn_mesh: MFnMesh = om2.MFnMesh(dag)
 
     # Confirm that UVs are available

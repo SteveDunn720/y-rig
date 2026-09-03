@@ -4,6 +4,7 @@ import maya.api.OpenMaya as om2
 from maya import cmds
 
 from yrig.color.convert import lch_to_lab, oklab_to_linear_srgb
+from yrig.maya_api.utils import get_dag_path
 from yrig.skin.split import get_mesh_spline_weights, get_mesh_surface_weights
 
 
@@ -40,9 +41,7 @@ def visualize_weights_on_mesh(
     cmds.setAttr(f"{mesh_shape}.displayColorChannel", "Diffuse", type="string")
 
     # get the MDagPaths
-    msel: om2.MSelectionList = om2.MSelectionList()
-    msel.add(mesh_shape)
-    mesh_dag: om2.MDagPath = msel.getDagPath(0)
+    mesh_dag = get_dag_path(mesh_shape)
 
     # make the function set and get the points
     fn_mesh: om2.MFnMesh = om2.MFnMesh(mesh_dag)

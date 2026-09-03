@@ -5,6 +5,7 @@
     "mute": false,
     "solo": false,
     "references": [
+        "component/face/face_base.nxt",
         "component/face/eye.nxt",
         "component/face/eyebrow.nxt",
         "component/face/mouth.nxt",
@@ -15,6 +16,10 @@
     ],
     "meta_data": {
         "positions": {
+            "/cleanup": [
+                578.6271216105457,
+                41.68783296905949
+            ],
             "/ear": [
                 318.8538364053693,
                 142.4484541260124
@@ -42,6 +47,10 @@
             "/face": [
                 280,
                 20
+            ],
+            "/face_base_component": [
+                -1435.4748153869095,
+                341.9310107006777
             ],
             "/left": [
                 160.30801917363112,
@@ -112,10 +121,12 @@
         "collapse": {
             "/ear_component": true,
             "/eye_component": true,
+            "/face_base_component": true,
             "/left/ear": true,
             "/left/eye": true,
             "/left/eyebrow": true,
             "/look_component": true,
+            "/middle/face/base": true,
             "/middle/face/look": true,
             "/middle/face/mouth": true,
             "/middle/face/nose": true,
@@ -129,6 +140,49 @@
         }
     },
     "nodes": {
+        "/apply/deformation": {
+            "child_order": [
+                "face",
+                "main"
+            ]
+        },
+        "/apply/deformation/face": {
+            "child_order": [
+                "skin"
+            ],
+            "attrs": {
+                "def_layer_group": {
+                    "type": "raw",
+                    "value": "${/setup/root/deformation/face.def_layer_group}"
+                },
+                "def_layer_name": {
+                    "type": "raw",
+                    "value": "face"
+                }
+            }
+        },
+        "/apply/deformation/face/skin": {
+            "instance": "/skin_geometry",
+            "child_order": [
+                "split"
+            ],
+            "attrs": {
+                "geo_list": {
+                    "value": "${/setup/root/deformation/face/duplicate_geo.duplicated_geo}"
+                },
+                "skin_directory": {
+                    "type": "raw",
+                    "value": "${file::${rig_path}/data/face/skin}"
+                },
+                "strip_suffix": {
+                    "type": "raw",
+                    "value": "_${def_layer_group}"
+                }
+            }
+        },
+        "/apply/deformation/face/skin/split": {
+            "instance": "/split_skin_weights"
+        },
         "/cleanup": {
             "child_order": [
                 "delete_face_guides",
@@ -141,7 +195,7 @@
             "attrs": {
                 "face_guides_group": {
                     "type": "raw",
-                    "value": "${/root/guides/face.face_guides_group}"
+                    "value": "${/setup/root/guides/face.face_guides_group}"
                 }
             },
             "code": [
@@ -156,21 +210,42 @@
             ]
         },
         "/left/ear": {
-            "instance": "/ear_component"
+            "instance": "/ear_component",
+            "attrs": {
+                "control_parent": {
+                    "value": "face_muppet_M_ctl"
+                },
+                "joint_parent": {
+                    "value": "face_muppet_M_jnt"
+                }
+            }
         },
         "/left/eye": {
-            "instance": "/eye_component"
+            "instance": "/eye_component",
+            "attrs": {
+                "control_parent": {
+                    "value": "face_upper_M_ctl"
+                },
+                "joint_parent": {
+                    "value": "face_upper_M_jnt"
+                }
+            }
         },
         "/left/eyebrow": {
             "instance": "/simple_eyebrow",
             "attrs": {
+                "control_parent": {
+                    "value": "face_top_M_ctl"
+                },
                 "joint_parent": {
-                    "value": "face_jnt"
+                    "type": "raw",
+                    "value": "face_top_M_jnt"
                 }
             }
         },
         "/middle/face": {
             "child_order": [
+                "base",
                 "nose",
                 "mouth",
                 "tongue",
@@ -178,18 +253,18 @@
                 "look"
             ],
             "attrs": {
-                "joint_parent": {
+                "face_joint_parent": {
                     "type": "raw",
                     "value": "neck_M0_head_jnt"
                 },
-                "parent": {
+                "face_parent": {
                     "type": "raw",
                     "value": "neck_M0_head_ctl"
                 }
             },
             "code": [
-                "parent=\"${parent}\"",
-                "joint_parent=\"${joint_parent}\"",
+                "parent=\"${face_parent}\"",
+                "joint_parent=\"${face_joint_parent}\"",
                 "transform = \"face_M\" if cmds.objExists(\"face_M\") else None",
                 "",
                 "face_group = yrig.transform.create_transform(",
@@ -204,6 +279,18 @@
                 "    connect=False)"
             ]
         },
+        "/middle/face/base": {
+            "instance": "/face_base_component",
+            "attrs": {
+                "joint_parent": {
+                    "value": "face_jnt"
+                },
+                "parent": {
+                    "type": "raw",
+                    "value": "${face_parent}"
+                }
+            }
+        },
         "/middle/face/look": {
             "instance": "/look_component"
         },
@@ -217,25 +304,23 @@
                     "value": "1"
                 },
                 "joint_parent": {
-                    "value": "face_jnt"
+                    "value": "${/setup/root/deformation/face.def_layer_group}"
+                },
+                "parent": {
+                    "value": "${/setup/root/deformation/face.def_layer_group}"
                 }
             }
         },
         "/middle/face/mouth/skin_surface": {
             "attrs": {
                 "mouth_surface_skin_filepath": {
+                    "type": "raw",
                     "value": "${file::${rig_path}/data/face/mouth_surface.yskin}"
                 }
             }
         },
         "/middle/face/nose": {
-            "instance": "/nose_component",
-            "code": [
-                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
-                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
-                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
-                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
-            ]
+            "instance": "/nose_component"
         },
         "/middle/face/teeth": {
             "instance": "/teeth_component"
@@ -243,7 +328,58 @@
         "/middle/face/tongue": {
             "instance": "/tongue_component"
         },
-        "/root/guides/face": {
+        "/setup/root/deformation/face": {
+            "child_order": [
+                "duplicate_geo"
+            ],
+            "attrs": {
+                "def_layer_group": {
+                    "type": "raw",
+                    "value": "${def_layer_name}_setup"
+                },
+                "def_layer_name": {
+                    "type": "raw",
+                    "value": "face"
+                },
+                "parent": {
+                    "type": "raw",
+                    "value": "setup"
+                }
+            },
+            "code": [
+                "def_layer_group = yrig.transform.create_transform(\"${def_layer_group}\", parent=\"${parent}\")",
+                "cmds.hide(def_layer_group)"
+            ]
+        },
+        "/setup/root/deformation/face/duplicate_geo": {
+            "attrs": {
+                "duplicated_geo": {
+                    "type": "list",
+                    "value": "[]"
+                },
+                "geo_to_duplicate": {
+                    "type": "list",
+                    "value": "[\"body_geo\"]"
+                }
+            },
+            "code": [
+                "from yrig.transform import get_shape",
+                "",
+                "geo_to_duplicate = ${geo_to_duplicate}",
+                "for geo in geo_to_duplicate:",
+                "    duplicated = cmds.duplicate(geo, name=f\"{geo}_${def_layer_group}\")[0]",
+                "    cmds.parent(duplicated, \"${def_layer_group}\")",
+                "    geo_shape = get_shape(geo)",
+                "    geo_input = cmds.deformableShape(geo_shape, frontOfChain=True)[0] or f\"{geo_shape}.{cmds.deformableShape(geo_shape, localShapeInAttr=True)[0]}\"",
+                "    print(geo_input)",
+                "    duplicated_shape = get_shape(duplicated)",
+                "    duplicated_output = cmds.deformableShape(duplicated_shape, localShapeOutAttr=True)[0]",
+                "    cmds.connectAttr(f\"{duplicated_shape}.{duplicated_output}\", geo_input)",
+                "    cmds.sets(duplicated, remove=\"${model_set}\")",
+                "    self.duplicated_geo.append(duplicated)"
+            ]
+        },
+        "/setup/root/guides/face": {
             "attrs": {
                 "face_guides_filepath": {
                     "type": "raw",
@@ -316,9 +452,9 @@
                 }
             },
             "code": [
-                "export_root_path = Path(\"${export_root_path}\")",
-                "if not export_root_path.exists():",
-                "    raise NotADirectoryError",
+                "export_root_path = \"${export_root_path}\"",
+                "if not export_root_path or not Path(export_root_path).is_dir():",
+                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
                 "export_path = Path(\"${export_path}\")",
                 "#exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), force=${force})",
                 "from pathlib import Path",

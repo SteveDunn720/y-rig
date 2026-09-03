@@ -4,7 +4,7 @@ from yrig.control import create_control
 from yrig.joint import create_joint
 from yrig.maya_api.node import BlendColorsNode, MultiplyDivideNode, SumNode
 from yrig.transform import create_transform
-from yrig.transform.matrix import matrix_constraint
+from yrig.transform.constraint import matrix_constraint
 
 from .eyeball import Eyeball
 from .eyelid import Eyelid
@@ -73,7 +73,9 @@ class Eye:
             name=f"eye_component_{self.side}", parent=self.main_grp
         )
         cmds.hide(self.component_grp)
-        self.control_grp = create_transform(name=f"eye_control_{self.side}", parent=self.main_grp)
+        self.control_grp = create_transform(
+            name=f"eye_control_{self.side}", parent=self.control_parent
+        )
 
     def create_controls(self) -> None:
 

@@ -12,10 +12,10 @@ from maya.api.OpenMaya import (
     MObject,
     MPoint,
     MPointArray,
-    MSelectionList,
 )
 
 from yrig.math import remap
+from yrig.maya_api.utils import get_dag_path
 from yrig.skin.core import (
     get_mesh_points,
 )
@@ -110,9 +110,7 @@ def get_mesh_spline_weights(
         )
 
     # get the MDagPaths
-    msel: om2.MSelectionList = om2.MSelectionList()
-    msel.add(mesh_shape)
-    mesh_dag: om2.MDagPath = msel.getDagPath(0)
+    mesh_dag = get_dag_path(mesh_shape)
 
     # make the function set and get the points
     fn_mesh: om2.MFnMesh = om2.MFnMesh(mesh_dag)
@@ -157,11 +155,9 @@ def get_mesh_surface_weights(
         list[list[tuple[Any, float]]]: A list of weights per vertex. Each entry is a list of tuples,
         where each tuple contains a influence transform and its corresponding influence weight on the vertex.
     """
-    msel: MSelectionList = MSelectionList()
-    msel.add(mesh_shape)
-    msel.add(surface_shape)
-    mesh_dag: MDagPath = msel.getDagPath(0)
-    surface_dag: MDagPath = msel.getDagPath(1)
+
+    mesh_dag: MDagPath = get_dag_path(mesh_shape)
+    surface_dag: MDagPath = get_dag_path(surface_shape)
 
     # make the function sets and data on the surface
     fn_mesh: om2.MFnMesh = om2.MFnMesh(mesh_dag)

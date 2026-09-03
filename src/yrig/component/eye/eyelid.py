@@ -19,7 +19,7 @@ from yrig.maya_api.node import (
 from yrig.skin.split.tag import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.transform import create_transform
-from yrig.transform.matrix import matrix_constraint
+from yrig.transform.constraint import matrix_constraint
 from yrig.transform.utils import get_position
 
 from .guide_curve import GuideCurve

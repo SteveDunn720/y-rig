@@ -5,9 +5,12 @@ from maya import cmds
 
 
 @contextmanager
-def maintain_selection() -> Generator[None, None, None]:
-    selection = cmds.ls(selection=True, long=True, ufeObjects=True, absoluteName=True)
+def maintain_selection(maintain_empty: bool = False) -> Generator[None, None, None]:
+    selection = cmds.ls(selection=True, long=True, ufeObjects=True, absoluteName=True) or []
     try:
         yield
     finally:
-        cmds.select(*selection, replace=True)
+        if maintain_empty:
+            cmds.select(clear=True)
+        if selection:
+            cmds.select(*selection, replace=True)

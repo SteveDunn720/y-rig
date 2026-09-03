@@ -1,10 +1,11 @@
 from collections.abc import Callable, Sequence
 
 from maya import cmds
-from maya.api.OpenMaya import MDagPath, MFnNurbsCurve, MPoint, MSelectionList, MSpace
+from maya.api.OpenMaya import MFnNurbsCurve, MPoint, MSpace
 
 from yrig.maya_api.enum import Axis
 from yrig.maya_api.node import MotionPathNode, MultiplyPointByMatrixNode
+from yrig.maya_api.utils import get_dag_path
 from yrig.name import get_short_name
 from yrig.spline import generate_knots
 from yrig.spline.math import collapse_periodic_cv_list, create_periodic_cv_list
@@ -87,10 +88,7 @@ def get_curve_cvs(curve: str, world_space: bool = True) -> list[MPoint]:
         raise RuntimeError(f"{curve} had no shape node!")
     if not cmds.nodeType(shape) == "nurbsCurve":
         raise RuntimeError(f"{curve} is not a nurbsCurve")
-
-    sel = MSelectionList()
-    sel.add(shape)
-    dag_path: MDagPath = sel.getDagPath(0)
+    dag_path = get_dag_path(shape)
     curve_fn = MFnNurbsCurve(dag_path)
     return [
         MPoint(cv) for cv in curve_fn.cvPositions(MSpace.kWorld if world_space else MSpace.kObject)

@@ -22,6 +22,7 @@ from maya.api.OpenMaya import (
 )
 from maya.api.OpenMayaAnim import MFnSkinCluster
 
+from yrig.maya_api.utils import get_dag_path, get_depend_node
 from yrig.name import natural_sort_key
 from yrig.transform.utils import get_shape
 
@@ -217,11 +218,8 @@ def get_weights_of_influence(skin_cluster: str, joint: str) -> dict[int, float]:
         A dictionary mapping vertex indices to their weight values for
         the specified joint.  Vertices with zero influence are omitted.
     """
-    sel: MSelectionList = MSelectionList()
-    sel.add(skin_cluster)
-    sel.add(joint)
-    skin_cluster_mob: MObject = sel.getDependNode(0)
-    joint_dag: MDagPath = sel.getDagPath(1)
+    skin_cluster_mob: MObject = get_depend_node(skin_cluster)
+    joint_dag: MDagPath = get_dag_path(joint)
     mfn_skin_cluster: MFnSkinCluster = MFnSkinCluster(skin_cluster_mob)
 
     components: MSelectionList
@@ -242,9 +240,7 @@ def get_weights_of_influence(skin_cluster: str, joint: str) -> dict[int, float]:
 
 
 def get_influence_map(skin_cluster: str) -> dict[int, str]:
-    sel: MSelectionList = MSelectionList()
-    sel.add(skin_cluster)
-    skin_cluster_mob: MObject = sel.getDependNode(0)
+    skin_cluster_mob = get_depend_node(skin_cluster)
     mfn_skin_cluster: MFnSkinCluster = MFnSkinCluster(skin_cluster_mob)
     influence_paths = mfn_skin_cluster.influenceObjects()
     influence_map: dict[int, str] = {
@@ -366,13 +362,12 @@ def set_skin_weights(
         )
 
     # Get the actual MFnSkinCluster to apply weights with
+
+    shape_dag = get_dag_path(shape)
+    skin_cluster_mob = get_depend_node(resolved_skin_cluster)
     sel: MSelectionList = MSelectionList()
-    sel.add(shape)
-    sel.add(resolved_skin_cluster)
     sel.add(f"{resolved_skin_cluster}.matrix")
-    shape_dag: MDagPath = sel.getDagPath(0)
-    skin_cluster_mob: MObject = sel.getDependNode(1)
-    matrix_list_plug: MPlug = sel.getPlug(2)
+    matrix_list_plug: MPlug = sel.getPlug(0)
     mfn_skin_cluster: MFnSkinCluster = MFnSkinCluster(skin_cluster_mob)
 
     # Get influence indices

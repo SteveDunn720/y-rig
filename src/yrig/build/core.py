@@ -50,7 +50,8 @@ def build_rig(
     with nxt_file_roots(extended_root_paths), bind_progress_step(build_step):
         try:
             execute_nxt_graph(
-                build_path, parameters={"/.dev_build": dev_build, "/.build_scope": resolved_scope}
+                build_path,
+                parameters={"/.dev_build": dev_build, "/.build_scope": str(resolved_scope)},
             )
         except Exception as e:
             build_logger.error("Build failed: %s", e)

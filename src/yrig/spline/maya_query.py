@@ -3,10 +3,10 @@ from maya.api.OpenMaya import (
     MDoubleArray,
     MFnNurbsCurve,
     MPointArray,
-    MSelectionList,
     MSpace,
 )
 
+from yrig.maya_api.utils import get_dag_path, get_depend_node
 from yrig.structs.transform import Vector3
 
 
@@ -74,10 +74,7 @@ def get_knots(curve_shape: str) -> list[float]:
     See Also:
         `maya_to_standard_knots` for details on the conversion.
     """
-
-    sel: MSelectionList = MSelectionList()
-    sel.add(curve_shape)
-    curve_obj = sel.getDependNode(0)
+    curve_obj = get_depend_node(curve_shape)
     fn_curve: MFnNurbsCurve = MFnNurbsCurve(curve_obj)
 
     knots_array: MDoubleArray = fn_curve.knots()
@@ -105,9 +102,7 @@ def get_cvs(curve_shape: str) -> list[Vector3]:
         An ordered list of `Vector3` objects,
         one per CV, in world space.
     """
-    sel: MSelectionList = MSelectionList()
-    sel.add(curve_shape)
-    dag_path = sel.getDagPath(0)
+    dag_path = get_dag_path(curve_shape)
     fn_curve: MFnNurbsCurve = MFnNurbsCurve(dag_path)
 
     cv_positions: MPointArray = fn_curve.cvPositions(space=MSpace.kWorld)
@@ -123,9 +118,7 @@ def get_cv_weights(curve_shape: str) -> list[float]:
     Returns:
         list: A list of CV weight values.
     """
-    sel: MSelectionList = MSelectionList()
-    sel.add(curve_shape)
-    dag_path = sel.getDagPath(0)
+    dag_path = get_dag_path(curve_shape)
     fn_curve: MFnNurbsCurve = MFnNurbsCurve(dag_path)
 
     cv_positions: MPointArray = fn_curve.cvPositions(space=MSpace.kWorld)

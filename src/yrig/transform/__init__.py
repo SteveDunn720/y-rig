@@ -5,15 +5,13 @@ including world/local matrix operations, matrix-based constraints,
 and common transform tasks such as matching, zeroing, and reparenting.
 """
 
-from . import matrix as matrix
-from . import quat as quat
-from . import utils as utils
+from . import constraint, matrix, quat, utils
+from .constraint import matrix_constraint
 from .matrix import (
     get_local_matrix,
     get_parent_inverse_matrix,
     get_parent_matrix,
     is_identity_matrix,
-    matrix_constraint,
     mmatrix_to_list,
     set_world_matrix,
 )
@@ -27,6 +25,7 @@ from .utils import (
 )
 
 __all__ = [
+    "constraint",
     # Utils
     "create_transform",
     # Matrix

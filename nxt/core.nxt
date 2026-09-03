@@ -21,53 +21,75 @@
             "code": [
                 "import yrig",
                 "from maya import cmds",
-                "from pathlib import Path"
+                "",
+                "from pathlib import Path",
+                "import logging",
+                "self.log = logging.getLogger(\"yrig.nxt.build\")"
             ]
         },
         "/component": {
             "attrs": {
                 "component_group": {
+                    "comment": "Name of the group created to house this components internal logic nodes,",
                     "type": "raw",
                     "value": "${name}_${side}_root"
                 },
+                "control_group": {
+                    "type": "raw",
+                    "value": "${name}_${side}_ctls"
+                },
                 "control_parent": {
+                    "comment": "Parent for the controls of this component",
                     "type": "raw",
                     "value": "${component_group}"
                 },
-                "joint_parent": {},
-                "name": {},
-                "parent": {},
+                "joint_parent": {
+                    "comment": "Parent for the joints of this component."
+                },
+                "name": {
+                    "comment": "Name for this component"
+                },
+                "parent": {
+                    "comment": "Parent for the component's rig nodes."
+                },
                 "side": {
                     "type": "raw",
                     "value": "M"
                 },
                 "socket": {
+                    "comment": "The transform to physically attach this component to",
                     "type": "raw",
                     "value": "${pareent}"
                 }
             },
             "code": [
-                "group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
-                "cmds.setAttr(f\"{group}.overrideEnabled\", True)",
-                "cmds.setAttr(f\"{group}.drawOverride.overrideRGBColors\", True)",
-                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{group}.drawOverride.overrideColorRGB\")"
+                "self.component_group = yrig.transform.create_transform(name=\"${component_group}\", parent=\"${parent}\")",
+                "",
+                "self.control_group = yrig.transform.create_transform(name=\"${control_group}\", parent=\"${control_parent}\")",
+                "cmds.setAttr(f\"{self.control_group}.overrideEnabled\", True)",
+                "cmds.setAttr(f\"{self.control_group}.drawOverride.overrideRGBColors\", True)",
+                "cmds.connectAttr(\"${control_layer}.controlColor\", f\"{self.control_group}.drawOverride.overrideColorRGB\")"
             ]
         },
         "/side": {
             "attrs": {
                 "control_color": {
+                    "comment": "RGB values for the control colors in this layer",
                     "type": "list",
                     "value": "[0.105, 0.247, 0.411]"
                 },
                 "control_layer": {
+                    "comment": "Name of the created control layer node that holds the control color.",
                     "type": "raw",
                     "value": "${side}_ControlLayer"
                 },
                 "side": {
+                    "comment": "The side token to use in child nodes.",
                     "type": "raw",
                     "value": "M"
                 },
                 "side_mult": {
+                    "comment": "Positive or negative 1, representing handedness of the space for the child components.",
                     "type": "int",
                     "value": "1"
                 }

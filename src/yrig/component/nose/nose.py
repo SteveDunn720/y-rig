@@ -61,7 +61,7 @@ class Nose:
 
         self.control_grp = create_transform(
             name=f"nose_control_{self.side}",
-            parent=self.main_grp,
+            parent=self.control_parent,
         )
 
     def create_controls(self) -> None:

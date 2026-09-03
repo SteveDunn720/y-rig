@@ -12,7 +12,7 @@ from yrig.maya_api.node import (
 )
 from yrig.skin.split.tag import tag_for_weight_split
 from yrig.transform import create_transform, match_location
-from yrig.transform.matrix import matrix_constraint
+from yrig.transform.constraint import matrix_constraint
 from yrig.transform.utils import get_position
 
 

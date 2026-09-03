@@ -185,7 +185,7 @@ def _add_split_parent_attr(node: str) -> None:
 def split_scene_to_files(
     directory: Path,
     objects: Iterable[str],
-    remainder_name: str = "remainder",
+    remainder_name: str | None = None,
     binary: bool = False,
     force: bool = False,
 ) -> bool:
@@ -246,17 +246,18 @@ def split_scene_to_files(
             or []
         )
 
-        remainder_filepath = directory / f"{remainder_name}{extension}"
+        if remainder_name:
+            remainder_filepath = directory / f"{remainder_name}{extension}"
 
-        exported = export_maya_file(
-            filepath=remainder_filepath,
-            nodes=remaining_roots,
-            binary=binary,
-            force=force,
-        )
+            exported = export_maya_file(
+                filepath=remainder_filepath,
+                nodes=remaining_roots,
+                binary=binary,
+                force=force,
+            )
 
-        if exported:
-            exported_files.append(remainder_filepath)
+            if exported:
+                exported_files.append(remainder_filepath)
 
     finally:
         cmds.undoInfo(closeChunk=True)
@@ -268,7 +269,7 @@ def split_scene_to_files(
 def import_split_scene_files(
     directory: Path,
     objects: Iterable[str],
-    remainder_name: str = "remainder",
+    remainder_name: str | None = None,
     binary: bool = False,
 ) -> bool:
     """Import a split Maya scene and restore the original hierarchy.
@@ -285,12 +286,13 @@ def import_split_scene_files(
 
     extension = ".mb" if binary else ".ma"
 
-    # Import the main scene first
-    remainder_filepath = directory / f"{remainder_name}{extension}"
+    if remainder_name:
+        # Import the main scene first
+        remainder_filepath = directory / f"{remainder_name}{extension}"
 
-    import_maya_file(
-        filepath=remainder_filepath,
-    )
+        import_maya_file(
+            filepath=remainder_filepath,
+        )
 
     # Import each split object
     for obj in objects:

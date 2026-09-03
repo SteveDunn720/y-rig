@@ -391,25 +391,11 @@
                 }
             },
             "code": [
-                "import_path = Path(\"${face_guides_filepath}\")",
-                "#imported_nodes = yrig.io.import_maya_file(import_path)",
-                "#print(imported_nodes)",
-                "",
-                "",
-                "from pathlib import Path",
-                "",
                 "from yrig.io import import_split_scene_files",
                 "",
                 "",
-                "export_root_path = Path(\"\")",
-                "",
-                "if not export_root_path.is_dir():",
-                "    raise NotADirectoryError(",
-                "        f\"Export root does not exist: {export_root_path}\"",
-                "    )",
-                "",
-                "folder = export_root_path / import_path.parent",
-                "",
+                "import_path = Path(\"${face_guides_filepath}\")",
+                "folder = import_path.parent",
                 "imported = import_split_scene_files(",
                 "    directory=folder,",
                 "    objects=[\"face_surface\"],",
@@ -420,7 +406,8 @@
         "/tools_window/biped/face": {
             "instance": "/panel",
             "child_order": [
-                "face_guides_io"
+                "face_guides_io",
+                "mouth_surface_io"
             ],
             "attrs": {
                 "text": {
@@ -452,15 +439,7 @@
                 }
             },
             "code": [
-                "export_root_path = \"${export_root_path}\"",
-                "if not export_root_path or not Path(export_root_path).is_dir():",
-                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
-                "export_path = Path(\"${export_path}\")",
-                "#exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), force=${force})",
-                "from pathlib import Path",
-                "",
                 "from yrig.io import split_scene_to_files",
-                "",
                 "",
                 "export_root_path = Path(\"${export_root_path}\")",
                 "",
@@ -469,10 +448,8 @@
                 "        f\"Export root does not exist: {export_root_path}\"",
                 "    )",
                 "",
-                "export_path = Path(\"${export_path}\")",
                 "",
-                "folder = export_root_path / export_path.parent",
-                "",
+                "folder = export_root_path",
                 "exported = split_scene_to_files(",
                 "    directory=folder,",
                 "    objects=[\"face_surface\"],",
@@ -487,32 +464,48 @@
                 }
             },
             "code": [
-                "import_path = Path(\"${import_filepath}\")",
-                "#imported_nodes = yrig.io.import_maya_file(import_path)",
-                "#print(imported_nodes)",
-                "",
-                "",
-                "from pathlib import Path",
-                "",
                 "from yrig.io import import_split_scene_files",
                 "",
-                "",
-                "export_root_path = Path(\"${export_root_path}\")",
-                "",
-                "if not export_root_path.is_dir():",
-                "    raise NotADirectoryError(",
-                "        f\"Export root does not exist: {export_root_path}\"",
-                "    )",
-                "",
                 "import_path = Path(\"${import_filepath}\")",
-                "",
-                "folder = export_root_path / import_path.parent",
-                "",
+                "folder = import_path.parent",
                 "imported = import_split_scene_files(",
                 "    directory=folder,",
                 "    objects=[\"face_surface\"],",
                 "    remainder_name=\"guides\",",
                 ")"
+            ]
+        },
+        "/tools_window/biped/face/mouth_surface_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "relative_filepath": {
+                    "value": "data/face/mouth_surface.ma"
+                },
+                "text": {
+                    "type": "raw",
+                    "value": "Mouth Surface"
+                }
+            }
+        },
+        "/tools_window/biped/face/mouth_surface_io/export": {
+            "attrs": {
+                "text": {
+                    "value": "Export Mouth Surface"
+                }
+            }
+        },
+        "/tools_window/biped/face/mouth_surface_io/import": {
+            "attrs": {
+                "text": {
+                    "value": "Import Mouth Surface"
+                }
+            },
+            "code": [
+                "import_path = Path(\"${import_filepath}\")"
             ]
         }
     }

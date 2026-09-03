@@ -37,10 +37,6 @@
                 -3388.987124646572,
                 -977.943561156741
             ],
-            "/node": [
-                -2362.506127529898,
-                -1170.476720025339
-            ],
             "/panel": [
                 -3388.987124646572,
                 -1277.9435611567415
@@ -141,11 +137,46 @@
         },
         "/tools_window/tools": {
             "instance": "/tab",
+            "child_order": [
+                "geometry"
+            ],
             "attrs": {
                 "text": {
                     "value": "Tools"
                 }
             }
+        },
+        "/tools_window/tools/geometry": {
+            "instance": "/panel",
+            "child_order": [
+                "layout"
+            ],
+            "attrs": {
+                "text": {
+                    "value": "Geometry"
+                }
+            }
+        },
+        "/tools_window/tools/geometry/layout": {
+            "instance": "/gridLayout",
+            "child_order": [
+                "bake_face_colors"
+            ]
+        },
+        "/tools_window/tools/geometry/layout/bake_face_colors": {
+            "instance": "/button",
+            "attrs": {
+                "text": {
+                    "value": "Bake Face Colors"
+                }
+            },
+            "code": [
+                "from yrig.color.bake import face_color_from_texture",
+                "",
+                "selection = cmds.ls(selection=True)",
+                "for object in selection:",
+                "    face_color_from_texture(object)"
+            ]
         }
     }
 }

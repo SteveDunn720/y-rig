@@ -69,6 +69,22 @@ class Attribute(Generic[T]):
         """Set the value of this attribute."""
         self.set(val)
 
+    def get_input(self) -> Attribute | None:
+        """Return the source attribute connected to this attribute."""
+        connections = cmds.listConnections(
+            self.attr_path,
+            source=True,
+            destination=False,
+            plugs=True,
+        )
+        return Attribute(connections[0]) if connections else None
+
+    @property
+    def input(self) -> Attribute | None:
+        """The source attribute connected to this attribute."""
+
+        return self.get_input()
+
     def connect_from(self, source_attr: str | Attribute) -> None:
         """Connect another attribute to this one."""
         source = str(source_attr)  # Works with both strings and Attribute objects

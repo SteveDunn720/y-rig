@@ -81,7 +81,7 @@ def get_blendshape_target_item_data(
     points_dict = {
         id: (point.x, point.y, point.z)
         for id, point in zip(component_ids, points_array, strict=True)  # type: ignore
-        if point.isEquivalent(MPoint.kOrigin)
+        if not point.isEquivalent(MPoint.kOrigin)
     }
     return BlendShapeTargetItemData(points=points_dict)
 

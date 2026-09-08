@@ -5,6 +5,7 @@ from enum import IntEnum
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Generic,
     Self,
     TypeAlias,
@@ -68,6 +69,22 @@ class Attribute(Generic[T]):
         """Set the value of this attribute."""
         self.set(val)
 
+    def get_input(self) -> Attribute | None:
+        """Return the source attribute connected to this attribute."""
+        connections = cmds.listConnections(
+            self.attr_path,
+            source=True,
+            destination=False,
+            plugs=True,
+        )
+        return Attribute(connections[0]) if connections else None
+
+    @property
+    def input(self) -> Attribute | None:
+        """The source attribute connected to this attribute."""
+
+        return self.get_input()
+
     def connect_from(self, source_attr: str | Attribute) -> None:
         """Connect another attribute to this one."""
         source = str(source_attr)  # Works with both strings and Attribute objects
@@ -122,6 +139,46 @@ class ArrayAttribute(Attribute, Iterable[AttributeType], Generic[AttributeType])
         # This allows for loop iteration: for item in my_attr:
         for index in self.get_indices():
             yield self[index]
+
+
+class ValueArrayAttribute(Attribute[Sequence[T]], Generic[T]):
+    """A Maya typed array attribute."""
+
+    maya_type: ClassVar[str]
+
+    def get(self) -> list[T]:
+        return list(cmds.getAttr(self.attr_path))
+
+    def set(self, value: Sequence[T]) -> None:
+        cmds.setAttr(
+            self.attr_path,
+            list(value),  # type: ignore
+            type=self.maya_type,
+        )
+
+
+class DoubleArrayAttribute(ValueArrayAttribute[float]):
+    maya_type = "doubleArray"
+
+
+class Int32ArrayAttribute(ValueArrayAttribute[int]):
+    maya_type = "Int32Array"
+
+
+class UInt64ArrayAttribute(ValueArrayAttribute[int]):
+    maya_type = "uInt32Array"
+
+
+class PointArrayAttribute(ValueArrayAttribute[tuple[float, float, float]]):
+    maya_type = "pointArray"
+
+
+class ComponentListAttribute(ValueArrayAttribute[str]):
+    maya_type = "componentList"
+
+
+class MatrixArrayAttribute(ValueArrayAttribute):
+    maya_type = "matrixArray"
 
 
 class BooleanAttribute(Attribute[bool]):
@@ -389,3 +446,24 @@ class QuatAttribute(Attribute[tuple[float, float, float, float]]):
         self.y = ScalarAttribute(f"{attr_path}Y")
         self.z = ScalarAttribute(f"{attr_path}Z")
         self.w = ScalarAttribute(f"{attr_path}W")
+
+
+class Long3Attribute(Attribute[tuple[int, int, int]]):
+    """A Maya attribute of the type long3 (123)"""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+        self.one = ScalarAttribute(f"{attr_path}1")
+        self.two = ScalarAttribute(f"{attr_path}2")
+        self.three = ScalarAttribute(f"{attr_path}3")
+
+    def get(self) -> tuple[int, int, int]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[int, int, int]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore

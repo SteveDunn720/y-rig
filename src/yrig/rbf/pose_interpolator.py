@@ -1,278 +1,243 @@
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import cast
 
-from maya import cmds, mel
+from maya import cmds
 
-
-@dataclass
-class PoseInterpolatorDriver:
-    name: str
-    index: int
-    matrix_attr: str
+from yrig.deformer.blendshape import export_maya_shape_file, import_maya_shape_file
+from yrig.maya_api.attribute import IntegerAttribute
+from yrig.maya_api.node import PoseInterpolatorManager
+from yrig.transform import create_transform
 
 
-@dataclass
-class PoseInterpolatorPose:
-    name: str
-    index: int
-    attr: str
+def resolve_pose_interpolator_shape(pose_interpolator: str) -> str:
+    if cmds.nodeType(pose_interpolator) == "poseInterpolator":
+        return pose_interpolator
+    shapes = cmds.listRelatives(
+        pose_interpolator,
+        shapes=True,
+        type="poseInterpolator",
+    )
+    if not shapes:
+        raise RuntimeError(f"Couldn't find a shape for {pose_interpolator}")
+    return shapes[0]
 
 
-@dataclass
-class PoseInterpolator:
-    node: str
-    drivers: list[PoseInterpolatorDriver]
-    poses: list[PoseInterpolatorPose]
+def get_pose_index(pose_interpolator_shape: str, pose_name: str) -> int:
+    attr = f"{pose_interpolator_shape}.pose"
 
-    def get_pose(self, pose: str | int) -> PoseInterpolatorPose:
-        """
-        Get a pose using either its name or logical index.
-        """
+    for index in cmds.getAttr(attr, multiIndices=True) or []:
+        name = cmds.getAttr(f"{attr}[{index}].poseName")
+        if name == pose_name:
+            return index
 
-        for pose_data in self.poses:
-            if pose_data.name == pose:
-                return pose_data
-
-            if pose_data.index == pose:
-                return pose_data
-
-        raise ValueError(f"Pose {pose!r} does not exist on {self.node}")
-
-    def get_driver(
-        self,
-        driver: str | int,
-    ) -> PoseInterpolatorDriver:
-        """
-        Get a driver using either its name or logical index.
-        """
-
-        for driver_data in self.drivers:
-            if driver_data.name == driver:
-                return driver_data
-
-            if driver_data.index == driver:
-                return driver_data
-
-        raise ValueError(f"Driver {driver!r} does not exist on {self.node}")
+    raise RuntimeError(f"Couldn't resolve and index for the pose {pose_name}")
 
 
-def import_pose_interpolator(
-    path: str | Path,
-    pose_interp_parent: str = "",
-) -> list[PoseInterpolator]:
-    path = Path(path)
+def _reslove_pose_index(pose_interpolator: str, pose: str | int) -> int:
+    shape = resolve_pose_interpolator_shape(pose_interpolator)
+    return pose if isinstance(pose, int) else get_pose_index(shape, pose)
 
-    if not path.exists():
-        raise FileNotFoundError(f"Pose Interpolator file does not exist: {path}")
+
+def get_pose_interpolator_blendshapes(pose_interpolator: str) -> list[str]:
+    shape = resolve_pose_interpolator_shape(pose_interpolator)
+
+    blendshapes: list[str] = []
+    for index in cmds.poseInterpolator(shape, query=True, index=True) or []:
+        plug = f"{shape}.output[{index}]"
+
+        for node in cmds.listConnections(plug, source=False) or []:
+            if cmds.nodeType(node) == "blendShape":
+                blendshapes.append(node)
+
+    return list(blendshapes)
+
+
+# TODO make this keep the ordering of the directory children by using the childIndices attr.
+def group_pose_interpolators_by_directory(
+    pose_interpolators: Iterable[str],
+    parent: str | None = None,
+    group_namer: Callable[[str], str] | None = None,
+) -> list[str]:
+    manager = PoseInterpolatorManager.from_existing("poseInterpolatorManager")
+    created_groups = []
+    index_group_map: dict[int, str] = {}
+
+    def get_group_name(directory_index: int) -> str:
+        directory_name = manager.pose_interpolator_directory[directory_index].directory_name.get()
+        return group_namer(directory_name) if group_namer else f"{directory_name}_rbf"
+
+    for pose_interpolator in pose_interpolators:
+        shape = resolve_pose_interpolator_shape(pose_interpolator)
+        transform: str | None = next(
+            iter(cmds.listRelatives(shape, parent=True, type="transform") or []),
+            None,
+        )
+        destinations = (
+            cmds.listConnections(
+                shape,
+                source=False,
+                destination=True,
+                plugs=True,
+            )
+            or []
+        )
+        if not destinations:
+            continue
+
+        directory_index: int = IntegerAttribute(destinations[0]).get()
+
+        # Walk upward only until we find an existing group.
+        missing: list[int] = []
+        group_parent = parent
+
+        while directory_index != 0:
+            if directory_index in index_group_map:
+                group_parent = index_group_map[directory_index]
+                break
+
+            group_name = get_group_name(directory_index)
+
+            if cmds.objExists(group_name):
+                index_group_map[directory_index] = group_name
+                group_parent = group_name
+                break
+
+            missing.append(directory_index)
+
+            directory_index = manager.pose_interpolator_directory[
+                directory_index
+            ].parent_index.get()
+
+        # Create the missing part of the hierarchy from top -> bottom.
+        for directory_index in reversed(missing):
+            group_name = get_group_name(directory_index)
+
+            create_transform(group_name, group_parent)
+
+            index_group_map[directory_index] = group_name
+            created_groups.append(group_name)
+
+            group_parent = group_name
+        if transform and group_parent:
+            cmds.parent(transform, group_parent, relative=True)
+
+    return created_groups
+
+
+def import_pose_file(
+    filepath: Path, parent: str | None = None, import_shapes: bool = True
+) -> set[str]:
+    if filepath.suffix != ".pose":
+        raise ValueError(f"The file at {filepath} is not a .pose file.")
+    if not filepath.exists():
+        raise FileNotFoundError(f"No .pose file found at {filepath}.")
+
+    if import_shapes:
+        for shp_file in filepath.parent.glob(f"{filepath.stem}.*.shp"):
+            blendshape = shp_file.stem.removeprefix(f"{filepath.stem}.")
+            import_maya_shape_file(shp_file, blendshape)
 
     existing_pose_interps = set(cmds.ls(type="poseInterpolator") or [])
-
-    try:
-        mel.eval(f'poseInterpolatorImportPoses "{path.as_posix()}" 1;')
-
-    except Exception as error:
-        raise RuntimeError(f"Failed to import Pose Interpolator file: {path}") from error
-
+    cmds.poseInterpolator(importPoses=str(filepath))
     current_pose_interps = set(cmds.ls(type="poseInterpolator") or [])
+    created_pose_interps = current_pose_interps - existing_pose_interps
+    group_pose_interpolators_by_directory(created_pose_interps, parent)
 
-    created_pose_interps = sorted(current_pose_interps - existing_pose_interps)
-
-    if pose_interp_parent and created_pose_interps:
-        if not cmds.objExists(pose_interp_parent):
-            raise RuntimeError(f"Pose Interpolator parent does not exist: {pose_interp_parent}")
-
-        cmds.parent(
-            created_pose_interps,  # type:ignore
-            pose_interp_parent,
-        )
-
-    return [get_pose_interpolator_data(node) for node in created_pose_interps]
+    return created_pose_interps
 
 
-def export_pose_interpolator(
-    path: Path,
-    pose_interp: str,
-) -> Path:
-    """
-    Export a Pose Interpolator node.
-
-    Args:
-        path:
-            Output path.
-
-        pose_interp:
-            Pose Interpolator node to export.
-
-    Returns:
-        The exported path.
-    """
-
-    validate_pose_interpolator(pose_interp)
-
-    path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    pose_path = path.as_posix()
-
-    try:
-        mel.eval(
-            f'''
-            string $tpls[] = {{"{pose_interp}"}};
-            string $poses[] = {{}};
-
-            poseInterpolatorExportPoses(
-                "{pose_path}",
-                $tpls,
-                $poses,
-                1
-            );
-            '''
-        )
-
-    except Exception as error:
-        raise RuntimeError(f"Failed to export Pose Interpolator: {pose_interp}") from error
-
-    return path
-
-
-def get_pose_interpolator_data(
-    pose_interp_node: str,
-) -> PoseInterpolator:
-    """
-    Read a Pose Interpolator node into a data class.
-
-    Args:
-        pose_interp_node:
-            Pose Interpolator node to read.
-
-    Returns:
-        Structured Pose Interpolator information.
-    """
-
-    validate_pose_interpolator(pose_interp_node)
-
-    drivers = get_pose_interpolator_drivers(pose_interp_node)
-
-    poses = get_pose_interpolator_poses(pose_interp_node)
-
-    return PoseInterpolator(
-        node=pose_interp_node,
-        drivers=drivers,
-        poses=poses,
-    )
-
-
-def get_pose_interpolator_drivers(
-    pose_interp_node: str,
-) -> list[PoseInterpolatorDriver]:
-    """
-    Get the drivers used by a Pose Interpolator.
-    """
-
-    driver_names = (
-        cast(
-            list[str] | None,
-            cmds.poseInterpolator(
-                pose_interp_node,
-                query=True,
-                drivers=True,
-            ),
-        )
-        or []
-    )
-
-    driver_indices = get_multi_indices(f"{pose_interp_node}.driver")
-
-    drivers: list[PoseInterpolatorDriver] = []
-
-    for list_index, driver_name in enumerate(driver_names):
-        if list_index < len(driver_indices):
-            driver_index = driver_indices[list_index]
-        else:
-            driver_index = list_index
-
-        drivers.append(
-            PoseInterpolatorDriver(
-                name=driver_name,
-                index=driver_index,
-                matrix_attr=(f"{pose_interp_node}.driver[{driver_index}].driverMatrix"),
-            )
-        )
-
-    return drivers
-
-
-def get_pose_interpolator_poses(
-    pose_interp_node: str,
-) -> list[PoseInterpolatorPose]:
-    """
-    Get the poses and output attributes from a Pose Interpolator.
-    """
-
-    pose_names = (
-        cast(
-            list[str] | None,
-            cmds.poseInterpolator(
-                pose_interp_node,
-                query=True,
-                poseNames=True,
-            ),
-        )
-        or []
-    )
-
-    pose_indices = get_multi_indices(f"{pose_interp_node}.pose")
-
-    poses: list[PoseInterpolatorPose] = []
-
-    for list_index, pose_name in enumerate(pose_names):
-        if list_index < len(pose_indices):
-            pose_index = pose_indices[list_index]
-        else:
-            pose_index = list_index
-
-        poses.append(
-            PoseInterpolatorPose(
-                name=pose_name,
-                index=pose_index,
-                attr=(f"{pose_interp_node}.output[{pose_index}]"),
-            )
-        )
-
-    return poses
-
-
-def get_multi_indices(attribute: str) -> list[int]:
-    """
-    Return the populated logical indices of a Maya multi attribute.
-    """
-
-    if not cmds.objExists(attribute):
-        return []
-
-    indices = cmds.getAttr(
-        attribute,
-        multiIndices=True,
-    )
-
-    if not indices:
-        return []
-
-    return sorted(cast(list[int], indices))
-
-
-def validate_pose_interpolator(
-    pose_interp_node: str,
+def _validate_pose_interpolators(
+    pose_interpolators: list[str],
 ) -> None:
-    """
-    Validate that a node exists and is a Pose Interpolator.
-    """
+    for pose_interpolator in pose_interpolators:
+        if (
+            not cmds.objExists(pose_interpolator)
+            or cmds.nodeType(pose_interpolator) != "poseInterpolator"
+        ):
+            raise RuntimeError(f"Not a pose interpolator: {pose_interpolator}")
 
-    if not cmds.objExists(pose_interp_node):
-        raise RuntimeError(f"Pose Interpolator does not exist: {pose_interp_node}")
 
-    if cmds.nodeType(pose_interp_node) != "poseInterpolator":
-        raise TypeError(f"{pose_interp_node} is not a poseInterpolator node")
+def export_pose_file(
+    filepath: Path,
+    pose_interpolators: list[str] | None = None,
+    poses: list[tuple[str, str | int]] | None = None,
+    export_shapes: bool = True,
+) -> None:
+    if pose_interpolators:
+        resloved_pose_interpolators = [
+            resolve_pose_interpolator_shape(pose_interpolator)
+            for pose_interpolator in pose_interpolators
+        ]
+    elif poses:
+        resloved_pose_interpolators = [
+            resolve_pose_interpolator_shape(pose_interpolator) for pose_interpolator, _pose in poses
+        ]
+    else:
+        raise ValueError("Must give pose_interpolators or poses for export")
+
+    _validate_pose_interpolators(resloved_pose_interpolators)
+
+    args = []
+    if pose_interpolators:
+        args.append(pose_interpolators)
+    kwargs = {}
+    if poses:
+        kwargs["pose"] = poses
+
+    cmds.poseInterpolator(
+        *args,  # type: ignore
+        **kwargs,  # type: ignore
+        edit=True,
+        exportPoses=str(filepath),
+    )
+
+    if not export_shapes:
+        return
+
+    # Find connected shape deformers.
+    blendshapes: list[str] = []
+
+    for pose_interpolator in resloved_pose_interpolators:
+        blendshapes.extend(get_pose_interpolator_blendshapes(pose_interpolator))
+
+    for blendshape in blendshapes:
+        shape_file = filepath.with_suffix(f".{blendshape}.shp")
+        targets: list[str] = []
+        destinations: list[str] = []
+        if poses:
+            for pose_interpolator, pose in poses:
+                pose_index = _reslove_pose_index(pose_interpolator, pose)
+                source = (
+                    f"{resolve_pose_interpolator_shape(pose_interpolator)}.output[{pose_index}]"
+                )
+                destinations.extend(
+                    cmds.connectionInfo(  # type: ignore
+                        source,
+                        destinationFromSource=True,
+                    )
+                    or []
+                )
+        else:
+            for pose_interpolator in resloved_pose_interpolators:
+                target_name = f"{pose_interpolator}.output"
+                indices = cmds.getAttr(target_name, multiIndices=True) or []
+
+                for index in indices:
+                    destinations.extend(
+                        cmds.connectionInfo(  # type: ignore
+                            f"{target_name}[{index}]",
+                            destinationFromSource=True,
+                        )
+                        or []
+                    )
+
+        for dest in destinations:
+            node, target_name = dest.split(".", 1)
+            if node == blendshape:
+                targets.append(target_name)
+
+        export_maya_shape_file(
+            shape_file,
+            blendshape,
+            targets,
+        )

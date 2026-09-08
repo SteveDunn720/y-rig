@@ -1,4 +1,3 @@
-import json
 import logging
 from collections.abc import Callable
 from functools import wraps
@@ -8,6 +7,7 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar
 from maya import cmds
 
 from yrig.io import confirm_overwrite
+from yrig.io.json import load_json
 
 log = logging.getLogger(__name__)
 
@@ -174,9 +174,8 @@ def get_influences_from_ng_skin_weights(
         filepath: Path to the weights file.
     """
     if not filepath.exists():
-        raise RuntimeError(f"{filepath} doesn't exist, unable to load weights.")
-    with open(filepath) as file:
-        data: dict = json.loads(file.read())
+        raise FileNotFoundError(f"{filepath} doesn't exist, unable to load weights.")
+    data = load_json(filepath, dict)
     return [influence["path"] for influence in data["influences"]]
 
 

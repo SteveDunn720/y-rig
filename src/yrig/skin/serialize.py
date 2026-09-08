@@ -1,17 +1,16 @@
-import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Self
 
 from yrig.io import confirm_overwrite
+from yrig.io.json import export_json, load_json
+from yrig.shape import get_shape
 from yrig.skin.core import (
     get_skin_cluster,
     get_skin_cluster_influences,
     get_skin_weights,
     set_skin_weights,
 )
-from yrig.transform import get_shape
 
 log = logging.getLogger(__name__)
 
@@ -21,31 +20,9 @@ class SkinWeightData:
     influences: list[str]
     skin_weights: dict[int, dict[str, float]]
 
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        raw_weights = data["skin_weights"]
-        skin_weights = {int(point_index): weights for point_index, weights in raw_weights.items()}
-        return cls(influences=data["influences"], skin_weights=skin_weights)
-
-
-def skin_weight_data_to_json(data: SkinWeightData) -> str:
-    return json.dumps(data.to_dict(), indent=2)
-
-
-def skin_weight_data_from_json(json_str: str) -> SkinWeightData:
-    data = json.loads(json_str)
-    return SkinWeightData.from_dict(data)
-
 
 def skin_weight_data_from_file(filepath: Path) -> SkinWeightData:
-    if not filepath.exists():
-        raise FileNotFoundError
-    with open(filepath) as file:
-        serialized = file.read()
-    return skin_weight_data_from_json(serialized)
+    return load_json(filepath, SkinWeightData)
 
 
 def apply_skin_weight_data(
@@ -99,9 +76,7 @@ def export_skin_weights(
     skin_weights = get_skin_weights(geometry, skin_cluster)
     influences = get_skin_cluster_influences(resolved_skin_cluster)
     skin_weight_data = SkinWeightData(influences=influences, skin_weights=skin_weights)
-    serialized = skin_weight_data_to_json(skin_weight_data)
-    with open(file=filepath, mode="w") as save_file:
-        save_file.write(serialized)
+    export_json(filepath, skin_weight_data)
     log.info(f"The skin weights for {resolved_skin_cluster} were written to {filepath}")
     return True
 

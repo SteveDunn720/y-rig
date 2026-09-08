@@ -49,6 +49,34 @@ class Axis(IntEnum):
                 return (0, 0, -1)
 
 
+class BlendShapeDeformationOrder(IntEnum):
+    PRE_DEFORMATION = 0
+    POST_DEFORMATION = 1
+
+
+class BlendShapeInbetweenTargetType(IntEnum):
+    ABSOLUTE = 0
+    RELATIVE = 1
+
+
+class BlendShapeInterpolation(IntEnum):
+    LINEAR = 0
+    SMOOTH = 1
+    CUSTOM = 2
+
+
+class BlendShapeOrigin(IntEnum):
+    WORLD = 0
+    LOCAL = 1
+    USER = 2
+
+
+class BlendShapePostDeformationOrder(IntEnum):
+    NONE = 0
+    TANGENT_SPACE = 1
+    TRANSFORM_SPACE = 2
+
+
 class ConditionOperation(IntEnum):
     EQUAL = 0
     NOT_EQUAL = 1

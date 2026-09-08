@@ -8,10 +8,7 @@ from maya.api.OpenMaya import (
     MFn,
     MFnComponent,
     MFnDependencyNode,
-    MFnDoubleIndexedComponent,
     MFnMesh,
-    MFnNurbsCurve,
-    MFnNurbsSurface,
     MFnSingleIndexedComponent,
     MIntArray,
     MObject,
@@ -24,7 +21,7 @@ from maya.api.OpenMayaAnim import MFnSkinCluster
 
 from yrig.maya_api.utils import get_dag_path, get_depend_node
 from yrig.name import natural_sort_key
-from yrig.transform.utils import get_shape
+from yrig.shape import get_components_of_shape, get_shape
 
 
 def get_skin_clusters(geometry: str) -> list[str] | None:
@@ -62,6 +59,12 @@ def get_skin_cluster(geometry: str) -> str | None:
     """
     skin_clusters = get_skin_clusters(geometry)
     return skin_clusters[0] if skin_clusters else None
+
+
+def _resolve_skin_cluster(node: str) -> str | None:
+    if cmds.nodeType(node) == "skinCluster":
+        return node
+    return get_skin_cluster(node)
 
 
 def get_skin_cluster_influences(skin_cluster: str) -> list[str]:
@@ -174,36 +177,7 @@ def get_mesh_points(fn_mesh: MFnMesh, vertex_indices: list[int] | None = None) -
     return mesh_points
 
 
-def get_components_of_shape(shape_dag_path: MDagPath) -> MObject:
-    api_type = shape_dag_path.apiType()
-
-    if api_type == MFn.kMesh:
-        fn = MFnMesh(shape_dag_path)
-        comp_fn = MFnSingleIndexedComponent()
-        component = comp_fn.create(MFn.kMeshVertComponent)
-        comp_fn.addElements(range(fn.numVertices))
-        return component
-
-    if api_type == MFn.kNurbsCurve:
-        fn = MFnNurbsCurve(shape_dag_path)
-        comp_fn = MFnSingleIndexedComponent()
-        component = comp_fn.create(MFn.kCurveCVComponent)
-        comp_fn.addElements(range(fn.numCVs))
-        return component
-
-    if api_type == MFn.kNurbsSurface:
-        fn = MFnNurbsSurface(shape_dag_path)
-        comp_fn = MFnDoubleIndexedComponent()
-        component = comp_fn.create(MFn.kSurfaceCVComponent)
-        for u in range(fn.numCVsInU):
-            for v in range(fn.numCVsInV):
-                comp_fn.addElement(u, v)
-        return component
-    else:
-        raise TypeError(f"Unsupported shape type: {shape_dag_path.node().apiTypeStr}")
-
-
-def get_weights_of_influence(skin_cluster: str, joint: str) -> dict[int, float]:
+def get_weights_of_influence(skin_cluster: str, influence: str) -> dict[int, float]:
     """Query per-vertex skin weights for a single influence joint.
 
     Uses the Maya API's ``MFnSkinCluster.getPointsAffectedByInfluence``
@@ -212,19 +186,19 @@ def get_weights_of_influence(skin_cluster: str, joint: str) -> dict[int, float]:
 
     Args:
         skin_cluster: The name of the skinCluster node to query.
-        joint: The name of the influence joint whose weights are requested.
+        influence: The name of the influence whose weights are requested.
 
     Returns:
         A dictionary mapping vertex indices to their weight values for
         the specified joint.  Vertices with zero influence are omitted.
     """
     skin_cluster_mob: MObject = get_depend_node(skin_cluster)
-    joint_dag: MDagPath = get_dag_path(joint)
+    influence_dag: MDagPath = get_dag_path(influence)
     mfn_skin_cluster: MFnSkinCluster = MFnSkinCluster(skin_cluster_mob)
 
     components: MSelectionList
     weights: list[float]
-    components, weights = mfn_skin_cluster.getPointsAffectedByInfluence(joint_dag)
+    components, weights = mfn_skin_cluster.getPointsAffectedByInfluence(influence_dag)
 
     index_weights: dict[int, float] = {}
     affected_indices: list[int] = []
@@ -320,6 +294,17 @@ def get_skinned_shapes() -> dict[str, str]:
     return skin_shapes
 
 
+def _add_missing_influences(
+    exisisting_influences: Iterable[str], needed_influences: Iterable[str], skin_cluster: str
+) -> list[str]:
+    influences_to_add: list[str] = sorted(
+        set(needed_influences) - set(exisisting_influences), key=natural_sort_key
+    )
+    if influences_to_add:
+        cmds.skinCluster(skin_cluster, edit=True, addInfluence=influences_to_add, weight=0.0)
+    return influences_to_add
+
+
 def set_skin_weights(
     shape: str,
     weights: dict[int, dict[str, float]],
@@ -352,17 +337,10 @@ def set_skin_weights(
     existing_influences = set(
         cmds.skinCluster(resolved_skin_cluster, query=True, influence=True) or []  # type: ignore
     )
-    # Add missing influences to the skinCluster
-    influences_to_add: list[str] = sorted(
-        all_influences_in_data - existing_influences, key=natural_sort_key
-    )
-    if influences_to_add:
-        cmds.skinCluster(
-            resolved_skin_cluster, edit=True, addInfluence=influences_to_add, weight=0.0
-        )
+
+    _add_missing_influences(existing_influences, all_influences_in_data, resolved_skin_cluster)
 
     # Get the actual MFnSkinCluster to apply weights with
-
     shape_dag = get_dag_path(shape)
     skin_cluster_mob = get_depend_node(resolved_skin_cluster)
     sel: MSelectionList = MSelectionList()
@@ -424,24 +402,42 @@ def set_skin_weights(
 
 
 def transfer_skin_weights(
-    source: str, target: str, interpolate: bool = True, map_by_name: bool = True
+    source: str,
+    target: str,
+    interpolate: bool = True,
+    map_by_name: bool = True,
+    add_missing_influences: bool = True,
+    skin_unskinned_target: bool = True,
 ) -> None:
-    source_skin: str
-    if cmds.nodeType(source) == "skinCluster":
-        source_skin = source
-    else:
-        skin_cluster = get_skin_cluster(source)
-        if skin_cluster is None:
-            raise RuntimeError(f"No skin cluster found on {source}.")
-        source_skin = skin_cluster
-    target_skin: str
-    if cmds.nodeType(source) == "skinCluster":
-        target_skin = source
-    else:
-        skin_cluster = get_skin_cluster(target)
-        if skin_cluster is None:
+    """Transfer skin weights from one skinned object to another.
+
+    Args:
+        source: Source geometry or skinCluster.
+        target: Target geometry or skinCluster.
+        interpolate: Smooth/interpolate weights when transferring between different topology.
+        map_by_name: Match influences by name. Otherwise Maya uses closestJoint.
+        add_missing_influences: Add source influences that do not exist on the target skinCluster.
+        skin_unskinned_target: Create a skinCluster on the target when one does not exist.
+    """
+    source_skin = _resolve_skin_cluster(source)
+    if source_skin is None:
+        raise RuntimeError(f"No skin cluster found on {source}.")
+
+    source_influences = get_skin_cluster_influences(source_skin)
+    if not source_influences:
+        raise RuntimeError(f"Source skin cluster {source_skin!r} has no influences.")
+
+    target_skin = _resolve_skin_cluster(target)
+
+    if target_skin is None:
+        if skin_unskinned_target:
+            target_skin = skin_geometry(source_influences, target)
+        else:
             raise RuntimeError(f"No skin cluster found on {target}.")
-        target_skin = skin_cluster
+    elif add_missing_influences:
+        target_influences = get_skin_cluster_influences(target_skin)
+        _add_missing_influences(target_influences, source_influences, target_skin)
+
     cmds.copySkinWeights(
         sourceSkin=source_skin,
         destinationSkin=target_skin,

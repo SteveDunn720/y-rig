@@ -1,3 +1,4 @@
+from .blendshape import BlendShape
 from .core import Node
 from .geometry import ClosestPointOnSurfaceNode, CurveInfoNode, MotionPathNode, UvPinNode
 from .matrix import (
@@ -15,6 +16,7 @@ from .matrix import (
     RowFromMatrixNode,
     WtAddMatrixNode,
 )
+from .pose_interpolator import PoseInterpolatorManager
 from .quat import (
     EulerToQuatNode,
     QuatInvertNode,
@@ -52,6 +54,7 @@ __all__ = [
     "AxisFromMatrixNode",
     "BlendColorsNode",
     "BlendMatrixNode",
+    "BlendShape",
     "ClampRangeNode",
     "ClosestPointOnSurfaceNode",
     "ComposeMatrixNode",
@@ -77,6 +80,7 @@ __all__ = [
     "NormalizeNode",
     "PickMatrixNode",
     "PlusMinusAverageNode",
+    "PoseInterpolatorManager",
     "QuatInvertNode",
     "QuatNormalizeNode",
     "QuatProdNode",

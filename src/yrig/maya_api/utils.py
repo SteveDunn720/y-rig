@@ -1,7 +1,7 @@
 import logging
 
 from maya import cmds
-from maya.api.OpenMaya import MDagPath, MObject, MSelectionList
+from maya.api.OpenMaya import MDagPath, MObject, MPlug, MSelectionList
 
 log = logging.getLogger(__name__)
 
@@ -41,3 +41,13 @@ def get_depend_node(node: str) -> MObject:
     except RuntimeError as exc:
         raise RuntimeError(f"Couldn't resolve an MObject for {node}") from exc
     return depend_node
+
+
+def get_plug(attr: str) -> MPlug:
+    selection = MSelectionList()
+    try:
+        selection.add(attr)
+        plug: MPlug = selection.getPlug(0)
+    except RuntimeError as exc:
+        raise RuntimeError(f"Couldn't resolve an MPlug for {attr}") from exc
+    return plug

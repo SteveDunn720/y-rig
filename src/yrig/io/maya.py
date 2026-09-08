@@ -5,8 +5,8 @@ from pathlib import Path
 
 from maya import cmds
 
-from yrig.name import get_short_name
 from yrig.io.core import confirm_overwrite
+from yrig.name import get_short_name
 from yrig.select import maintain_selection
 
 log = logging.getLogger(__name__)

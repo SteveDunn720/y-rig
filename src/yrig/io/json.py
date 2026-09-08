@@ -90,22 +90,25 @@ def load_json(filepath: Path, type: type[T]) -> T:
     return msgspec.json.decode(data, type=type)
 
 
-def export_json(filepath: Path, obj: Any, pretty: bool = True) -> None:  # noqa:  ANN401
+def export_json(filepath: Path, obj: Any, pretty: bool = True, compact: bool = True) -> None:  # noqa:  ANN401
     """
     Encode an object as JSON and write it to a file.
 
-    When ``pretty`` is enabled, small containers are formatted across
-    multiple lines while large containers are kept compact on a single
+    When ``compact`` is enabled large containers are kept compact on a single
     line. This produces human-readable JSON while avoiding large,
     noisy diffs for big data (like weights, blendshape deltas, etc).
 
     Args:
         filepath: Path to the output JSON file.
         obj: Object to encode as JSON.
-        pretty: Whether to use the compact pretty formatting scheme.
+        pretty: Whether to use the pretty formatting scheme.
+        compact: When True use the compact formatting scheme (only does anything if ``pretty`` is also True).
     """
     with open(filepath, "wb") as file:
         if pretty:
-            _write_compact_pretty(msgspec.to_builtins(obj), file)
+            if compact:
+                _write_compact_pretty(msgspec.to_builtins(obj), file)
+            else:
+                file.write(msgspec.json.format(_msgspec_encoder.encode(obj), indent=2))
         else:
             file.write(_msgspec_encoder.encode(obj))

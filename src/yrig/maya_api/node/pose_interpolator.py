@@ -1,6 +1,8 @@
-from yrig.maya_api.attribute import ArrayAttribute
-from yrig.maya_api.attribute.compound import PoseInterpolatorDirectoryAttribute
-from yrig.maya_api.attribute.core import Int32ArrayAttribute
+from yrig.maya_api.attribute import (
+    ArrayAttribute,
+    Int32ArrayAttribute,
+    PoseInterpolatorDirectoryAttribute,
+)
 
 from .core import Node
 

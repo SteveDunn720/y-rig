@@ -1,6 +1,8 @@
 from maya import cmds
 
-from yrig.maya_api.enum import AimMatrixAxisMode
+from yrig.maya_api.enum import (
+    AimMatrixAxisMode,
+)
 
 from .core import (
     Attribute,

@@ -1,3 +1,4 @@
+from .blendshape import BlendShape
 from .core import Node
 from .geometry import ClosestPointOnSurfaceNode, CurveInfoNode, MotionPathNode, UvPinNode
 from .matrix import (
@@ -53,6 +54,7 @@ __all__ = [
     "AxisFromMatrixNode",
     "BlendColorsNode",
     "BlendMatrixNode",
+    "BlendShape",
     "ClampRangeNode",
     "ClosestPointOnSurfaceNode",
     "ComposeMatrixNode",

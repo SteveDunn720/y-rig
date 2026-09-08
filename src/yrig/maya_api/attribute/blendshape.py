@@ -114,10 +114,10 @@ class BlendShapeInputTargetItemAttribute(Attribute):
             f"{attr_path}.inputRelativePointsTarget"
         )
         self.input_relative_components_target = ComponentListAttribute(
-            f"{attr_path}.inputRelativePointsTarget"
+            f"{attr_path}.inputRelativeComponentsTarget"
         )
         self.input_points_target = PointArrayAttribute(f"{attr_path}.inputPointsTarget")
-        self.input_components_target = ComponentListAttribute(f"{attr_path}.inputPointsTarget")
+        self.input_components_target = ComponentListAttribute(f"{attr_path}.inputComponentsTarget")
 
 
 class BlendShapeNormalizationGroupAttribute(Attribute):

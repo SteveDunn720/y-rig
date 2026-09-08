@@ -3,7 +3,7 @@ from pathlib import Path
 
 from maya import cmds
 
-from yrig.deformer.blendshape import export_blendshape, import_blendshape
+from yrig.deformer.blendshape import export_maya_shape_file, import_maya_shape_file
 from yrig.maya_api.attribute import IntegerAttribute
 from yrig.maya_api.node import PoseInterpolatorManager
 from yrig.transform import create_transform
@@ -135,7 +135,7 @@ def import_pose_file(
     if import_shapes:
         for shp_file in filepath.parent.glob(f"{filepath.stem}.*.shp"):
             blendshape = shp_file.stem.removeprefix(f"{filepath.stem}.")
-            import_blendshape(shp_file, blendshape)
+            import_maya_shape_file(shp_file, blendshape)
 
     existing_pose_interps = set(cmds.ls(type="poseInterpolator") or [])
     cmds.poseInterpolator(importPoses=str(filepath))
@@ -236,7 +236,7 @@ def export_pose_file(
             if node == blendshape:
                 targets.append(target_name)
 
-        export_blendshape(
+        export_maya_shape_file(
             shape_file,
             blendshape,
             targets,

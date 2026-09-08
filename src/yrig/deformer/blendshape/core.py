@@ -21,7 +21,7 @@ def create_blendshape(
     return result[0]
 
 
-def import_blendshape(
+def import_maya_shape_file(
     filepath: Path,
     blendshape: str | None = None,
 ) -> list[str]:
@@ -59,7 +59,7 @@ def import_blendshape(
         )
 
 
-def export_blendshape(
+def export_maya_shape_file(
     filepath: Path,
     blendshape: str,
     targets: Iterable[str | int] | None = None,

@@ -8,6 +8,11 @@ T = TypeVar("T")
 _msgspec_encoder = msgspec.json.Encoder()
 
 
+def _encode_json_key(key: Any) -> bytes:  # noqa: ANN401
+    # This is kinda a hack to get a properly encoded json key according to msgspec.
+    return _msgspec_encoder.encode({key: None})[1:].rsplit(b":", 1)[0]
+
+
 def _is_compact(obj: list | tuple | dict, threshold: int) -> bool:
     """Return whether a container should be rendered on a single line."""
     return len(obj) > threshold
@@ -65,7 +70,7 @@ def _write_compact_pretty(
         last = len(obj) - 1
         for i, (k, v) in enumerate(obj.items()):
             buffer.write(child_prefix)
-            buffer.write(_msgspec_encoder.encode(k))
+            buffer.write(_encode_json_key(k))
             buffer.write(b": ")
             _write_compact_pretty(v, buffer, indent + 1, pad, threshold)
             buffer.write(b",\n" if i != last else b"\n")

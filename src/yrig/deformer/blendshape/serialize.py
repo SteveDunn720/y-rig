@@ -83,7 +83,8 @@ class BlendShapeTargetGroupData:
 
 @dataclass
 class BlendShapeTargetItemData:
-    points: dict[int, tuple[float, float, float]]
+    components: list[int]
+    points: list[tuple[float, float, float]]
 
 
 def _get_component_indices(plug: MPlug) -> list[int]:
@@ -123,12 +124,12 @@ def get_blendshape_target_item_data(
     points_mob: MObject = points_plug.asMObject()
     fn_points: MFnPointArrayData = MFnPointArrayData(points_mob)
     points_array: MPointArray = fn_points.array()
-    points_dict = {
-        id: (point.x, point.y, point.z)
-        for id, point in zip(component_ids, points_array, strict=True)  # type: ignore
+    point_tuples: list[tuple[float, float, float]] = [
+        (point.x, point.y, point.z)
+        for point in points_array
         if not point.isEquivalent(MPoint.kOrigin)
-    }
-    return BlendShapeTargetItemData(points=points_dict)
+    ]
+    return BlendShapeTargetItemData(components=component_ids, points=point_tuples)
 
 
 def apply_blendshape_target_item_data(
@@ -146,14 +147,12 @@ def apply_blendshape_target_item_data(
     component_plug = get_plug(str(item_attr.input_components_target))
     points_plug = get_plug(str(item_attr.input_points_target))
 
-    component_ids: list[int] = []
     point_array: MPointArray = MPointArray()
     point_array.setLength(len(data.points))
-    for index, (component_id, point) in enumerate(data.points.items()):
-        component_ids.append(component_id)
+    for index, point in enumerate(data.points):
         point_array[index] = MPoint(*point)
 
-    _set_component_indices(component_plug, component_ids)
+    _set_component_indices(component_plug, data.components)
     _set_point_array(points_plug, point_array)
 
 

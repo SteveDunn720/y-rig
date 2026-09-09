@@ -52,6 +52,10 @@
                 -1435.4748153869095,
                 341.9310107006777
             ],
+            "/io_pair2": [
+                320,
+                0
+            ],
             "/left": [
                 160.30801917363112,
                 39.76334630104233
@@ -391,14 +395,25 @@
                 }
             },
             "code": [
-                "imported_nodes = cmds.file(\"${face_guides_filepath}\", i=True, defaultNamespace=True, returnNewNodes=True)"
+                "from yrig.io.maya import import_split_scene_files",
+                "",
+                "",
+                "import_path = Path(\"${face_guides_filepath}\")",
+                "folder = import_path.parent",
+                "imported = import_split_scene_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                ")"
             ]
         },
         "/tools_window/biped/face": {
             "instance": "/panel",
             "child_order": [
                 "face_guides_io",
-                "mouth_surf_skin_io"
+                "mouth_surface_io",
+                "mouth_surf_skin_io",
+                "solo_face_guides_io"
             ],
             "attrs": {
                 "text": {
@@ -430,12 +445,27 @@
                 }
             },
             "code": [
-                "export_root_path = \"${export_root_path}\"",
-                "if not export_root_path or not Path(export_root_path).is_dir():",
-                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
-                "export_path = Path(\"${export_path}\")",
-                "exported = yrig.io.export_maya_file(export_path, (\"${face_guides_group}\",), force=${force})",
-                ""
+                "from pathlib import Path",
+                "",
+                "from yrig.io.maya import split_scene_to_files",
+                "",
+                "",
+                "export_root_path = (",
+                "    Path(\"${export_root_path}\")",
+                "    / \"data\"",
+                "    / \"face\"",
+                ")",
+                "",
+                "if not export_root_path.is_dir():",
+                "    raise NotADirectoryError(",
+                "        f\"Export root does not exist: {export_root_path}\"",
+                "    )",
+                "",
+                "split_scene_to_files(",
+                "    directory=export_root_path,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                ")"
             ]
         },
         "/tools_window/biped/face/face_guides_io/import": {
@@ -445,9 +475,15 @@
                 }
             },
             "code": [
+                "from yrig.io.maya import import_split_scene_files",
+                "",
                 "import_path = Path(\"${import_filepath}\")",
-                "imported_nodes = yrig.io.import_maya_file(import_path)",
-                "print(imported_nodes)"
+                "folder = import_path.parent",
+                "imported = import_split_scene_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                ")"
             ]
         },
         "/tools_window/biped/face/mouth_surf_skin_io": {
@@ -493,6 +529,110 @@
             "code": [
                 "import_path = Path(\"${import_filepath}\")",
                 "yrig.skin.apply_weights(import_path, \"${mouth_surface}\")"
+            ]
+        },
+        "/tools_window/biped/face/mouth_surface_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "export",
+                "import"
+            ],
+            "attrs": {
+                "relative_filepath": {
+                    "value": "data/face/mouth_surface.ma"
+                },
+                "text": {
+                    "type": "raw",
+                    "value": "Mouth Surface"
+                }
+            }
+        },
+        "/tools_window/biped/face/mouth_surface_io/export": {
+            "attrs": {
+                "text": {
+                    "value": "Export Mouth Surface"
+                }
+            },
+            "code": [
+                "from yrig.io.maya import split_scene_to_files",
+                "",
+                "export_root_path = Path(\"/job/sandwich/05_production/rig_build_work/sd547/rig_build/character/biped\")",
+                "",
+                "if not export_root_path.is_dir():",
+                "    raise NotADirectoryError(",
+                "        f\"Export root does not exist: {export_root_path}\"",
+                "    )",
+                "",
+                "",
+                "folder = export_root_path",
+                "exported = split_scene_to_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=None,",
+                ")"
+            ]
+        },
+        "/tools_window/biped/face/mouth_surface_io/import": {
+            "code": [
+                "from yrig.io.maya import import_split_scene_files",
+                "",
+                "import_path = Path(\"${import_filepath}\")",
+                "folder = import_path.parent",
+                "imported = import_split_scene_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                ")"
+            ]
+        },
+        "/tools_window/biped/face/solo_face_guides_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "export",
+                "import"
+            ],
+            "attrs": {
+                "text": {
+                    "value": "Solo Face Guides"
+                }
+            }
+        },
+        "/tools_window/biped/face/solo_face_guides_io/export": {
+            "attrs": {
+                "text": {
+                    "value": "Export Solo Face Guides"
+                }
+            },
+            "code": [
+                "from yrig.io.maya import import_split_scene_files",
+                "",
+                "import_path = Path(\"${import_filepath}\")",
+                "folder = import_path.parent",
+                "imported = import_split_scene_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                "    solo=True",
+                ")"
+            ]
+        },
+        "/tools_window/biped/face/solo_face_guides_io/import": {
+            "attrs": {
+                "text": {
+                    "value": "Import Solo Face Guides"
+                }
+            },
+            "code": [
+                "from yrig.io.maya import import_split_scene_files",
+                "",
+                "import_path = Path(\"${import_filepath}\")",
+                "folder = import_path.parent",
+                "imported = import_split_scene_files(",
+                "    directory=folder,",
+                "    objects=[\"face_surface\"],",
+                "    remainder_name=\"guides\",",
+                "    solo=True",
+                ")"
             ]
         }
     }

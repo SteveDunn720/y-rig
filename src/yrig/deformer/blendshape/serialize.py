@@ -107,13 +107,6 @@ def _set_component_indices(plug: MPlug, indices: list[int]) -> None:
     plug.setMObject(data_mob)
 
 
-def _get_point_array(plug: MPlug) -> MPointArray:
-    points_mob: MObject = plug.asMObject()
-    fn_points: MFnPointArrayData = MFnPointArrayData(points_mob)
-    points_array: MPointArray = fn_points.array()
-    return points_array
-
-
 def _set_point_array(plug: MPlug, point_array: MPointArray) -> None:
     fn_points = MFnPointArrayData()
     points_mob = fn_points.create(point_array)
@@ -127,7 +120,9 @@ def get_blendshape_target_item_data(
     component_ids = _get_component_indices(components_plug)
 
     points_plug = get_plug(str(target_item.input_points_target))
-    points_array = _get_point_array(points_plug)
+    points_mob: MObject = points_plug.asMObject()
+    fn_points: MFnPointArrayData = MFnPointArrayData(points_mob)
+    points_array: MPointArray = fn_points.array()
     points_dict = {
         id: (point.x, point.y, point.z)
         for id, point in zip(component_ids, points_array, strict=True)  # type: ignore
@@ -159,7 +154,6 @@ def apply_blendshape_target_item_data(
         point_array[index] = MPoint(*point)
 
     _set_component_indices(component_plug, component_ids)
-
     _set_point_array(points_plug, point_array)
 
 
@@ -303,6 +297,18 @@ def export_blendshape(
     targets: Iterable[str | int] | None = None,
     force: bool = False,
 ) -> bool:
+    """
+    blendShape target data to a `.yshape` file.
+
+    Args:
+        filepath: Destination `.yshape` file.
+        blendshape: BlendShape node to export.
+        targets: Optional target names or indices to export. If omitted, all targets are exported.
+        force: Whether to overwrite an existing file without confirmation.
+
+    Returns:
+        ``True`` if the blendShape was exported, or ``False``
+        if the export was cancelled."""
     if not confirm_overwrite(filepath, force):
         return False
     blendshape_data = get_blendshape_data(blendshape, targets)
@@ -315,5 +321,13 @@ def import_blendshape(
     blendshape: str | BlendShape,
     targets: Collection[str] | None = None,
 ) -> None:
+    """
+    Import blendShape target data from a `.yshape` file.
+
+    Args:
+        filepath: Source `.yshape` file containing serialized blendShape data.
+        blendshape: BlendShape node to modify.
+        targets: Optional collection of target names to import. If omitted, all targets contained in the file are imported.
+    """
     data = load_json(filepath, BlendShapeData)
     apply_blendshape_data(blendshape, data, targets)

@@ -128,7 +128,6 @@
             "/tools_window/biped": false,
             "/tools_window/biped/face": false,
             "/tools_window/biped/face/face_guides_io": false,
-            "/tools_window/biped/face/face_guides_io/export": true,
             "/tools_window/biped/face/face_guides_io/import": true
         }
     },

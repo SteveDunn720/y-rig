@@ -154,6 +154,7 @@ def split_scene_to_files(
     directory: Path,
     objects: Iterable[str],
     remainder_name: str | None = None,
+    solo: bool = False,
     binary: bool = False,
     force: bool = False,
 ) -> bool:
@@ -197,12 +198,13 @@ def split_scene_to_files(
 
             filepath = directory / f"{obj}{extension}"
 
-            export_maya_file(
-                filepath=filepath,
-                nodes=[obj],
-                binary=binary,
-                force=force,
-            )
+            if not solo:
+                export_maya_file(
+                    filepath=filepath,
+                    nodes=[obj],
+                    binary=binary,
+                    force=force,
+                )
 
         cmds.delete(objects)  # type:ignore
         # Get everything remaining at the top level
@@ -239,6 +241,7 @@ def import_split_scene_files(
     objects: Iterable[str],
     remainder_name: str | None = None,
     binary: bool = False,
+    solo: bool = False,
 ) -> bool:
     """Import a split Maya scene and restore the original hierarchy.
 
@@ -262,35 +265,36 @@ def import_split_scene_files(
             filepath=remainder_filepath,
         )
 
-    # Import each split object
-    for obj in objects:
-        filepath = directory / f"{obj}{extension}"
+    if not solo:
+        # Import each split object
+        for obj in objects:
+            filepath = directory / f"{obj}{extension}"
 
-        imported_nodes = import_maya_file(
-            filepath=filepath,
-        )
+            imported_nodes = import_maya_file(
+                filepath=filepath,
+            )
 
-        # Find the imported node carrying our split metadata
-        for node in imported_nodes:
-            node = get_short_name(node)
+            # Find the imported node carrying our split metadata
+            for node in imported_nodes:
+                node = get_short_name(node)
 
-            if not cmds.attributeQuery(
-                SPLIT_PARENT_ATTR,
-                node=node,
-                exists=True,
-            ):
-                continue
+                if not cmds.attributeQuery(
+                    SPLIT_PARENT_ATTR,
+                    node=node,
+                    exists=True,
+                ):
+                    continue
 
-            parent = cmds.getAttr(f"{node}.{SPLIT_PARENT_ATTR}")
+                parent = cmds.getAttr(f"{node}.{SPLIT_PARENT_ATTR}")
 
-            if parent:
-                if cmds.objExists(parent):
-                    cmds.parent(node, parent)
-                else:
-                    log.warning(
-                        f"Could not restore parent for '{node}'. Parent '{parent}' does not exist."
-                    )
+                if parent:
+                    if cmds.objExists(parent):
+                        cmds.parent(node, parent)
+                    else:
+                        log.warning(
+                            f"Could not restore parent for '{node}'. Parent '{parent}' does not exist."
+                        )
 
-            cmds.deleteAttr(f"{node}.{SPLIT_PARENT_ATTR}")
+                cmds.deleteAttr(f"{node}.{SPLIT_PARENT_ATTR}")
 
     return True

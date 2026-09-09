@@ -124,12 +124,13 @@ def get_blendshape_target_item_data(
     points_mob: MObject = points_plug.asMObject()
     fn_points: MFnPointArrayData = MFnPointArrayData(points_mob)
     points_array: MPointArray = fn_points.array()
-    point_tuples: list[tuple[float, float, float]] = [
-        (point.x, point.y, point.z)
-        for point in points_array
-        if not point.isEquivalent(MPoint.kOrigin)
-    ]
-    return BlendShapeTargetItemData(components=component_ids, points=point_tuples)
+    filtered_components: list[int] = []
+    filtered_point_tuples: list[tuple[float, float, float]] = []
+    for component_index, point in zip(component_ids, points_array, strict=True):  # type: ignore
+        if not point.isEquivalent(MPoint.kOrigin):
+            filtered_components.append(component_index)
+            filtered_point_tuples.append((point.x, point.y, point.z))
+    return BlendShapeTargetItemData(components=filtered_components, points=filtered_point_tuples)
 
 
 def apply_blendshape_target_item_data(

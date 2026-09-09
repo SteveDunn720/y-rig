@@ -111,6 +111,15 @@ class Attribute(Generic[T]):
         """Control whether this attribute is displayed in the channel box."""
         cmds.setAttr(self.attr_path, channelBox=enabled)
 
+    def get_alias(self) -> str:
+        return cmds.aliasAttr(self.attr_path, query=True)  # type: ignore
+
+    def set_alias(self, alias: str) -> None:
+        cmds.aliasAttr(alias, self.attr_path)
+
+    def clear_alias(self) -> None:
+        cmds.aliasAttr(self.attr_path, remove=True)
+
 
 class ArrayAttribute(Attribute, Iterable[AttributeType], Generic[AttributeType]):
     """Base class for array-style Maya attributes supporting indexed access."""

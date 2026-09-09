@@ -5,7 +5,7 @@ from .core import (
     import_maya_shape_file,
     set_target_weights,
 )
-from .serialize import export_blendshape, get_blendshape_data
+from .serialize import export_blendshape, get_blendshape_data, import_blendshape
 
 __all__ = [
     "build_blendshape_networks",

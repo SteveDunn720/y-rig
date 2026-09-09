@@ -63,6 +63,8 @@ def export_skin_weights(
     Returns:
         True if export succeeded, False if aborted due to overwrite check.
     """
+    if filepath.suffix != ".yskin":
+        raise ValueError("Skin weight files should use the .yskin extension.")
     if not skin_cluster:
         resolved_skin_cluster = get_skin_cluster(geometry)
         if not resolved_skin_cluster:

@@ -298,7 +298,7 @@ def export_blendshape(
     force: bool = False,
 ) -> bool:
     """
-    blendShape target data to a `.yshape` file.
+    Export blendShape target data to a `.yshape` file.
 
     Args:
         filepath: Destination `.yshape` file.
@@ -309,6 +309,8 @@ def export_blendshape(
     Returns:
         ``True`` if the blendShape was exported, or ``False``
         if the export was cancelled."""
+    if filepath.suffix != ".yshape":
+        raise ValueError("Blendshaspe files should use the .yshape extension.")
     if not confirm_overwrite(filepath, force):
         return False
     blendshape_data = get_blendshape_data(blendshape, targets)

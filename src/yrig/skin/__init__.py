@@ -17,7 +17,6 @@ from .apply import (
 from .core import skin_geometry
 from .export import (
     batch_export_skin_data,
-    export_skin_weights_for_shape,
 )
 from .serialize import export_skin_data, export_skin_weights, import_skin_weights
 from .transfer import transfer_skin
@@ -31,7 +30,6 @@ __all__ = [
     "export",
     "export_skin_data",
     "export_skin_weights",
-    "export_skin_weights_for_shape",
     "import_skin_weights",
     "ng",
     "serialize",

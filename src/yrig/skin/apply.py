@@ -64,7 +64,7 @@ def skin_and_apply_weights(filepath: Path, geometry: str) -> SkinCluster:
     skin_weight_data = load_skin_weight_data(filepath)
     skin_bind_data = _get_bind_data(filepath)
     if skin_bind_data is not None:
-        skin_geometry_from_bind_data(geometry, skin_bind_data)
+        skin_cluster = skin_geometry_from_bind_data(geometry, skin_bind_data)
     else:
         valid_influences = _validate_influences(
             skin_weight_data.influences,

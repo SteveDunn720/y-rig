@@ -91,6 +91,10 @@
                 280,
                 20
             ],
+            "/skin_data_io": [
+                -2900.0,
+                -1240.0
+            ],
             "/skin_geometry": [
                 120.0,
                 -180.0
@@ -115,11 +119,11 @@
             "/psd_import/shapes": true,
             "/root/rig_hierarchy": true,
             "/setup/root": false,
-            "/tools_window/tools/control_shapes/control_shapes_io": false,
+            "/tools_window/tools/control_shapes/control_shapes_io": true,
             "/tools_window/tools/control_shapes/control_shapes_io/export": true,
             "/tools_window/tools/control_shapes/control_shapes_io/import": true,
-            "/tools_window/tools/geometry/geometry_io": false,
-            "/tools_window/tools/skin/skin_data_io": false
+            "/tools_window/tools/geometry/geometry_io": true,
+            "/tools_window/tools/skin/skin_data_io": true
         },
         "locks": {
             "$YRIG_NXT_DIR/core.nxt": false,
@@ -537,6 +541,66 @@
                 "    yrig.shape.set_smooth_preview(geo)"
             ]
         },
+        "/skin_data_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "relative_filepath": {
+                    "value": "data/skin"
+                },
+                "strip_suffix": {},
+                "text": {
+                    "type": "raw",
+                    "value": "Skin Data"
+                }
+            }
+        },
+        "/skin_data_io/export": {
+            "code": [
+                "export_root_path = \"${export_root_path}\"",
+                "if not export_root_path or not Path(export_root_path).is_dir():",
+                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
+                "export_path = Path(\"${export_path}\")",
+                "",
+                "",
+                "",
+                "strip_suffix = \"${strip_suffix}\"",
+                "def _map_geo_to_file(geometry: str):",
+                "    return geometry.removesuffix(strip_suffix)",
+                "",
+                "selection = yrig.select.get_selection()",
+                "yrig.skin.export.batch_export_skin_data(",
+                "    geometry=selection,",
+                "    directory=export_path, ",
+                "    map_geo_to_file=_map_geo_to_file",
+                ")"
+            ]
+        },
+        "/skin_data_io/import": {
+            "attrs": {
+                "skin_directories": {
+                    "type": "raw",
+                    "value": "${filelist::${import_filepath}}"
+                }
+            },
+            "code": [
+                "skin_directories = [Path(dir) for dir in ${skin_directories}]",
+                "",
+                "strip_suffix = \"${strip_suffix}\"",
+                "def _map_geo_to_file(geometry: str):",
+                "    return geometry.removesuffix(strip_suffix)",
+                "",
+                "selection = yrig.select.get_selection()",
+                "yrig.skin.apply.apply_skin_data_from_directories(",
+                "    skin_directories, ",
+                "    geometry=selection,",
+                "    map_geo_to_file=_map_geo_to_file,",
+                ")"
+            ]
+        },
         "/tools_window/tools/control_shapes": {
             "instance": "/panel",
             "child_order": [
@@ -688,15 +752,12 @@
             }
         },
         "/tools_window/tools/skin/skin_data_io": {
-            "instance": "/io_pair",
+            "instance": "/skin_data_io",
             "child_order": [
                 "import",
                 "export"
             ],
             "attrs": {
-                "relative_filepath": {
-                    "value": "data/skin"
-                },
                 "text": {
                     "type": "raw",
                     "value": "Skin Data"
@@ -706,40 +767,16 @@
         "/tools_window/tools/skin/skin_data_io/export": {
             "attrs": {
                 "text": {
-                    "type": "raw",
                     "value": "Export Skin Data"
                 }
-            },
-            "code": [
-                "export_root_path = \"${export_root_path}\"",
-                "if not export_root_path or not Path(export_root_path).is_dir():",
-                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
-                "export_path = Path(\"${export_path}\")",
-                "",
-                "selection = yrig.select.get_selection()",
-                "yrig.skin.export.batch_export_skin_data(export_path, selected_only=True)"
-            ]
+            }
         },
         "/tools_window/tools/skin/skin_data_io/import": {
             "attrs": {
-                "resolved_skin_directories": {
-                    "type": "raw",
-                    "value": "${filelist::${import_filepath}}"
-                },
                 "text": {
-                    "type": "raw",
                     "value": "Import Skin Data"
                 }
-            },
-            "code": [
-                "skin_directories = [Path(dir) for dir in ${resolved_skin_directories}]",
-                "",
-                "selection = yrig.select.get_selection()",
-                "yrig.skin.apply.apply_skin_data_from_directories(",
-                "    skin_directories, ",
-                "    geometry=selection,",
-                ")"
-            ]
+            }
         }
     }
 }

@@ -328,32 +328,6 @@ def organize_weights_by_influence(
     return weights_by_influence
 
 
-def get_skinned_shapes() -> dict[str, str]:
-    """
-    Return all shapes in the scene bound to skinClusters.
-
-    Args:
-        shapes: When True, return shape nodes instead of transforms.
-        intermediate: When True, include intermediate shapes.
-
-    Returns:
-       Dictionary of skin cluster -> skinned shape.
-    """
-    skin_shapes: dict[str, str] = {}
-
-    skin_clusters = cmds.ls(type="skinCluster") or []
-
-    for skin_cluster in skin_clusters:
-        geometry: list[str] = (
-            cmds.skinCluster(skin_cluster, query=True, geometry=True) or []
-        )  # type : ignore
-        for shape in geometry:
-            if cmds.getAttr(f"{shape}.intermediateObject"):
-                continue
-            skin_shapes[skin_cluster] = shape
-    return skin_shapes
-
-
 def _add_missing_influences(
     exisisting_influences: Iterable[str], needed_influences: Iterable[str], skin_cluster: str
 ) -> list[str]:

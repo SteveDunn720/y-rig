@@ -195,6 +195,10 @@ def write_ng_skin_data(filepath: Path, geometry: str, force: bool = False) -> bo
     bind_data = get_skin_bind_data(skin_cluster)
     export_json(bind_filepath, bind_data)
     ng.export_json(target=geometry, file=str(weight_filepath))
+    log.info(
+        f"The skin binding and weights for {geometry} were written to {filepath.with_suffix('')} "
+        f"({bind_filepath.suffix} and {weight_filepath.suffix})"
+    )
     return True
 
 

@@ -135,7 +135,19 @@
             "/nose_component": true,
             "/simple_eyebrow": true,
             "/teeth_component": true,
-            "/tongue_component": true
+            "/tongue_component": true,
+            "/tools_window/biped/body/psd/hand_shapes_io": true,
+            "/tools_window/biped/face/face_guides_io": true,
+            "/tools_window/biped/face/guides/face_guides_io": true,
+            "/tools_window/biped/face/guides/mouth_surf_skin_io": true,
+            "/tools_window/biped/face/guides/mouth_surface_io": true,
+            "/tools_window/biped/face/guides/solo_face_guides_io": true,
+            "/tools_window/biped/face/mouth_surf_skin_io": true,
+            "/tools_window/biped/face/mouth_surface_io": true,
+            "/tools_window/biped/face/skin_data_io": true,
+            "/tools_window/biped/face/solo_face_guides_io": true,
+            "/tools_window/biped/visibility_sets_io": true,
+            "/tools_window/tools/mgear/shifter_guides_io": true
         }
     },
     "nodes": {

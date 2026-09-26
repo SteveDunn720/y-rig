@@ -296,10 +296,8 @@
         "/tools_window/biped/face": {
             "instance": "/panel",
             "child_order": [
-                "face_guides_io",
-                "mouth_surface_io",
-                "mouth_surf_skin_io",
-                "solo_face_guides_io"
+                "guides",
+                "skin_data_io"
             ],
             "attrs": {
                 "text": {
@@ -307,7 +305,21 @@
                 }
             }
         },
-        "/tools_window/biped/face/face_guides_io": {
+        "/tools_window/biped/face/guides": {
+            "instance": "/panel",
+            "child_order": [
+                "face_guides_io",
+                "mouth_surface_io",
+                "mouth_surf_skin_io",
+                "solo_face_guides_io"
+            ],
+            "attrs": {
+                "text": {
+                    "value": "Guides"
+                }
+            }
+        },
+        "/tools_window/biped/face/guides/face_guides_io": {
             "instance": "/io_pair",
             "child_order": [
                 "import",
@@ -320,7 +332,7 @@
                 }
             }
         },
-        "/tools_window/biped/face/face_guides_io/export": {
+        "/tools_window/biped/face/guides/face_guides_io/export": {
             "attrs": {
                 "face_guides_group": {
                     "type": "raw",
@@ -351,7 +363,7 @@
                 ")"
             ]
         },
-        "/tools_window/biped/face/face_guides_io/import": {
+        "/tools_window/biped/face/guides/face_guides_io/import": {
             "attrs": {
                 "text": {
                     "value": "Import Face Guides"
@@ -368,7 +380,7 @@
                 ")"
             ]
         },
-        "/tools_window/biped/face/mouth_surf_skin_io": {
+        "/tools_window/biped/face/guides/mouth_surf_skin_io": {
             "instance": "/io_pair",
             "child_order": [
                 "import",
@@ -388,7 +400,7 @@
                 }
             }
         },
-        "/tools_window/biped/face/mouth_surf_skin_io/export": {
+        "/tools_window/biped/face/guides/mouth_surf_skin_io/export": {
             "attrs": {
                 "text": {
                     "value": "Export Mouth Surf Skin"
@@ -402,7 +414,7 @@
                 "yrig.skin.export_skin_weights(export_path, \"${mouth_surface}\")"
             ]
         },
-        "/tools_window/biped/face/mouth_surf_skin_io/import": {
+        "/tools_window/biped/face/guides/mouth_surf_skin_io/import": {
             "attrs": {
                 "text": {
                     "value": "Import Mouth Surf Skin"
@@ -413,7 +425,7 @@
                 "yrig.skin.apply_weights(import_path, \"${mouth_surface}\")"
             ]
         },
-        "/tools_window/biped/face/mouth_surface_io": {
+        "/tools_window/biped/face/guides/mouth_surface_io": {
             "instance": "/io_pair",
             "child_order": [
                 "import",
@@ -430,7 +442,7 @@
                 }
             }
         },
-        "/tools_window/biped/face/mouth_surface_io/export": {
+        "/tools_window/biped/face/guides/mouth_surface_io/export": {
             "attrs": {
                 "text": {
                     "value": "Export Mouth Surface"
@@ -458,7 +470,7 @@
                 ")"
             ]
         },
-        "/tools_window/biped/face/mouth_surface_io/import": {
+        "/tools_window/biped/face/guides/mouth_surface_io/import": {
             "attrs": {
                 "text": {
                     "value": "Import Mouth Surface"
@@ -476,7 +488,7 @@
                 ")"
             ]
         },
-        "/tools_window/biped/face/solo_face_guides_io": {
+        "/tools_window/biped/face/guides/solo_face_guides_io": {
             "instance": "/io_pair",
             "child_order": [
                 "import",
@@ -492,7 +504,7 @@
                 }
             }
         },
-        "/tools_window/biped/face/solo_face_guides_io/export": {
+        "/tools_window/biped/face/guides/solo_face_guides_io/export": {
             "attrs": {
                 "text": {
                     "value": "Export Solo Face Guides"
@@ -521,7 +533,7 @@
                 ")"
             ]
         },
-        "/tools_window/biped/face/solo_face_guides_io/import": {
+        "/tools_window/biped/face/guides/solo_face_guides_io/import": {
             "attrs": {
                 "text": {
                     "value": "Import Solo Face Guides"
@@ -539,6 +551,39 @@
                 "    solo=True",
                 ")"
             ]
+        },
+        "/tools_window/biped/face/skin_data_io": {
+            "instance": "/skin_data_io",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "relative_filepath": {
+                    "value": "data/face/skin"
+                },
+                "strip_suffix": {
+                    "type": "raw",
+                    "value": "_face_setup"
+                },
+                "text": {
+                    "value": "Skin Data"
+                }
+            }
+        },
+        "/tools_window/biped/face/skin_data_io/export": {
+            "attrs": {
+                "text": {
+                    "value": "Export Skin Data"
+                }
+            }
+        },
+        "/tools_window/biped/face/skin_data_io/import": {
+            "attrs": {
+                "text": {
+                    "value": "Import Skin Data"
+                }
+            }
         }
     }
 }

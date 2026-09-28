@@ -109,7 +109,7 @@ def export_json(filepath: Path, obj: Any, pretty: bool = True, compact: bool = T
         pretty: Whether to use the pretty formatting scheme.
         compact: When True use the compact formatting scheme (only does anything if ``pretty`` is also True).
     """
-    with open(filepath, "wb") as file:
+    with Path(filepath).open("wb") as file:
         if pretty:
             if compact:
                 _write_compact_pretty(msgspec.to_builtins(obj), file)

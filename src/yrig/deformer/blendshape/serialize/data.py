@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from yrig.maya_api.enum import BlendShapePostDeformationOrder
+if TYPE_CHECKING:
+    from yrig.maya_api.enum import BlendShapePostDeformationOrder
 
 
 @dataclass

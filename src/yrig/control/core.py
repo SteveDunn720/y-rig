@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from maya import cmds
 from maya.api.OpenMaya import MMatrix
@@ -20,7 +20,11 @@ from yrig.name import MIDDLE_SIDE_NAME, get_side
 from yrig.shape import bake_shape
 from yrig.transform import create_transform, get_shapes, partial_path_name
 from yrig.transform.matrix import get_world_matrix
-from yrig.transform.structs import Direction
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from yrig.transform.structs import Direction
 
 CONTROL_SUFFIX = "_ctl"
 OFFSET_SUFFIX = "_npo"

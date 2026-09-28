@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import json
+import json  # noqa
 import logging
-from collections.abc import Callable
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from yrig.build.mgear_api.log import (
     ProgressLogHandler,
@@ -13,6 +12,10 @@ from yrig.build.mgear_api.log import (
 )
 from yrig.build.mgear_api.step import BuildStep
 from yrig.build.progress import bind_progress_step
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 mgear_api_logger = logging.getLogger("yrig.build.mgear_api")
 

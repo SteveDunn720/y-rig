@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -14,6 +13,8 @@ from nxt.session import Session
 from nxt.stage import Stage, logger, run
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
     from nxt.nxt_layer import SpecLayer
     from nxt.nxt_node import SpecNode
 

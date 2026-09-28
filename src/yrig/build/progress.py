@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Generator
 from contextlib import contextmanager, suppress
 from contextvars import ContextVar
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
 
 _current_progress: ContextVar[ProgressStep | None] = ContextVar("_current_progress", default=None)
 

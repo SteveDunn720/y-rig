@@ -7,7 +7,7 @@ from typing import Final, cast
 
 from maya import cmds
 
-MAYA_API_VERSION: Final[int] = cast(int, cmds.about(apiVersion=True))
+MAYA_API_VERSION: Final[int] = cast("int", cmds.about(apiVersion=True))
 TARGET_API_VERSION = 20242000
 
 

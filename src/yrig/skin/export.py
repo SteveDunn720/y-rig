@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Iterable
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from yrig.io import promt_user_for_directory
 from yrig.shape import get_shape
 from yrig.skin.ng import write_ng_skin_data
 from yrig.skin.serialize import export_skin_data
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+    from pathlib import Path
 
 log = logging.getLogger(__name__)
 

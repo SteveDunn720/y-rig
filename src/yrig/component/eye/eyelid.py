@@ -1,12 +1,11 @@
 import math
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from maya import cmds
 from maya.api.OpenMaya import MEulerRotation, MMatrix, MSpace, MTransformationMatrix, MVector
 
 from yrig.control import ControlShape, create_control
-from yrig.control.core import Control
 from yrig.joint import create_joint
 from yrig.maya_api.node import (
     ConditionNode,
@@ -23,6 +22,9 @@ from yrig.transform.constraint import matrix_constraint
 from yrig.transform.utils import get_position
 
 from .guide_curve import GuideCurve
+
+if TYPE_CHECKING:
+    from yrig.control.core import Control
 
 
 @dataclass

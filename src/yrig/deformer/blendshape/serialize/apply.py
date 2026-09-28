@@ -1,19 +1,15 @@
 from __future__ import annotations
 
 from collections import deque
-from collections.abc import Collection, Generator
 from contextlib import contextmanager
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
 from maya.api.OpenMaya import (
     MPoint,
     MPointArray,
 )
 
-from yrig.maya_api.attribute import (
-    BlendShapeInputTargetGroupAttribute,
-    BlendShapeInputTargetItemAttribute,
-)
 from yrig.maya_api.node import BlendShape
 from yrig.maya_api.utils import get_plug, set_component_list_indices, set_point_array
 
@@ -29,6 +25,14 @@ from .directory import (
     prune_blendshape_directory_dict,
     resolve_needed_group_indices,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Generator
+
+    from yrig.maya_api.attribute import (
+        BlendShapeInputTargetGroupAttribute,
+        BlendShapeInputTargetItemAttribute,
+    )
 
 
 @contextmanager

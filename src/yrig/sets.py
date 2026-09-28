@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from maya import cmds
 
 from yrig.io import confirm_overwrite
 from yrig.io.json import export_json, load_json
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from pathlib import Path
 
 log = logging.getLogger(__name__)
 

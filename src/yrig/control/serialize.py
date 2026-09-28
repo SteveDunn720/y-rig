@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import json
 import logging
-from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from maya import cmds
 from maya.api.OpenMaya import (
@@ -21,6 +20,9 @@ from yrig.io.json import export_json, load_json
 from yrig.maya_api.utils import get_depend_node
 from yrig.name import natural_sort_key
 from yrig.transform import create_transform, get_shapes
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
 
 log = logging.getLogger(__name__)
 
@@ -146,12 +148,12 @@ def get_control_shape_data(curve: str) -> ControlShapeData:
     return ControlShapeData(curves)
 
 
-def control_shape_data_to_json(data: ControlShapeData) -> str:
-    return json.dumps(data.to_dict(), indent=2)
+def export_control_shape_data_to_json(data: ControlShapeData, json_file: Path) -> None:
+    export_json(json_file, data.to_dict(), compact=False)
 
 
-def control_shape_data_from_json(json_str: str) -> ControlShapeData:
-    data = json.loads(json_str)
+def control_shape_data_from_json(json_file: Path) -> ControlShapeData:
+    data = load_json(json_file, dict)
     return ControlShapeData.from_dict(data)
 
 
@@ -167,10 +169,7 @@ def control_shape_data_from_library(curve_shape: ControlShape | str) -> ControlS
                 f"The shape file for {curve_shape.filename} couldn't be found in the shape library. "
                 f"You must write out the file {file_path} before reading."
             )
-
-        with open(file_path) as json_file:
-            json_data = json_file.read()
-            _control_shape_data_cache[curve_shape] = control_shape_data_from_json(json_data)
+        _control_shape_data_cache[curve_shape] = control_shape_data_from_json(file_path)
     return _control_shape_data_cache[curve_shape]
 
 
@@ -312,9 +311,7 @@ def write_curve_to_library(
 
     # get curve data
     curve_data = get_control_shape_data(curve=curve)
-    json_dump = control_shape_data_to_json(curve_data)
-    with open(file=json_path, mode="w") as json_file:
-        json_file.write(json_dump)
+    export_control_shape_data_to_json(curve_data, json_path)
     log.info(f"The control shape for {curve} was written to the shape library at {json_path}")
 
 
@@ -344,7 +341,8 @@ def add_override_for_controls(
     filepath: Path, controls: Iterable[str] | None = None, force: bool = False
 ) -> bool:
     """Add control shape overrides to an existing shape file,
-    or if it doesn't exist create it and add the overrides."""
+    or if it doesn't exist create it and add the overrides.
+    """
     resolved_controls = _resolve_controls_ordered(controls)
     if filepath.exists():
         control_shapes = load_control_shapes_file(filepath)
@@ -373,7 +371,7 @@ def load_control_shapes_file(filepath: Path) -> dict[str, ControlShapeData]:
     if not filepath.exists():
         raise RuntimeError(f"There was no control shapes file found at {filepath}")
 
-    with open(filepath) as json_file:
+    with Path(filepath).open() as json_file:
         control_dict = load_json(filepath, dict)
 
     return {control: ControlShapeData.from_dict(data) for control, data in control_dict.items()}

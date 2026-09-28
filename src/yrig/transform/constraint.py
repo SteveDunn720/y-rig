@@ -1,5 +1,6 @@
+from typing import TYPE_CHECKING
+
 from maya import cmds
-from maya.api.OpenMaya import MMatrix
 
 from yrig.maya_api.attribute import MatrixAttribute
 from yrig.maya_api.enum import AimMatrixAxisMode
@@ -11,6 +12,9 @@ from yrig.transform.matrix import (
     get_world_matrix,
     multiply_matrices,
 )
+
+if TYPE_CHECKING:
+    from maya.api.OpenMaya import MMatrix
 
 
 def matrix_constraint(

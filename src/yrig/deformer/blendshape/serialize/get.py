@@ -7,6 +7,7 @@ from maya.api.OpenMaya import (
     MPointArray,
 )
 
+from yrig.deformer.blendshape.core import get_target_index_to_name_map, resolve_target_index
 from yrig.maya_api.attribute import (
     BlendShapeInputTargetAttribute,
     BlendShapeInputTargetGroupAttribute,
@@ -15,7 +16,6 @@ from yrig.maya_api.attribute import (
 from yrig.maya_api.node import BlendShape
 from yrig.maya_api.utils import get_component_indices, get_plug
 
-from ..core import get_target_index_to_name_map, resolve_target_index
 from .data import (
     BlendShapeData,
     BlendShapeInputData,

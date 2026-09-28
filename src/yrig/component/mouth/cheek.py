@@ -236,46 +236,46 @@ class CheekInterpolate:
             cv_guides=self.guides.max_lower_right_cvs,
             parent=self.group,
         )
-        self.cv_transforms = (
-            [self.max_upper_mid_cv]
-            + [self.max_lower_mid_cv]
-            + [self.max_left_corner_cv]
-            + [self.max_right_corner_cv]
-            + self.max_upper_left_cvs
-            + self.max_upper_right_cvs
-            + self.max_lower_left_cvs
-            + self.max_lower_right_cvs
-        )
+        self.cv_transforms = [
+            self.max_upper_mid_cv,
+            self.max_lower_mid_cv,
+            self.max_left_corner_cv,
+            self.max_right_corner_cv,
+            *self.max_upper_left_cvs,
+            *self.max_upper_right_cvs,
+            *self.max_lower_left_cvs,
+            *self.max_lower_right_cvs,
+        ]
 
-        self.max_upper_left_full_cvs = (
-            [self.max_lower_left_cvs[-1]]
-            + [self.max_left_corner_cv]
-            + self.max_upper_left_cvs
-            + [self.max_upper_mid_cv]
-            + [self.max_upper_right_cvs[0]]
-        )
-        self.max_upper_right_full_cvs = (
-            [self.max_lower_right_cvs[-1]]
-            + [self.max_right_corner_cv]
-            + self.max_upper_right_cvs
-            + [self.max_upper_mid_cv]
-            + [self.max_upper_left_cvs[0]]
-        )
+        self.max_upper_left_full_cvs = [
+            self.max_lower_left_cvs[-1],
+            self.max_left_corner_cv,
+            *self.max_upper_left_cvs,
+            self.max_upper_mid_cv,
+            self.max_upper_right_cvs[0],
+        ]
+        self.max_upper_right_full_cvs = [
+            self.max_lower_right_cvs[-1],
+            self.max_right_corner_cv,
+            *self.max_upper_right_cvs,
+            self.max_upper_mid_cv,
+            self.max_upper_left_cvs[0],
+        ]
 
-        self.max_lower_left_full_cvs = (
-            [self.max_upper_left_cvs[-1]]
-            + [self.max_left_corner_cv]
-            + self.max_lower_left_cvs
-            + [self.max_lower_mid_cv]
-            + [self.max_lower_right_cvs[0]]
-        )
-        self.max_lower_right_full_cvs = (
-            [self.max_upper_right_cvs[-1]]
-            + [self.max_right_corner_cv]
-            + self.max_lower_right_cvs
-            + [self.max_lower_mid_cv]
-            + [self.max_lower_left_cvs[0]]
-        )
+        self.max_lower_left_full_cvs = [
+            self.max_upper_left_cvs[-1],
+            self.max_left_corner_cv,
+            *self.max_lower_left_cvs,
+            self.max_lower_mid_cv,
+            self.max_lower_right_cvs[0],
+        ]
+        self.max_lower_right_full_cvs = [
+            self.max_upper_right_cvs[-1],
+            self.max_right_corner_cv,
+            *self.max_lower_right_cvs,
+            self.max_lower_mid_cv,
+            self.max_lower_left_cvs[0],
+        ]
 
         self.uv_pin = uv_pin_multi(
             "cheek_interpolate_uvPin", mouth_surface, self.cv_transforms, keep_offset=True

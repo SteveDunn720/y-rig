@@ -317,7 +317,7 @@ class Component(component.Main):
         )
         self.ik_ctl_ref = primitive.addTransform(self.ik_ctl, self.getName("ikCtl_ref"), ik_ref_t)
 
-        self.fk_ik_ctls = self.fk_ctl + [self.ik_ctl]
+        self.fk_ik_ctls = [*self.fk_ctl, self.ik_ctl]
 
     def _add_reference_objects(self) -> None:
         # References --------------------------------------
@@ -841,13 +841,13 @@ class Component(component.Main):
 
         if self.settings["upvrefarray"]:
             ref_names = self.settings["upvrefarray"].split(",")
-            ref_names = ["Auto"] + ref_names
+            ref_names = ["Auto", *ref_names]
             if len(ref_names) > 1:
                 self.upvref_att = self.addAnimEnumParam("upvref", "UpV Ref", 0, ref_names)
 
         if self.settings["pinrefarray"]:
             ref_names = self.settings["pinrefarray"].split(",")
-            ref_names = ["Auto"] + ref_names
+            ref_names = ["Auto", *ref_names]
             if len(ref_names) > 1:
                 self.pin_att = self.addAnimEnumParam("midref", "Mid Ref", 0, ref_names)
 

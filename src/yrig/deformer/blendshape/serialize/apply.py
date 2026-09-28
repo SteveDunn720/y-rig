@@ -68,7 +68,7 @@ def add_target_group(
     original_child_indices = parent_directory.child_indices.get()
     with preserve_all_target_directories(blendshape):
         apply_blendshape_target_group_data(blendshape, data, input_target_index, target_group_index)
-    parent_directory.child_indices.set(original_child_indices + [target_group_index])
+    parent_directory.child_indices.set([*original_child_indices, target_group_index])
     return target_group_index
 
 
@@ -85,7 +85,7 @@ def add_target_directory(
         parent_directory_index
     ].child_indices.get()
 
-    new_child_indices = parent_directory_child_indices + [-target_directory_index]
+    new_child_indices = [*parent_directory_child_indices, -target_directory_index]
     blendshape.target_directory[parent_directory_index].child_indices.set(new_child_indices)
     return target_directory_index
 

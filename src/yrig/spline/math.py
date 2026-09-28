@@ -1,3 +1,4 @@
+import math
 from bisect import bisect_left, bisect_right
 from collections.abc import Iterable, Sequence
 from itertools import chain
@@ -329,7 +330,7 @@ def point_on_spline_weights(
     return [
         (cvs[index], weight)
         for index, weight in reversed(out_weights.items())
-        if (weight != 0.0) or return_zero_weights
+        if math.isclose(weight, 0.0) or return_zero_weights
     ]
 
 

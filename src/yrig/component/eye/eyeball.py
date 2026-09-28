@@ -133,7 +133,7 @@ class Eyeball:
         eye_radius: float,
         dilation_attr: str,
         new_attr: bool,
-        new_attr_tgt: None | str,
+        new_attr_tgt: str | None,
         offset_x_attr: str,
         offset_y_attr: str,
         offset_z_attr: str,
@@ -394,7 +394,7 @@ class Eyeball:
 
         self.dilation_joints = []
 
-        for i, _loop in enumerate(loops_list):
+        for i, loop in enumerate(loops_list):
             parent = self.eye_jnt
 
             jnt = create_joint(
@@ -404,7 +404,7 @@ class Eyeball:
                 connect=False,
             )
             self.dilation_joints.append(jnt)
-            cmds.setAttr(f"{jnt}.translateZ", _loop)
+            cmds.setAttr(f"{jnt}.translateZ", loop)
 
             x = i / 10.0
             if x < iris_percent:

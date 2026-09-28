@@ -110,6 +110,7 @@
             ]
         },
         "collapse": {
+            "/apply/deformation/main/psd/body_psd/arms": true,
             "/apply/deformation/main/psd/body_psd/eyes": true,
             "/apply/deformation/main/psd/body_psd/eyes/shapes": true,
             "/apply/deformation/main/psd/body_psd/hands": true,

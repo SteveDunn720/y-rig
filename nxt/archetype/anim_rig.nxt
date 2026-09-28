@@ -75,6 +75,10 @@
                 0.0,
                 0.0
             ],
+            "/shape_io": [
+                -2900.0,
+                -1240.0
+            ],
             "/shifter_build": [
                 -745.8425286930325,
                 -513.4641872897497
@@ -539,6 +543,38 @@
             "code": [
                 "for geo in ${smooth_geo}:",
                 "    yrig.shape.set_smooth_preview(geo)"
+            ]
+        },
+        "/shape_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "blendshape": {},
+                "blendshape_directory": {},
+                "relative_filepath": {
+                    "value": "data/psd"
+                }
+            }
+        },
+        "/shape_io/export": {
+            "code": [
+                "export_root_path = \"${export_root_path}\"",
+                "if not export_root_path or not Path(export_root_path).is_dir():",
+                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
+                "export_path = Path(\"${export_path}\")",
+                "",
+                "yrig.deformer.blendshape.export_blendshape(export_path, \"${blendshape}\", directories={\"${blendshape_directory}\"})",
+                ""
+            ]
+        },
+        "/shape_io/import": {
+            "code": [
+                "import_path = Path(\"${import_filepath}\")",
+                "",
+                "yrig.deformer.blendshape.import_blendshape(import_path, \"${blendshape}\")"
             ]
         },
         "/skin_data_io": {

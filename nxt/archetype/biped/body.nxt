@@ -27,7 +27,8 @@
         "/apply/deformation/main/psd/body_psd": {
             "instance": "/psd_layer",
             "child_order": [
-                "hands"
+                "hands",
+                "arms"
             ],
             "attrs": {
                 "blendshape": {
@@ -47,6 +48,15 @@
                 "yrig.deformer.blendshape.create_blendshape(geometry=\"${geometry}\", name=\"${blendshape}\")"
             ]
         },
+        "/apply/deformation/main/psd/body_psd/arms": {
+            "instance": "/psd_import",
+            "attrs": {
+                "psd_filename": {
+                    "value": "arms"
+                }
+            }
+        },
+        "/apply/deformation/main/psd/body_psd/eyes/node": {},
         "/apply/deformation/main/psd/body_psd/hands": {
             "instance": "/psd_import",
             "attrs": {

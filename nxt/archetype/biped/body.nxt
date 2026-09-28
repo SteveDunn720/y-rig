@@ -28,7 +28,8 @@
             "instance": "/psd_layer",
             "child_order": [
                 "hands",
-                "arms"
+                "arms",
+                "legs"
             ],
             "attrs": {
                 "blendshape": {
@@ -62,6 +63,15 @@
             "attrs": {
                 "psd_filename": {
                     "value": "hands"
+                }
+            }
+        },
+        "/apply/deformation/main/psd/body_psd/legs": {
+            "instance": "/psd_import",
+            "attrs": {
+                "psd_filename": {
+                    "type": "raw",
+                    "value": "legs"
                 }
             }
         },
@@ -172,13 +182,58 @@
         "/tools_window/biped/body/psd": {
             "instance": "/panel",
             "child_order": [
-                "hand_shapes_io"
+                "hand_shapes_io",
+                "arm_shapes_io",
+                "leg_shapes_io"
             ],
             "attrs": {
                 "text": {
                     "value": "PSD"
                 }
             }
+        },
+        "/tools_window/biped/body/psd/arm_shapes_io": {
+            "instance": "/shape_io",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "blendshape": {
+                    "value": "body_psd"
+                },
+                "blendshape_directory": {
+                    "type": "raw",
+                    "value": "arms"
+                },
+                "relative_filepath": {
+                    "type": "raw",
+                    "value": "data/body/psd/arms.yshape"
+                },
+                "text": {
+                    "type": "raw",
+                    "value": "Arm Shapes"
+                }
+            }
+        },
+        "/tools_window/biped/body/psd/arm_shapes_io/export": {
+            "attrs": {
+                "text": {
+                    "value": "Export Arm Shapes"
+                }
+            }
+        },
+        "/tools_window/biped/body/psd/arm_shapes_io/import": {
+            "attrs": {
+                "text": {
+                    "value": "Import Arm Shapes"
+                }
+            },
+            "code": [
+                "import_path = Path(\"${import_filepath}\")",
+                "",
+                "yrig.deformer.blendshape.import_blendshape(import_path, \"${blendshape}\")"
+            ]
         },
         "/tools_window/biped/body/psd/hand_shapes_io": {
             "instance": "/io_pair",
@@ -226,6 +281,42 @@
                 "",
                 "yrig.deformer.blendshape.import_blendshape(import_path, \"${blendshape}\")"
             ]
+        },
+        "/tools_window/biped/body/psd/leg_shapes_io": {
+            "instance": "/shape_io",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "blendshape": {
+                    "value": "body_psd"
+                },
+                "blendshape_directory": {
+                    "type": "raw",
+                    "value": "legs"
+                },
+                "relative_filepath": {
+                    "value": "data/body/psd/legs.yshape"
+                },
+                "text": {
+                    "value": "Leg Shapes"
+                }
+            }
+        },
+        "/tools_window/biped/body/psd/leg_shapes_io/export": {
+            "attrs": {
+                "text": {
+                    "value": "Export Leg Shapes"
+                }
+            }
+        },
+        "/tools_window/biped/body/psd/leg_shapes_io/import": {
+            "attrs": {
+                "text": {
+                    "value": "Import Leg Shapes"
+                }
+            }
         }
     }
 }

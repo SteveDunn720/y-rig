@@ -85,15 +85,41 @@ class Attribute(Generic[T]):
 
         return self.get_input()
 
+    def get_outputs(self) -> list[Attribute]:
+        """Return the destination attributes connected to this attribute."""
+        connections = (
+            cmds.listConnections(
+                self.attr_path,
+                source=False,
+                destination=True,
+                plugs=True,
+            )
+            or []
+        )
+        return [Attribute(connection) for connection in connections]
+
+    @property
+    def outputs(self) -> list[Attribute]:
+        """The destination attributes connected to this attribute."""
+        return self.get_outputs()
+
     def connect_from(self, source_attr: str | Attribute) -> None:
         """Connect another attribute to this one."""
         source = str(source_attr)  # Works with both strings and Attribute objects
         cmds.connectAttr(source, self.attr_path)
 
+    def disconnect_from(self, source_attr: str | Attribute) -> None:
+        """Disconnect this attribute from another attribute."""
+        cmds.disconnectAttr(str(source_attr), self.attr_path)
+
     def connect_to(self, dest_attr: str | Attribute) -> None:
         """Connect this attribute to another one."""
         dest = str(dest_attr)
         cmds.connectAttr(self.attr_path, dest)
+
+    def disconnect_to(self, dest_attr: str | Attribute) -> None:
+        """Disconnect this attribute from another attribute."""
+        cmds.disconnectAttr(self.attr_path, str(dest_attr))
 
     def exists(self) -> bool:
         """Check if this attribute exists."""
@@ -158,6 +184,11 @@ class ArrayAttribute(Attribute, Iterable[AttributeType], Generic[AttributeType])
         # This allows for loop iteration: for item in my_attr:
         for index in self.get_indices():
             yield self[index]
+
+    def clear(self) -> None:
+        """Remove all existing elements from this array."""
+        for index in self.get_indices():
+            cmds.removeMultiInstance(f"{self.attr_path}[{index}]", b=True)
 
 
 class ValueArrayAttribute(Attribute[Sequence[T]], Generic[T]):
@@ -286,6 +317,9 @@ class ScalarAttribute(NumericAttribute[float]):
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
+
+    def set(self, value: float) -> None:
+        cmds.setAttr(self.attr_path, value, clamp=True)  # type: ignore
 
     @classmethod
     def create(

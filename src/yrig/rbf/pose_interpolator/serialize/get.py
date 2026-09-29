@@ -135,7 +135,7 @@ def _get_pose_interpolator_directory_data(
     """
     directory = manager.pose_interpolator_directory[index]
 
-    directory_selected = ancestor_selected or index in directory_indices
+    directory_selected = export_all or ancestor_selected or index in directory_indices
 
     child_indices = directory.child_indices.get()
     child_directories = []

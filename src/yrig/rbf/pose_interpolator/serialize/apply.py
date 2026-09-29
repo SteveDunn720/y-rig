@@ -68,8 +68,8 @@ def apply_pose_interpolator_data(
         pose.pose_name.set(pose_data.name)
         for index, rotation in enumerate(pose_data.rotations):
             pose.pose_rotation[index].set(rotation)
-        for index, rotation in enumerate(pose_data.rotations):
-            pose.pose_rotation[index].set(rotation)
+        for index, translation in enumerate(pose_data.translations):
+            pose.pose_translation[index].set(translation)
         pose.is_independent.set(pose_data.independent)
         pose.pose_rotation_falloff.set(pose_data.rotation_falloff)
         pose.pose_translation_falloff.set(pose_data.translation_falloff)

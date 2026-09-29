@@ -16,7 +16,7 @@ from yrig.maya_api.enum import BlendShapeDeformationOrder, BlendShapeOrigin
 from .geometry_filter import WeightGeometryFilter
 
 
-class BlendShape(WeightGeometryFilter):
+class BlendShapeNode(WeightGeometryFilter):
     """Maya blendShape node with enhanced interface."""
 
     node_type = "blendShape"

@@ -10,7 +10,7 @@ from maya.api.OpenMaya import (
     MPointArray,
 )
 
-from yrig.maya_api.node import BlendShape
+from yrig.maya_api.node import BlendShapeNode
 from yrig.maya_api.utils import get_plug, set_component_list_indices, set_point_array
 
 from .data import (
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 
 @contextmanager
-def preserve_all_target_directories(blendshape: BlendShape) -> Generator[None, None, None]:
+def preserve_all_target_directories(blendshape: BlendShapeNode) -> Generator[None, None, None]:
     """
     When initializing a new inputTargetGroup plug Maya just decides a directory to add it to.
     This screws up our manual handling of directories on import.
@@ -56,7 +56,7 @@ def preserve_all_target_directories(blendshape: BlendShape) -> Generator[None, N
 
 
 def add_target_group(
-    blendshape: BlendShape,
+    blendshape: BlendShapeNode,
     data: BlendShapeTargetGroupData,
     input_target_index: int,
     parent_directory_index: int = 0,
@@ -73,7 +73,7 @@ def add_target_group(
 
 
 def add_target_directory(
-    blendshape: BlendShape, data: BlendShapeTargetDirectory, parent_directory_index: int
+    blendshape: BlendShapeNode, data: BlendShapeTargetDirectory, parent_directory_index: int
 ) -> int:
     """Add target directory to blendshape and apply data. Returns the index at which the target directory was added."""
     target_directory_index = blendshape.target_directory.next_available_index()
@@ -91,7 +91,7 @@ def add_target_directory(
 
 
 def get_existing_child_directories(
-    blendshape: BlendShape, target_directory_index: int
+    blendshape: BlendShapeNode, target_directory_index: int
 ) -> dict[str, int]:
     directory = blendshape.target_directory[target_directory_index]
     # Get existing directories
@@ -106,7 +106,7 @@ def get_existing_child_directories(
 
 
 def apply_directory_children(
-    blendshape: BlendShape,
+    blendshape: BlendShapeNode,
     data: BlendShapeData,
     target_directory_index: int,
     parent_directory_index: int = 0,
@@ -191,7 +191,7 @@ def apply_blendshape_target_items_dict(
 
 
 def apply_blendshape_target_group_data(
-    blendshape: BlendShape,
+    blendshape: BlendShapeNode,
     data: BlendShapeTargetGroupData,
     input_target_index: int,
     target_group_index: int,
@@ -207,7 +207,7 @@ def apply_blendshape_target_group_data(
 
 
 def get_parent_directory_index_from_name(
-    blendshape: BlendShape, parent_directory: str
+    blendshape: BlendShapeNode, parent_directory: str
 ) -> int | None:
     """
     Breadth first search for the given parent directory by name.
@@ -223,7 +223,9 @@ def get_parent_directory_index_from_name(
     return None
 
 
-def _resolve_parent_directory_index(blendshape: BlendShape, parent_directory: str | None) -> int:
+def _resolve_parent_directory_index(
+    blendshape: BlendShapeNode, parent_directory: str | None
+) -> int:
     if not parent_directory:
         return 0
     index = get_parent_directory_index_from_name(blendshape, parent_directory)
@@ -235,7 +237,7 @@ def _resolve_parent_directory_index(blendshape: BlendShape, parent_directory: st
 
 
 def _apply_explicit_targets(
-    blendshape: BlendShape,
+    blendshape: BlendShapeNode,
     data: BlendShapeData,
     target_names: Collection[str],
     target_index_map: dict[str, int],
@@ -263,7 +265,7 @@ def _apply_explicit_targets(
 
 
 def _apply_directories(
-    blendshape: BlendShape,
+    blendshape: BlendShapeNode,
     data: BlendShapeData,
     directories: Collection[str],
     parent_directory_index: int,
@@ -292,7 +294,7 @@ def _apply_directories(
 
 
 def apply_blendshape_data(
-    blendshape: str | BlendShape,
+    blendshape: str | BlendShapeNode,
     data: BlendShapeData,
     directories: Collection[str] | None = None,
     targets: Collection[str] | None = None,
@@ -311,7 +313,9 @@ def apply_blendshape_data(
     """
 
     blendshape_node = (
-        blendshape if isinstance(blendshape, BlendShape) else BlendShape.from_existing(blendshape)
+        blendshape
+        if isinstance(blendshape, BlendShapeNode)
+        else BlendShapeNode.from_existing(blendshape)
     )
     data_target_to_index_map = get_target_group_indices_map(data)
     data_target_group_indices = (

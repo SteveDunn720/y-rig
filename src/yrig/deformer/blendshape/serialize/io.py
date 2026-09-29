@@ -4,7 +4,7 @@ from pathlib import Path
 
 from yrig.io import confirm_overwrite
 from yrig.io.json import export_json, load_json
-from yrig.maya_api.node import BlendShape
+from yrig.maya_api.node import BlendShapeNode
 
 from .apply import apply_blendshape_data
 from .data import BlendShapeData
@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 def import_blendshape(
     filepath: Path,
-    blendshape: str | BlendShape,
+    blendshape: str | BlendShapeNode,
     directories: Collection[str] | None = None,
     targets: Collection[str] | None = None,
     parent_directory: str | None = None,
@@ -36,7 +36,7 @@ def import_blendshape(
 
 def export_blendshape(
     filepath: Path,
-    blendshape: str | BlendShape,
+    blendshape: str | BlendShapeNode,
     directories: Collection[str] | None = None,
     targets: Iterable[str | int] | None = None,
     force: bool = False,

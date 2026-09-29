@@ -13,7 +13,7 @@ from yrig.maya_api.attribute import (
     BlendShapeInputTargetGroupAttribute,
     BlendShapeInputTargetItemAttribute,
 )
-from yrig.maya_api.node import BlendShape
+from yrig.maya_api.node import BlendShapeNode
 from yrig.maya_api.utils import get_component_indices, get_plug
 
 from .data import (
@@ -78,7 +78,7 @@ def get_blendshape_target_items_dict(
 
 
 def get_blendshape_target_groups_dict(
-    blendshape: BlendShape,
+    blendshape: BlendShapeNode,
     target: BlendShapeInputTargetAttribute,
     target_group_indices: Iterable[int] | None = None,
 ) -> dict[int, BlendShapeTargetGroupData]:
@@ -102,7 +102,7 @@ def get_blendshape_target_groups_dict(
 
 
 def get_blendshape_target_dict(
-    blendshape: BlendShape, target_group_indices: Iterable[int] | None = None
+    blendshape: BlendShapeNode, target_group_indices: Iterable[int] | None = None
 ) -> dict[int, BlendShapeInputTargetData]:
     target_data_dict: dict[int, BlendShapeInputTargetData] = {}
     indices = blendshape.input.get_indices()
@@ -115,7 +115,7 @@ def get_blendshape_target_dict(
     return target_data_dict
 
 
-def get_blendshape_input_data_list(blendshape: BlendShape) -> list[BlendShapeInputData]:
+def get_blendshape_input_data_list(blendshape: BlendShapeNode) -> list[BlendShapeInputData]:
     inputs: list[BlendShapeInputData] = []
     indices = blendshape.input.get_indices()
     for index in indices:
@@ -134,7 +134,7 @@ def get_blendshape_input_data_list(blendshape: BlendShape) -> list[BlendShapeInp
 
 
 def get_blendshape_directory_dict(
-    blendshape: BlendShape,
+    blendshape: BlendShapeNode,
 ) -> dict[int, BlendShapeTargetDirectory]:
     indices = blendshape.target_directory.get_indices()
     directory_dict: dict[int, BlendShapeTargetDirectory] = {}
@@ -152,12 +152,14 @@ def get_blendshape_directory_dict(
 
 
 def get_blendshape_data(
-    blendshape: str | BlendShape,
+    blendshape: str | BlendShapeNode,
     directories: Collection[str] | None = None,
     targets: Iterable[str | int] | None = None,
 ) -> BlendShapeData:
     blendshape_node = (
-        blendshape if isinstance(blendshape, BlendShape) else BlendShape.from_existing(blendshape)
+        blendshape
+        if isinstance(blendshape, BlendShapeNode)
+        else BlendShapeNode.from_existing(blendshape)
     )
     target_groups_to_export = (
         {resolve_target_index(str(blendshape), target) for target in targets}

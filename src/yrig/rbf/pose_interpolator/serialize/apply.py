@@ -1,9 +1,11 @@
 import logging
+from collections.abc import Iterable
 
 from maya import cmds
 
 from yrig.maya_api.attribute import Attribute
 from yrig.maya_api.node import PoseInterpolatorManagerNode, PoseInterpolatorNode
+from yrig.rbf.pose_interpolator.serialize.directory import get_directory_indices
 from yrig.transform import get_transform
 
 from .data import (
@@ -48,7 +50,14 @@ def apply_pose_interpolator_data(
         driver = node.driver[index]
 
         driver_node = driver_data.matrix.split(".", 1)[0]
-        driver.driver_matrix.connect_from(driver_data.matrix)
+        try:
+            driver.driver_matrix.connect_from(driver_data.matrix)
+        except Exception:
+            log.warning(
+                "Couldn't connect %s to from the source attribute specified in the data: %s",
+                driver.driver_matrix,
+                driver_data.matrix,
+            )
         _apply_attribute(driver.driver_orient, f"{driver_node}.jointOrient", driver_data.orient)
         _apply_attribute(
             driver.driver_rotate_axis, f"{driver_node}.rotateAxis", driver_data.rotate_axis
@@ -113,10 +122,10 @@ def add_pose_interpolator(
     parent_directory_index: int = 0,
 ) -> tuple[str, PoseInterpolatorNode]:
     """Add poseInterpolator to manager and apply data. Returns the transform and shape node of the created poseInterpolator."""
-    pose_interpolator = PoseInterpolatorNode(name=data.name)
+    pose_interpolator = PoseInterpolatorNode().create(name=data.name)
     pose_interpolator_transform = get_transform(str(pose_interpolator))
     pose_interpolator_transform = cmds.rename(
-        pose_interpolator_transform, data.name.removesuffix("Shape")
+        pose_interpolator_transform, data.name.removesuffix("Shape"), ignoreShape=True
     )
     if parent is not None:
         cmds.parent(pose_interpolator_transform, parent)
@@ -146,3 +155,74 @@ def add_pose_interpolator_directory(
     new_child_indices = [*parent_directory_child_indices, -directory_index]
     manager.pose_interpolator_directory[parent_directory_index].child_indices.set(new_child_indices)
     return directory_index
+
+
+def _import_directory_contents(
+    manager: PoseInterpolatorManagerNode,
+    data: PoseInterpolatorDirectoryData,
+    directory_index: int,
+    parent: str | None,
+    created: list[tuple[str, PoseInterpolatorNode]],
+) -> None:
+    for child in data.directories:
+        _import_directory(manager, child, directory_index, parent, created)
+    for pose_interpolator_data in data.pose_interpolators:
+        created.append(
+            add_pose_interpolator(manager, pose_interpolator_data, parent, directory_index)
+        )
+
+
+def _import_directory(
+    manager: PoseInterpolatorManagerNode,
+    data: PoseInterpolatorDirectoryData,
+    parent_directory_index: int,
+    parent: str | None,
+    created: list[tuple[str, PoseInterpolatorNode]],
+) -> None:
+    """Create a directory (and everything below it) under parent_directory_index."""
+    directory_index = add_pose_interpolator_directory(manager, data, parent_directory_index)
+    _import_directory_contents(manager, data, directory_index, parent, created)
+
+
+def apply_pose_interpolator_directory_data(
+    data: PoseInterpolatorDirectoryData,
+    directories: Iterable[str] | None = None,
+    pose_interpolators: Iterable[str] | None = None,
+    parent_directory: str | None = None,
+    parent: str | None = None,
+) -> list[tuple[str, PoseInterpolatorNode]]:
+    """
+    Import directory data into the poseInterpolatorManager.
+
+    Args:
+        data: Root directory data loaded from a file.
+        directories: Directory names to import (with everything below them).
+        pose_interpolators: poseInterpolator names (shape or transform) to import.
+        parent_directory: Manager directory to import into. Defaults to the root.
+        parent: Optional DAG parent for the created poseInterpolator transforms.
+
+    If neither ``directories`` nor ``pose_interpolators`` is given, everything in
+    the file is imported.
+
+    Returns:
+        The (transform, shape node) pair of every created poseInterpolator.
+    """
+    manager = PoseInterpolatorManagerNode.from_existing("poseInterpolatorManager")
+
+    parent_directory_index = 0
+    if parent_directory is not None:
+        parent_directory_index = get_directory_indices(manager, {parent_directory})[
+            parent_directory
+        ]
+
+    import_all = directories is None and pose_interpolators is None
+    directory_names = set(directories or ())
+    pose_interpolator_names = set(pose_interpolators or ())
+
+    created: list[tuple[str, PoseInterpolatorNode]] = []
+
+    if import_all:
+        _import_directory_contents(manager, data, parent_directory_index, parent, created)
+        return created
+
+    return created

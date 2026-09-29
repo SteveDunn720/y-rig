@@ -4,8 +4,10 @@ from pathlib import Path
 
 from yrig.io import confirm_overwrite
 from yrig.io.json import export_json, load_json
-from yrig.rbf.pose_interpolator.serialize import get_pose_interpolator_directory_data
-from yrig.rbf.pose_interpolator.serialize.data import PoseInterpolatorFileData
+
+from .apply import apply_pose_interpolator_directory_data
+from .data import PoseInterpolatorFileData
+from .get import get_pose_interpolator_directory_data
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +27,12 @@ def import_pose_file(
         pose_interpolators: Specify poseInterpolator names to import.
     """
     data = load_json(filepath, PoseInterpolatorFileData)
-    # apply_blendshape_data(blendshape, data, directories, targets, parent_directory)
+    apply_pose_interpolator_directory_data(
+        data.directory,
+        directories=directories,
+        pose_interpolators=pose_interpolators,
+        parent_directory=parent_directory,
+    )
     log.info(f"Imported pose file from {filepath}")
 
 

@@ -33,6 +33,44 @@ def ensure_plugin_loaded(plugin: str) -> None:
         _loaded_plugin_cache.add(plugin)
 
 
+def list_attribute_origins(node: str) -> None:
+    """
+    Print each attribute and the Maya node type where it is first defined.
+    Use this when adding new node wrappers.
+    """
+    node_type = cmds.nodeType(node)
+
+    # Root-first chain, then the node's own type last.
+    type_chain: list[str] = [*cmds.nodeType(node, inherited=True), node_type]  # type: ignore
+
+    print(f"\n{node} ({node_type})")  # noqa
+    print("=" * 80)  # noqa
+
+    seen: set[str] = set()
+    pending: list[str] = []  # types attributeInfo can't resolve
+
+    for level, type_name in enumerate(type_chain):
+        try:
+            attrs = cmds.attributeInfo(type=type_name, allAttributes=True) or []
+        except RuntimeError:
+            pending.append(type_name)
+            continue
+
+        new_attrs = sorted(set(attrs) - seen)
+        seen.update(attrs)
+
+        label = " + ".join([*pending, type_name])
+        pending.clear()
+
+        if not new_attrs:
+            continue
+
+        print(f"\nLevel {level}: {label}")  # noqa
+        print("-" * 80)  # noqa
+        for attr in new_attrs:
+            print(f"{attr:<40} {type_name}")  # noqa
+
+
 def get_dag_path(node: str | Node) -> MDagPath:
     node_str = str(node)
     selection = MSelectionList()

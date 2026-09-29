@@ -120,6 +120,29 @@ class PlusMinusAverageOperation(IntEnum):
     AVERAGE = 3
 
 
+class PoseInterpolatorInterpolation(IntEnum):
+    LINEAR = 0
+    GAUSSIAN = 1
+
+
+class PoseInterpolatorPoseType(IntEnum):
+    SWING_AND_TWIST = 0
+    SWING_ONLY = 1
+    TWIST_ONLY = 2
+
+
+class PoseInterpolatorPoseControllerDataItemType(IntEnum):
+    BOOL = 0
+    CHAR = 1
+    SHORT = 2
+    INT = 3
+    INT64 = 4
+    FLOAT = 5
+    DOUBLE = 6
+    STRING = 7
+    MOBJECT = 8
+
+
 class SkinClusterBindMethod(IntEnum):
     CLOSEST_DISTANCE = 0
     CLOSEST_JOINT_IN_HIERARCHY = 1

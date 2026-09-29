@@ -203,9 +203,6 @@ class MatrixArrayAttribute(ValueArrayAttribute):
 class BooleanAttribute(Attribute[bool]):
     """A Maya attribute of a bool type."""
 
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
     def get(self) -> bool:
         """Get the value of this attribute."""
         return bool(cmds.getAttr(self.attr_path))
@@ -285,7 +282,7 @@ class NumericAttribute(Attribute[T]):
 
 
 class ScalarAttribute(NumericAttribute[float]):
-    """Single float (double) Maya attribute."""
+    """Single scalar Maya attribute."""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
@@ -326,11 +323,20 @@ class ScalarAttribute(NumericAttribute[float]):
         return attribute
 
 
+class FloatAttribute(ScalarAttribute):
+    """Single scalar (float) Maya attribute."""
+
+
+class DoubleAttribute(ScalarAttribute):
+    """Single scalar (double) Maya attribute."""
+
+
+class DoubleAngleAttribute(DoubleAttribute):
+    """Single scalar (doubleAngle) Maya attribute."""
+
+
 class IntegerAttribute(NumericAttribute[int]):
     """Single integer Maya attribute."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
 
     def get(self) -> int:
         """Get the value of this attribute."""
@@ -341,11 +347,12 @@ class IntegerAttribute(NumericAttribute[int]):
         cmds.setAttr(self.attr_path, int(value))  # type: ignore
 
 
+class LongAttribute(NumericAttribute[int]):
+    """Single integer (long) Maya attribute."""
+
+
 class StringAttribute(Attribute[str]):
     """Maya string attribute."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
 
     def get(self) -> str:
         """Get the value of this attribute."""
@@ -358,9 +365,6 @@ class StringAttribute(Attribute[str]):
 
 class MatrixAttribute(Attribute[MMatrix]):
     """A Maya attribute of the matrix type."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
 
     def get(self) -> MMatrix:
         """Get the value of this attribute."""
@@ -384,22 +388,13 @@ class MatrixAttribute(Attribute[MMatrix]):
 class GeometryAttribute(Attribute):
     """A Maya attribute of the geometry type."""
 
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
 
 class NurbsCurveAttribute(GeometryAttribute):
     """A Maya attribute of the nurbsCurve type."""
 
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
-
 
 class NurbsSurfaceAttribute(GeometryAttribute):
     """A Maya attribute of the nurbsSurface type."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path)
 
 
 class Vector2Attribute(Attribute[tuple[float, float]]):
@@ -486,3 +481,27 @@ class Long3Attribute(Attribute[tuple[int, int, int]]):
     def set(self, value: tuple[int, int, int]) -> None:
         """Set the value of this attribute."""
         cmds.setAttr(self.attr_path, *value)  # type: ignore
+
+
+class EulerRotationAttribute(Attribute[tuple[float, float, float]]):
+    """A Maya attribute of the type doubleAngle3 (XYZ)"""
+
+    def __init__(self, attr_path: str) -> None:
+        super().__init__(attr_path)
+
+        self.x = DoubleAngleAttribute(f"{attr_path}X")
+        self.y = DoubleAngleAttribute(f"{attr_path}Y")
+        self.z = DoubleAngleAttribute(f"{attr_path}Z")
+
+    def get(self) -> tuple[float, float, float]:
+        """Get the value of this attribute."""
+        return_list = cmds.getAttr(self.attr_path)
+        tuple = return_list[0]
+        return tuple
+
+    def set(self, value: tuple[float, float, float]) -> None:
+        """Set the value of this attribute."""
+        cmds.setAttr(self.attr_path, *value)  # type: ignore
+
+
+class GenericAttribute(Attribute): ...

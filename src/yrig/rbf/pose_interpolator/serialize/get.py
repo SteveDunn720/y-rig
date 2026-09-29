@@ -153,7 +153,7 @@ def _get_pose_interpolator_directory_data(
             if child_directory_data is not None:
                 child_directories.append(child_directory_data)
         else:
-            if child_index in pose_interpolator_indices:
+            if export_all or child_index in pose_interpolator_indices:
                 parent_attr = manager.pose_interpolator_parent[child_index]
                 source_attr = parent_attr.get_input()
                 if source_attr is None:
@@ -194,18 +194,25 @@ def get_pose_interpolator_directory_data(
     interpolators and nested selected directories.
     """
     manager = PoseInterpolatorManagerNode.from_existing("poseInterpolatorManager")
-
-    directory_names = set(directories or ())
-    pose_interpolator_names = set(pose_interpolators or ())
     export_all = directories is None and pose_interpolators is None
 
-    directory_indices = get_directory_indices(manager, directory_names)
-    pose_interpolators_indices = get_pose_interpolator_indices(manager, pose_interpolator_names)
+    if export_all:
+        directory_indices: set[int] = set()
+        pose_interpolator_indices: set[int] = set()
+    else:
+        directory_names = set(directories or ())
+        pose_interpolator_names = set(pose_interpolators or ())
+
+        directory_indices = set(get_directory_indices(manager, directory_names).values())
+        pose_interpolator_indices = set(
+            get_pose_interpolator_indices(manager, pose_interpolator_names).values()
+        )
+
     directory_data = _get_pose_interpolator_directory_data(
         manager=manager,
         index=0,
-        directory_indices=set(directory_indices.values()),
-        pose_interpolator_indices=set(pose_interpolators_indices.values()),
+        directory_indices=directory_indices,
+        pose_interpolator_indices=pose_interpolator_indices,
         export_all=export_all,
     )
 

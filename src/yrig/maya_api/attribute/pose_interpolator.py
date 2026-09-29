@@ -59,7 +59,7 @@ class PoseInterpolatorPoseControllerDataItemAttribute(Attribute):
             f"{attr_path}.poseControllerDataItemName"
         )
         self.pose_controller_data_item_type = EnumAttribute(
-            f"{attr_path}.poseControllerDataItemName",
+            f"{attr_path}.poseControllerDataItemType",
             PoseInterpolatorPoseControllerDataItemType,
         )
         self.pose_controller_data_item_value = GenericAttribute(
@@ -87,11 +87,11 @@ class PoseInterpolatorPoseAttribute(Attribute):
         self.pose_rotation = ArrayAttribute(f"{attr_path}.poseRotation", DoubleArrayAttribute)
         self.pose_translation = ArrayAttribute(f"{attr_path}.poseTranslation", DoubleArrayAttribute)
         self.pose_name = StringAttribute(f"{attr_path}.poseName")
-        self.independent = BooleanAttribute(f"{attr_path}.independent")
+        self.is_independent = BooleanAttribute(f"{attr_path}.isIndependent")
         self.pose_rotation_falloff = FloatAttribute(f"{attr_path}.poseRotationFalloff")
         self.pose_translation_falloff = FloatAttribute(f"{attr_path}.poseTranslationFalloff")
         self.pose_type = EnumAttribute(f"{attr_path}.poseType", PoseInterpolatorPoseType)
-        self.gaussian_falloff = FloatAttribute(f"{attr_path}.gaussianFalloff")
+        self.pose_falloff = FloatAttribute(f"{attr_path}.poseFalloff")
         self.is_enabled = BooleanAttribute(f"{attr_path}.isEnabled")
         self.pose_controller_data = ArrayAttribute(
             f"{attr_path}.poseControllerData", PoseInterpolatorPoseControllerDataAttribute

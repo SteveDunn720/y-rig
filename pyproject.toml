@@ -60,7 +60,8 @@ exclude = [
   "camelcase-imported-as-lowercase",
   "line-too-long",
   "ambiguous-unicode-character-docstring",
-  "noqa-comments"
+  "noqa-comments",
+  "blind-except"
 ]
 
     [tool.ruff.lint.per-file-ignores]

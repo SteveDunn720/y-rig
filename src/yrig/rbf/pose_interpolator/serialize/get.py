@@ -28,6 +28,8 @@ def get_pose_interpolator_data(
         if isinstance(pose_interpolator, PoseInterpolatorNode)
         else PoseInterpolatorNode.from_existing(pose_interpolator)
     )
+    enable_rotation = node.enable_rotation.get()
+    enable_translation = node.enable_translation.get()
 
     drivers = []
     for index in node.driver.get_indices():
@@ -69,14 +71,20 @@ def get_pose_interpolator_data(
                 items=items,
             )
 
-        rotations: list[tuple[float, float, float, float]] = [  # type: ignore
-            tuple(pose.pose_rotation[index].get()) for index in pose.pose_rotation.get_indices()
-        ]
+        rotations: list[tuple[float, float, float, float]] = (  # type: ignore
+            [tuple(pose.pose_rotation[index].get()) for index in pose.pose_rotation.get_indices()]
+            if enable_rotation
+            else None
+        )
 
-        translations: list[tuple[float, float, float]] = [  # type: ignore
-            tuple(pose.pose_translation[index].get())
-            for index in pose.pose_translation.get_indices()
-        ]
+        translations: list[tuple[float, float, float]] = (  # type: ignore
+            [
+                tuple(pose.pose_translation[index].get())
+                for index in pose.pose_translation.get_indices()
+            ]
+            if enable_translation
+            else None
+        )
 
         poses.append(
             PoseInterpolatorPoseData(
@@ -97,8 +105,8 @@ def get_pose_interpolator_data(
     return PoseInterpolatorData(
         name=node.name,
         allow_negative_weights=node.allow_negative_weights.get(),
-        enable_rotation=node.enable_rotation.get(),
-        enable_translation=node.enable_translation.get(),
+        enable_rotation=enable_rotation,
+        enable_translation=enable_translation,
         interpolation=node.interpolation.get(),
         output_smoothing=node.output_smoothing.get(),
         regularization=node.regularization.get(),

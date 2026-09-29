@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Collection, Iterable
+from collections.abc import Iterable
 from pathlib import Path
 
 from yrig.io import confirm_overwrite
@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 
 def import_pose_file(
     filepath: Path,
-    directories: Collection[str] | None = None,
-    pose_interpolators: Collection[str] | None = None,
+    directories: Iterable[str] | None = None,
+    pose_interpolators: Iterable[str] | None = None,
     parent_directory: str | None = None,
 ) -> None:
     """
@@ -31,7 +31,7 @@ def import_pose_file(
 
 def export_pose_file(
     filepath: Path,
-    directories: Collection[str] | None = None,
+    directories: Iterable[str] | None = None,
     pose_interpolators: Iterable[str] | None = None,
     force: bool = False,
 ) -> bool:

@@ -14,21 +14,27 @@ def get_directory_indices(
     Breadth first search for the given directories.
     """
     indices_map: dict[str, int] = {}
+    visited: set[int] = set()
     queue = deque([start_index])
     while queue:
         current_index = queue.popleft()
+        if current_index in visited:
+            continue
+        visited.add(current_index)
+
         if current_index > 0:
             continue
-        directory_index = -current_index
-        directory = manager.pose_interpolator_directory[directory_index]
-        directory_name = directory.directory_name.get()
-        if directory_name in directories and directory_name not in indices_map:
-            indices_map[directory_name] = directory_index
-            # Early exit if all target directories have been found
-            if len(indices_map) == len(directories):
-                return indices_map
+        else:
+            directory_index = -current_index
+            directory = manager.pose_interpolator_directory[directory_index]
+            directory_name = directory.directory_name.get()
+            if directory_name in directories and directory_name not in indices_map:
+                indices_map[directory_name] = directory_index
+                # Early exit if all target directories have been found
+                if len(indices_map) == len(directories):
+                    return indices_map
 
-        queue.extend(child_index for child_index in directory.child_indices.get())
+            queue.extend(child_index for child_index in directory.child_indices.get())
 
     missing = directories - indices_map.keys()
     if missing:
@@ -46,9 +52,14 @@ def get_pose_interpolator_indices(
     Breadth first search for the given poseInterpolators (shape or transform name).
     """
     indices_map: dict[str, int] = {}
+    visited: set[int] = set()
     queue = deque([start_index])
     while queue:
         current_index = queue.popleft()
+        if current_index in visited:
+            continue
+        visited.add(current_index)
+
         if current_index > 0:
             parent_attr = manager.pose_interpolator_parent[current_index]
             source_attr = parent_attr.get_input()
@@ -62,9 +73,10 @@ def get_pose_interpolator_indices(
                 pose_interpolator_match = next(iter(matches))
                 indices_map[pose_interpolator_match] = current_index
             continue
-        directory_index = -current_index
-        directory = manager.pose_interpolator_directory[directory_index]
-        queue.extend(child_index for child_index in directory.child_indices.get())
+        else:
+            directory_index = -current_index
+            directory = manager.pose_interpolator_directory[directory_index]
+            queue.extend(child_index for child_index in directory.child_indices.get())
 
     missing = pose_interpolators - indices_map.keys()
     if missing:

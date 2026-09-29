@@ -26,8 +26,8 @@ class PoseInterpolatorPoseControllerData:
 @dataclass
 class PoseInterpolatorPoseData:
     name: str
-    rotations: list[tuple[float, float, float, float]]
-    translations: list[tuple[float, float, float]]
+    rotations: list[tuple[float, float, float, float]] | None
+    translations: list[tuple[float, float, float]] | None
     independent: bool
     rotation_falloff: float
     translation_falloff: float

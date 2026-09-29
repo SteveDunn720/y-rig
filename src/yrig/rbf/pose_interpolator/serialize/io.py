@@ -32,7 +32,7 @@ def import_pose_file(
 def export_pose_file(
     filepath: Path,
     directories: Collection[str] | None = None,
-    pose_interpolators: Iterable[str | int] | None = None,
+    pose_interpolators: Iterable[str] | None = None,
     force: bool = False,
 ) -> bool:
     """
@@ -54,7 +54,9 @@ def export_pose_file(
         raise ValueError("Pose Interpolator files should use the .ypose extension.")
     if not confirm_overwrite(filepath, force):
         return False
-    directory_data = get_pose_interpolator_directory_data()
+    directory_data = get_pose_interpolator_directory_data(
+        directories=directories, pose_interpolators=pose_interpolators
+    )
     file_data = PoseInterpolatorFileData(directory=directory_data)
     export_json(filepath, file_data, compact=False)
     log.info(f"Exported pose file to {filepath}")

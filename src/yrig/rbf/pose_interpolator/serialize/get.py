@@ -1,6 +1,10 @@
 from collections.abc import Iterable
 
 from yrig.maya_api.node import PoseInterpolatorManagerNode, PoseInterpolatorNode
+from yrig.rbf.pose_interpolator.serialize.directory import (
+    get_directory_indices,
+    get_pose_interpolator_indices,
+)
 
 from .data import (
     PoseInterpolatorControllerDataItem,
@@ -107,8 +111,8 @@ def get_pose_interpolator_data(
 def _get_pose_interpolator_directory_data(
     manager: PoseInterpolatorManagerNode,
     index: int,
-    directories: set[str],
-    pose_interpolators: set[str],
+    directory_indices: set[int],
+    pose_interpolator_indices: set[int],
     export_all: bool,
     ancestor_selected: bool = False,
 ) -> PoseInterpolatorDirectoryData | None:
@@ -123,8 +127,7 @@ def _get_pose_interpolator_directory_data(
     """
     directory = manager.pose_interpolator_directory[index]
 
-    directory_name = directory.directory_name.get()
-    directory_selected = ancestor_selected or directory_name in directories
+    directory_selected = ancestor_selected or index in directory_indices
 
     child_indices = directory.child_indices.get()
     child_directories = []
@@ -134,24 +137,22 @@ def _get_pose_interpolator_directory_data(
             child_directory_data = _get_pose_interpolator_directory_data(
                 manager,
                 -child_index,
-                directories,
-                pose_interpolators,
+                directory_indices,
+                pose_interpolator_indices,
                 export_all,
                 ancestor_selected=directory_selected,
             )
             if child_directory_data is not None:
                 child_directories.append(child_directory_data)
         else:
-            parent_attr = manager.pose_interpolator_parent[child_index]
-            source_attr = parent_attr.get_input()
-            if source_attr is None:
-                raise RuntimeError(f"Couldn't find a poseInterpolator connected to {source_attr}")
-            source_node = str(source_attr).split(".", 1)[0]
-
-            should_export_pose_interpolator = (
-                export_all or directory_selected or source_node in pose_interpolators
-            )
-            if should_export_pose_interpolator:
+            if child_index in pose_interpolator_indices:
+                parent_attr = manager.pose_interpolator_parent[child_index]
+                source_attr = parent_attr.get_input()
+                if source_attr is None:
+                    raise RuntimeError(
+                        f"Couldn't find a poseInterpolator connected to {source_attr}"
+                    )
+                source_node = str(source_attr).split(".", 1)[0]
                 child_pose_interpolators.append(get_pose_interpolator_data(source_node))
 
     should_keep_directory = (
@@ -190,11 +191,13 @@ def get_pose_interpolator_directory_data(
     pose_interpolator_names = set(pose_interpolators or ())
     export_all = directories is None and pose_interpolators is None
 
+    directory_indices = get_directory_indices(manager, directory_names)
+    pose_interpolators_indices = get_pose_interpolator_indices(manager, pose_interpolator_names)
     directory_data = _get_pose_interpolator_directory_data(
         manager=manager,
         index=0,
-        directories=directory_names,
-        pose_interpolators=pose_interpolator_names,
+        directory_indices=set(directory_indices.values()),
+        pose_interpolator_indices=set(pose_interpolators_indices.values()),
         export_all=export_all,
     )
 

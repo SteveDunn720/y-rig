@@ -47,7 +47,6 @@ exclude = [
   "SIM",
   "T20",
   "TID",
-  "TC",
   "UP",
   "F",
   "RUF"

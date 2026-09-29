@@ -228,12 +228,7 @@
                 "text": {
                     "value": "Import Arm Shapes"
                 }
-            },
-            "code": [
-                "import_path = Path(\"${import_filepath}\")",
-                "",
-                "yrig.deformer.blendshape.import_blendshape(import_path, \"${blendshape}\")"
-            ]
+            }
         },
         "/tools_window/biped/body/psd/hand_shapes_io": {
             "instance": "/io_pair",

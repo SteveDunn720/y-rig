@@ -1,8 +1,9 @@
-from yrig.maya_api.node import PoseInterpolatorNode
+from yrig.maya_api.node import PoseInterpolatorManagerNode, PoseInterpolatorNode
 
 from .data import (
     PoseInterpolatorControllerDataItem,
     PoseInterpolatorData,
+    PoseInterpolatorDirectoryData,
     PoseInterpolatorDriverData,
     PoseInterpolatorPoseControllerData,
     PoseInterpolatorPoseData,
@@ -62,7 +63,7 @@ def get_pose_interpolator_data(
                 items=items,
             )
 
-        rotations: list[tuple[float, float, float]] = [  # type: ignore
+        rotations: list[tuple[float, float, float, float]] = [  # type: ignore
             tuple(pose.pose_rotation[index].get()) for index in pose.pose_rotation.get_indices()
         ]
 
@@ -99,3 +100,33 @@ def get_pose_interpolator_data(
         poses=poses,
         outputs=outputs,
     )
+
+
+def _get_pose_interpolator_directory_data(
+    manager: PoseInterpolatorManagerNode, index: int
+) -> PoseInterpolatorDirectoryData:
+    directory = manager.pose_interpolator_directory[index]
+    child_indices = directory.child_indices.get()
+    directories = []
+    pose_interpolators = []
+    for child_index in child_indices:
+        if child_index < 0:
+            directories.append(_get_pose_interpolator_directory_data(manager, -child_index))
+        else:
+            parent_attr = manager.pose_interpolator_parent[child_index]
+            source_attr = parent_attr.get_input()
+            if source_attr is None:
+                raise RuntimeError(f"Couldn't find a poseInterpolator connected to {source_attr}")
+            source_node = str(source_attr).split(".", 1)[0]
+            pose_interpolators.append(get_pose_interpolator_data(source_node))
+
+    return PoseInterpolatorDirectoryData(
+        name=directory.directory_name.get(),
+        directories=directories,
+        pose_interpolators=pose_interpolators,
+    )
+
+
+def get_pose_interpolator_directory_data(index: int = 0) -> PoseInterpolatorDirectoryData:
+    manager = PoseInterpolatorManagerNode.from_existing("poseInterpolatorManager")
+    return _get_pose_interpolator_directory_data(manager, index)

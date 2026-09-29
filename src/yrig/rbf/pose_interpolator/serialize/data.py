@@ -26,7 +26,7 @@ class PoseInterpolatorPoseControllerData:
 @dataclass
 class PoseInterpolatorPoseData:
     name: str
-    rotations: list[tuple[float, float, float]]
+    rotations: list[tuple[float, float, float, float]]
     translations: list[tuple[float, float, float]]
     independent: bool
     rotation_falloff: float
@@ -60,3 +60,15 @@ class PoseInterpolatorData:
     drivers: list[PoseInterpolatorDriverData]
     poses: list[PoseInterpolatorPoseData]
     outputs: list[list[str]]
+
+
+@dataclass
+class PoseInterpolatorDirectoryData:
+    name: str
+    directories: list[PoseInterpolatorDirectoryData]
+    pose_interpolators: list[PoseInterpolatorData]
+
+
+@dataclass
+class PoseInterpolatorFileData:
+    directory: PoseInterpolatorDirectoryData

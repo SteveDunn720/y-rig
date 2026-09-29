@@ -1,12 +1,29 @@
 import logging
 
-from yrig.maya_api.node import PoseInterpolatorNode
+from maya import cmds
+
+from yrig.maya_api.attribute import Attribute
+from yrig.maya_api.node import PoseInterpolatorManagerNode, PoseInterpolatorNode
+from yrig.transform import get_transform
 
 from .data import (
     PoseInterpolatorData,
+    PoseInterpolatorDirectoryData,
 )
 
 log = logging.getLogger(__name__)
+
+
+def _apply_attribute(
+    attribute: Attribute,
+    source: Attribute | str,
+    value: object,
+) -> None:
+    """Connect an attribute when possible, otherwise set its value."""
+    try:
+        attribute.connect_from(source)
+    except Exception:
+        attribute.set(value)
 
 
 def apply_pose_interpolator_data(
@@ -30,13 +47,16 @@ def apply_pose_interpolator_data(
     for index, driver_data in enumerate(data.drivers):
         driver = node.driver[index]
 
-        # TODO: make this connect all the values. If it's not possible to do so, then set the static values.
         driver_node = driver_data.matrix.split(".", 1)[0]
         driver.driver_matrix.connect_from(driver_data.matrix)
-        driver.driver_orient.set(driver_data.orient)
-        driver.driver_rotate_axis.set(driver_data.rotate_axis)
+        _apply_attribute(driver.driver_orient, f"{driver_node}.jointOrient", driver_data.orient)
+        _apply_attribute(
+            driver.driver_rotate_axis, f"{driver_node}.rotateAxis", driver_data.rotate_axis
+        )
         driver.driver_twist_axis.set(driver_data.twist_axis)
-        driver.driver_rotate_order.set(driver_data.rotate_order)
+        _apply_attribute(
+            driver.driver_rotate_order, f"{driver_node}.rotateOrder", driver_data.rotate_order
+        )
         driver.driver_euler_twist.set(driver_data.euler_twist)
 
         for controller_index, value in driver_data.controllers.items():
@@ -82,3 +102,45 @@ def apply_pose_interpolator_data(
                     output_attr,
                     destination,
                 )
+
+
+def add_pose_interpolator(
+    manager: PoseInterpolatorManagerNode,
+    data: PoseInterpolatorData,
+    parent: str | None = None,
+    parent_directory_index: int = 0,
+) -> tuple[str, PoseInterpolatorNode]:
+    """Add poseInterpolator to manager and apply data. Returns the transform and shape node of the created poseInterpolator."""
+    pose_interpolator = PoseInterpolatorNode(name=data.name)
+    pose_interpolator_transform = get_transform(str(pose_interpolator))
+    pose_interpolator_transform = cmds.rename(
+        pose_interpolator_transform, data.name.removesuffix("Shape")
+    )
+    if parent is not None:
+        cmds.parent(pose_interpolator_transform, parent)
+    target_index = manager.pose_interpolator_parent.next_available_index()
+    parent_directory = manager.pose_interpolator_directory[parent_directory_index]
+    original_child_indices = parent_directory.child_indices.get()
+    apply_pose_interpolator_data(pose_interpolator, data)
+    parent_directory.child_indices.set([*original_child_indices, target_index])
+    return pose_interpolator_transform, pose_interpolator
+
+
+def add_pose_interpolator_directory(
+    manager: PoseInterpolatorManagerNode,
+    data: PoseInterpolatorDirectoryData,
+    parent_directory_index: int,
+) -> int:
+    """Add poseInterpolator directory to manager and apply data. Returns the index at which the poseInterpolator directory was added."""
+    directory_index = manager.pose_interpolator_directory.next_available_index()
+    directory = manager.pose_interpolator_directory[directory_index]
+
+    directory.directory_name.set(data.name)
+    directory.parent_index.set(parent_directory_index)
+    parent_directory_child_indices = manager.pose_interpolator_directory[
+        parent_directory_index
+    ].child_indices.get()
+
+    new_child_indices = [*parent_directory_child_indices, -directory_index]
+    manager.pose_interpolator_directory[parent_directory_index].child_indices.set(new_child_indices)
+    return directory_index

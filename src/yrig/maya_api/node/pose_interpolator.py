@@ -4,7 +4,6 @@ from yrig.maya_api.attribute import (
     DoubleAttribute,
     EnumAttribute,
     FloatAttribute,
-    Int32ArrayAttribute,
     IntegerAttribute,
     LongAttribute,
     PoseInterpolatorDirectoryAttribute,
@@ -56,5 +55,5 @@ class PoseInterpolatorManagerNode(Node):
             f"{self.name}.poseInterpolatorDirectory", PoseInterpolatorDirectoryAttribute
         )
         self.pose_interpolator_parent = ArrayAttribute(
-            f"{self.name}.poseInterpolatorParent", Int32ArrayAttribute
+            f"{self.name}.poseInterpolatorParent", LongAttribute
         )

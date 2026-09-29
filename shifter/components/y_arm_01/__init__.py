@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, ClassVar
 import mgear.pymaya as pm
 
 if TYPE_CHECKING:
-    from components.y_limb_01 import (
+    from ..y_limb_01 import (
         Component as LimbComponent,  # relative import within the package
     )
 else:

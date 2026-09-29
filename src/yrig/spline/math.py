@@ -330,7 +330,7 @@ def point_on_spline_weights(
     return [
         (cvs[index], weight)
         for index, weight in reversed(out_weights.items())
-        if math.isclose(weight, 0.0) or return_zero_weights
+        if not math.isclose(weight, 0.0) or return_zero_weights
     ]
 
 

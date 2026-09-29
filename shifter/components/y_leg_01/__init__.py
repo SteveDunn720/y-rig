@@ -7,7 +7,7 @@ import mgear.pymaya as pm
 from mgear.core import attribute, primitive, transform
 
 if TYPE_CHECKING:
-    from components.y_limb_01 import (
+    from ..y_limb_01 import (
         Component as LimbComponent,  # relative import within the package
     )
 else:
@@ -49,7 +49,7 @@ class Component(LimbComponent):
 
         if self.settings["pinrefarray"]:
             ref_names = self.get_valid_alias_list(self.settings["pinrefarray"].split(","))
-            ref_names = ["Auto", *ref_names]
+            ref_names = ["Auto"] + [ref_names]
             if len(ref_names) > 1:
                 self.pin_att = self.addAnimEnumParam("midref", "Mid Control Space", 0, ref_names)
 

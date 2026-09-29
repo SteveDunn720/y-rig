@@ -1,5 +1,6 @@
 import logging
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
+from contextlib import contextmanager
 
 from maya import cmds
 
@@ -14,6 +15,29 @@ from .data import (
 )
 
 log = logging.getLogger(__name__)
+
+
+@contextmanager
+def preserve_all_pose_interpolator_directories(
+    manager: PoseInterpolatorManagerNode,
+) -> Generator[None, None, None]:
+    """
+    When initializing a poseInterpolator plug Maya just decides a directory to add it to.
+    This screws up our manual handling of directories on import.
+
+    This might be overkill, but since I don't have the Maya source code on hand
+    this is the only way to guarantee that Maya won't screw up directory data.
+    """
+    directory_indices = manager.pose_interpolator_directory.get_indices()
+    snapshot = {
+        index: manager.pose_interpolator_directory[index].child_indices.get()
+        for index in directory_indices
+    }
+    try:
+        yield
+    finally:
+        for index, child_indices in snapshot.items():
+            manager.pose_interpolator_directory[index].child_indices.set(child_indices)
 
 
 def _apply_attribute(
@@ -131,6 +155,11 @@ def add_pose_interpolator(
         cmds.parent(pose_interpolator_transform, parent)
     target_index = manager.pose_interpolator_parent.next_available_index()
     parent_directory = manager.pose_interpolator_directory[parent_directory_index]
+    with preserve_all_pose_interpolator_directories(manager):
+        pose_interpolator.mid_layer_id.set(target_index)
+        pose_interpolator.mid_layer_parent.connect_to(
+            manager.pose_interpolator_parent[target_index]
+        )
     original_child_indices = parent_directory.child_indices.get()
     apply_pose_interpolator_data(pose_interpolator, data)
     parent_directory.child_indices.set([*original_child_indices, target_index])
@@ -157,21 +186,6 @@ def add_pose_interpolator_directory(
     return directory_index
 
 
-def _import_directory_contents(
-    manager: PoseInterpolatorManagerNode,
-    data: PoseInterpolatorDirectoryData,
-    directory_index: int,
-    parent: str | None,
-    created: list[tuple[str, PoseInterpolatorNode]],
-) -> None:
-    for child in data.directories:
-        _import_directory(manager, child, directory_index, parent, created)
-    for pose_interpolator_data in data.pose_interpolators:
-        created.append(
-            add_pose_interpolator(manager, pose_interpolator_data, parent, directory_index)
-        )
-
-
 def _import_directory(
     manager: PoseInterpolatorManagerNode,
     data: PoseInterpolatorDirectoryData,
@@ -182,6 +196,21 @@ def _import_directory(
     """Create a directory (and everything below it) under parent_directory_index."""
     directory_index = add_pose_interpolator_directory(manager, data, parent_directory_index)
     _import_directory_contents(manager, data, directory_index, parent, created)
+
+
+def _import_directory_contents(
+    manager: PoseInterpolatorManagerNode,
+    data: PoseInterpolatorDirectoryData,
+    parent_directory_index: int,
+    parent: str | None,
+    created: list[tuple[str, PoseInterpolatorNode]],
+) -> None:
+    for child in data.directories:
+        _import_directory(manager, child, parent_directory_index, parent, created)
+    for pose_interpolator_data in data.pose_interpolators:
+        created.append(
+            add_pose_interpolator(manager, pose_interpolator_data, parent, parent_directory_index)
+        )
 
 
 def apply_pose_interpolator_directory_data(

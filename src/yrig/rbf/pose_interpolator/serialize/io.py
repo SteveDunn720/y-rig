@@ -54,7 +54,7 @@ def export_pose_file(
         raise ValueError("Pose Interpolator files should use the .ypose extension.")
     if not confirm_overwrite(filepath, force):
         return False
-    directory_data = get_pose_interpolator_directory_data(0)
+    directory_data = get_pose_interpolator_directory_data()
     file_data = PoseInterpolatorFileData(directory=directory_data)
     export_json(filepath, file_data, compact=False)
     log.info(f"Exported pose file to {filepath}")

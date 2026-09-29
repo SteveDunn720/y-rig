@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from yrig.maya_api.node import PoseInterpolatorManagerNode, PoseInterpolatorNode
 
 from .data import (
@@ -103,30 +105,100 @@ def get_pose_interpolator_data(
 
 
 def _get_pose_interpolator_directory_data(
-    manager: PoseInterpolatorManagerNode, index: int
-) -> PoseInterpolatorDirectoryData:
+    manager: PoseInterpolatorManagerNode,
+    index: int,
+    directories: set[str],
+    pose_interpolators: set[str],
+    export_all: bool,
+    ancestor_selected: bool = False,
+) -> PoseInterpolatorDirectoryData | None:
+    """
+    Collect pose-interpolator data from a directory.
+
+    A directory is retained when:
+    - It was explicitly selected.
+    - One of its ancestors was selected.
+    - It contains a selected child directory.
+    - It contains a selected pose interpolator.
+    """
     directory = manager.pose_interpolator_directory[index]
+
+    directory_name = directory.directory_name.get()
+    directory_selected = ancestor_selected or directory_name in directories
+
     child_indices = directory.child_indices.get()
-    directories = []
-    pose_interpolators = []
+    child_directories = []
+    child_pose_interpolators = []
     for child_index in child_indices:
         if child_index < 0:
-            directories.append(_get_pose_interpolator_directory_data(manager, -child_index))
+            child_directory_data = _get_pose_interpolator_directory_data(
+                manager,
+                -child_index,
+                directories,
+                pose_interpolators,
+                export_all,
+                ancestor_selected=directory_selected,
+            )
+            if child_directory_data is not None:
+                child_directories.append(child_directory_data)
         else:
             parent_attr = manager.pose_interpolator_parent[child_index]
             source_attr = parent_attr.get_input()
             if source_attr is None:
                 raise RuntimeError(f"Couldn't find a poseInterpolator connected to {source_attr}")
             source_node = str(source_attr).split(".", 1)[0]
-            pose_interpolators.append(get_pose_interpolator_data(source_node))
+
+            should_export_pose_interpolator = (
+                export_all or directory_selected or source_node in pose_interpolators
+            )
+            if should_export_pose_interpolator:
+                child_pose_interpolators.append(get_pose_interpolator_data(source_node))
+
+    should_keep_directory = (
+        index == 0 or directory_selected or child_directories or child_pose_interpolators
+    )
+
+    if not should_keep_directory:
+        return None
 
     return PoseInterpolatorDirectoryData(
         name=directory.directory_name.get(),
-        directories=directories,
-        pose_interpolators=pose_interpolators,
+        directories=child_directories,
+        pose_interpolators=child_pose_interpolators,
     )
 
 
-def get_pose_interpolator_directory_data(index: int = 0) -> PoseInterpolatorDirectoryData:
+def get_pose_interpolator_directory_data(
+    directories: Iterable[str] | None = None,
+    pose_interpolators: Iterable[str] | None = None,
+) -> PoseInterpolatorDirectoryData:
+    """
+    Get serialized pose-interpolator directory data.
+
+    Args:
+        index: Manager directory index to begin exporting from.
+        directories: Directory names to export. Every pose interpolator and
+            nested directory below a selected directory is exported.
+        pose_interpolators: Pose-interpolator names to export.
+
+    Ancestor directories are automatically retained for selected pose
+    interpolators and nested selected directories.
+    """
     manager = PoseInterpolatorManagerNode.from_existing("poseInterpolatorManager")
-    return _get_pose_interpolator_directory_data(manager, index)
+
+    directory_names = set(directories or ())
+    pose_interpolator_names = set(pose_interpolators or ())
+    export_all = directories is None and pose_interpolators is None
+
+    directory_data = _get_pose_interpolator_directory_data(
+        manager=manager,
+        index=0,
+        directories=directory_names,
+        pose_interpolators=pose_interpolator_names,
+        export_all=export_all,
+    )
+
+    if directory_data is None:
+        raise RuntimeError(f"Couldn't create pose-interpolator directory data for index {0}")
+
+    return directory_data

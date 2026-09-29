@@ -1,7 +1,10 @@
 import logging
 
 from yrig.maya_api.node import PoseInterpolatorNode
-from yrig.rbf.pose_interpolator.serialize.data import PoseInterpolatorData
+
+from .data import (
+    PoseInterpolatorData,
+)
 
 log = logging.getLogger(__name__)
 
@@ -27,6 +30,8 @@ def apply_pose_interpolator_data(
     for index, driver_data in enumerate(data.drivers):
         driver = node.driver[index]
 
+        # TODO: make this connect all the values. If it's not possible to do so, then set the static values.
+        driver_node = driver_data.matrix.split(".", 1)[0]
         driver.driver_matrix.connect_from(driver_data.matrix)
         driver.driver_orient.set(driver_data.orient)
         driver.driver_rotate_axis.set(driver_data.rotate_axis)

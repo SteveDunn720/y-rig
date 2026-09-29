@@ -1,12 +1,3 @@
-from yrig.maya_api.attribute import (
-    ArrayAttribute,
-    BooleanAttribute,
-    DoubleArrayAttribute,
-    EnumAttribute,
-    EulerRotationAttribute,
-    FloatAttribute,
-    MatrixAttribute,
-)
 from yrig.maya_api.enum import (
     PoseInterpolatorPoseControllerDataItemType,
     PoseInterpolatorPoseType,
@@ -15,10 +6,17 @@ from yrig.maya_api.enum import (
 )
 
 from .core import (
+    ArrayAttribute,
     Attribute,
+    BooleanAttribute,
+    DoubleArrayAttribute,
+    EnumAttribute,
+    EulerRotationAttribute,
+    FloatAttribute,
     GenericAttribute,
     Int32ArrayAttribute,
     LongAttribute,
+    MatrixAttribute,
     StringAttribute,
 )
 

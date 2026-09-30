@@ -254,7 +254,7 @@ def _get_or_create_folder(name: str, parent: str | None) -> str:
     path = f"{parent}|{named}" if parent else f"|{named}"
     if cmds.objExists(path):
         return cmds.ls(path, long=True)[0]
-    return create_transform(name, parent=parent)
+    return create_transform(named, parent=parent)
 
 
 def _import_directory(
@@ -274,14 +274,21 @@ def _import_directory(
         directory_index = add_pose_interpolator_directory(manager, data, parent_directory_index)
 
     if create_folders:
-        parent = (
+        child_parent = (
             _get_or_create_folder(data.name, parent)
             if merge_directories
             else create_transform(data.name, parent=parent)
         )
+    else:
+        child_parent = parent
 
     return _import_directory_contents(
-        manager, data, directory_index, parent, existing_policy=existing_policy
+        manager,
+        data,
+        directory_index,
+        parent=child_parent,
+        existing_policy=existing_policy,
+        create_folders=create_folders,
     )
 
 

@@ -10,6 +10,9 @@
         "archetype/anim_rig.nxt"
     ],
     "comp_overrides": {
+        "./body.nxt": {
+            "mute": false
+        },
         "./face.nxt": {
             "solo": false
         }
@@ -52,6 +55,10 @@
                 -360.0,
                 -620.0
             ],
+            "/io_pair": [
+                -2900.0,
+                -1400.0
+            ],
             "/look_component": [
                 -360.0,
                 -440.0
@@ -67,6 +74,10 @@
             "/psd_import": [
                 120.0,
                 -320.0
+            ],
+            "/psd_io": [
+                -2900.0,
+                -1160.0
             ],
             "/psd_layer": [
                 120.0,
@@ -114,6 +125,7 @@
             "/apply/deformation/main/psd/body_psd/eyes": true,
             "/apply/deformation/main/psd/body_psd/eyes/shapes": true,
             "/apply/deformation/main/psd/body_psd/hands": true,
+            "/apply/deformation/main/psd/body_psd/legs": true,
             "/build/left": false,
             "/build/left/ear": true,
             "/build/left/eye": true,
@@ -131,15 +143,27 @@
             "/ear_component": true,
             "/eye_component": true,
             "/face_base_component": true,
+            "/io_pair": true,
             "/look_component": true,
             "/mouth_component": true,
             "/nose_component": true,
+            "/psd_import": true,
+            "/psd_io": true,
+            "/psd_io/rbf_io": true,
+            "/psd_io/shape_io": true,
+            "/rbf_io": true,
+            "/shape_io": true,
             "/simple_eyebrow": true,
+            "/skin_data_io": true,
             "/teeth_component": true,
             "/tongue_component": true,
-            "/tools_window/biped/body/psd/arm_shapes_io": true,
-            "/tools_window/biped/body/psd/hand_shapes_io": true,
-            "/tools_window/biped/body/psd/leg_shapes_io": true,
+            "/tools_window/biped/body/psd/arm_psd_io": true,
+            "/tools_window/biped/body/psd/arm_shapes_io": false,
+            "/tools_window/biped/body/psd/arms_psd_io": true,
+            "/tools_window/biped/body/psd/hand_psd_io": true,
+            "/tools_window/biped/body/psd/hand_shapes_io": false,
+            "/tools_window/biped/body/psd/leg_psd_io": true,
+            "/tools_window/biped/body/psd/leg_shapes_io": false,
             "/tools_window/biped/face/face_guides_io": true,
             "/tools_window/biped/face/guides/face_guides_io": true,
             "/tools_window/biped/face/guides/mouth_surf_skin_io": true,
@@ -147,6 +171,7 @@
             "/tools_window/biped/face/guides/solo_face_guides_io": true,
             "/tools_window/biped/face/mouth_surf_skin_io": true,
             "/tools_window/biped/face/mouth_surface_io": true,
+            "/tools_window/biped/face/psd/eye_psd_io": true,
             "/tools_window/biped/face/skin_data_io": true,
             "/tools_window/biped/face/solo_face_guides_io": true,
             "/tools_window/biped/visibility_sets_io": true,

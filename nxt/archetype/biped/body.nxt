@@ -182,134 +182,73 @@
         "/tools_window/biped/body/psd": {
             "instance": "/panel",
             "child_order": [
-                "hand_shapes_io",
-                "arm_shapes_io",
-                "leg_shapes_io"
+                "arm_psd_io",
+                "hand_psd_io",
+                "leg_psd_io"
             ],
             "attrs": {
+                "blendshape": {
+                    "type": "raw",
+                    "value": "body_psd"
+                },
                 "text": {
                     "value": "PSD"
                 }
             }
         },
-        "/tools_window/biped/body/psd/arm_shapes_io": {
-            "instance": "/shape_io",
-            "child_order": [
-                "import",
-                "export"
-            ],
+        "/tools_window/biped/body/psd/arm_psd_io": {
+            "instance": "/psd_io",
             "attrs": {
-                "blendshape": {
-                    "value": "body_psd"
-                },
-                "blendshape_directory": {
-                    "type": "raw",
+                "psd_directory": {
                     "value": "arms"
                 },
-                "relative_filepath": {
+                "relative_path_stem": {
+                    "value": "data/body/psd/arms"
+                },
+                "system_name": {
                     "type": "raw",
-                    "value": "data/body/psd/arms.yshape"
+                    "value": "Arm"
                 },
                 "text": {
-                    "type": "raw",
-                    "value": "Arm Shapes"
+                    "value": "${title}"
                 }
             }
         },
-        "/tools_window/biped/body/psd/arm_shapes_io/export": {
-            "attrs": {
-                "text": {
-                    "value": "Export Arm Shapes"
-                }
-            }
-        },
-        "/tools_window/biped/body/psd/arm_shapes_io/import": {
-            "attrs": {
-                "text": {
-                    "value": "Import Arm Shapes"
-                }
-            }
-        },
-        "/tools_window/biped/body/psd/hand_shapes_io": {
-            "instance": "/io_pair",
-            "child_order": [
-                "import",
-                "export"
-            ],
+        "/tools_window/biped/body/psd/hand_psd_io": {
+            "instance": "/psd_io",
             "attrs": {
                 "blendshape": {
                     "type": "raw",
                     "value": "body_psd"
                 },
-                "relative_filepath": {
-                    "type": "raw",
-                    "value": "data/body/psd/hands.yshape"
+                "psd_directory": {
+                    "value": "hands"
+                },
+                "relative_path_stem": {
+                    "value": "data/body/psd/hands"
+                },
+                "system_name": {
+                    "value": "Hand"
                 },
                 "text": {
-                    "value": "Hand Shapes"
+                    "value": "${title}"
                 }
             }
         },
-        "/tools_window/biped/body/psd/hand_shapes_io/export": {
+        "/tools_window/biped/body/psd/leg_psd_io": {
+            "instance": "/psd_io",
             "attrs": {
-                "text": {
-                    "value": "Export Hand Shapes"
-                }
-            },
-            "code": [
-                "export_root_path = \"${export_root_path}\"",
-                "if not export_root_path or not Path(export_root_path).is_dir():",
-                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
-                "export_path = Path(\"${export_path}\")",
-                "",
-                "yrig.deformer.blendshape.export_blendshape(export_path, \"${blendshape}\", directories={\"hands\"})"
-            ]
-        },
-        "/tools_window/biped/body/psd/hand_shapes_io/import": {
-            "attrs": {
-                "text": {
-                    "value": "Import Hand Shapes"
-                }
-            },
-            "code": [
-                "import_path = Path(\"${import_filepath}\")",
-                "",
-                "yrig.deformer.blendshape.import_blendshape(import_path, \"${blendshape}\")"
-            ]
-        },
-        "/tools_window/biped/body/psd/leg_shapes_io": {
-            "instance": "/shape_io",
-            "child_order": [
-                "import",
-                "export"
-            ],
-            "attrs": {
-                "blendshape": {
-                    "value": "body_psd"
-                },
-                "blendshape_directory": {
-                    "type": "raw",
+                "psd_directory": {
                     "value": "legs"
                 },
-                "relative_filepath": {
-                    "value": "data/body/psd/legs.yshape"
+                "relative_path_stem": {
+                    "value": "data/body/psd/legs"
+                },
+                "system_name": {
+                    "value": "Leg"
                 },
                 "text": {
-                    "value": "Leg Shapes"
-                }
-            }
-        },
-        "/tools_window/biped/body/psd/leg_shapes_io/export": {
-            "attrs": {
-                "text": {
-                    "value": "Export Leg Shapes"
-                }
-            }
-        },
-        "/tools_window/biped/body/psd/leg_shapes_io/import": {
-            "attrs": {
-                "text": {
-                    "value": "Import Leg Shapes"
+                    "value": "${title}"
                 }
             }
         }

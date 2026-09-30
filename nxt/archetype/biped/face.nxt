@@ -73,13 +73,6 @@
                 }
             }
         },
-        "/build/left": {
-            "child_order": [
-                "eye",
-                "eyebrow",
-                "ear"
-            ]
-        },
         "/build/left/ear": {
             "instance": "/ear_component",
             "attrs": {
@@ -297,7 +290,8 @@
             "instance": "/panel",
             "child_order": [
                 "guides",
-                "skin_data_io"
+                "skin_data_io",
+                "psd"
             ],
             "attrs": {
                 "text": {
@@ -551,6 +545,38 @@
                 "    solo=True",
                 ")"
             ]
+        },
+        "/tools_window/biped/face/psd": {
+            "instance": "/panel",
+            "child_order": [
+                "eye_psd_io"
+            ],
+            "attrs": {
+                "blendshape": {
+                    "type": "raw",
+                    "value": "body_psd"
+                },
+                "text": {
+                    "value": "PSD"
+                }
+            }
+        },
+        "/tools_window/biped/face/psd/eye_psd_io": {
+            "instance": "/psd_io",
+            "attrs": {
+                "psd_directory": {
+                    "value": "eyes"
+                },
+                "relative_path_stem": {
+                    "value": "data/face/psd/eyes"
+                },
+                "system_name": {
+                    "value": "Eye"
+                },
+                "text": {
+                    "value": "${title}"
+                }
+            }
         },
         "/tools_window/biped/face/skin_data_io": {
             "instance": "/skin_data_io",

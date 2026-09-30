@@ -73,11 +73,15 @@
             "attrs": {
                 "pair_name": {
                     "type": "raw",
-                    "value": "data"
+                    "value": "Data"
                 },
                 "relative_filepath": {
                     "type": "raw",
                     "value": "data"
+                },
+                "text": {
+                    "type": "raw",
+                    "value": "${title}"
                 }
             }
         },
@@ -96,9 +100,9 @@
                     "type": "bool",
                     "value": "False"
                 },
-                "text": {
+                "title": {
                     "type": "raw",
-                    "value": "${_name} ${pair_name}"
+                    "value": "Export ${pair_name}"
                 }
             },
             "code": [
@@ -115,9 +119,9 @@
                     "type": "raw",
                     "value": "${file::${rig_path}/${relative_filepath}}"
                 },
-                "text": {
+                "title": {
                     "type": "raw",
-                    "value": "${_name} ${pair_name}"
+                    "value": "Import ${pair_name}"
                 }
             },
             "code": [
@@ -137,6 +141,9 @@
         },
         "/tools_window/tools": {
             "instance": "/tab",
+            "child_order": [
+                "geometry"
+            ],
             "attrs": {
                 "text": {
                     "value": "Tools"

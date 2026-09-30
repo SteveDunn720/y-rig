@@ -51,9 +51,17 @@
                 120.0,
                 -300.0
             ],
+            "/psd_io": [
+                -2900.0,
+                -1160.0
+            ],
             "/psd_layer": [
                 120.0,
                 -360.0
+            ],
+            "/rbf_io": [
+                -2900.0,
+                -1220.0
             ],
             "/rest_pose": [
                 107.99415846869607,
@@ -77,7 +85,7 @@
             ],
             "/shape_io": [
                 -2900.0,
-                -1240.0
+                -1280.0
             ],
             "/shifter_build": [
                 -745.8425286930325,
@@ -97,7 +105,7 @@
             ],
             "/skin_data_io": [
                 -2900.0,
-                -1240.0
+                -1340.0
             ],
             "/skin_geometry": [
                 120.0,
@@ -119,10 +127,15 @@
         "collapse": {
             "/apply/deformation": false,
             "/cleanup/hide_joints": true,
+            "/io_pair": true,
             "/psd_import": true,
             "/psd_import/shapes": true,
+            "/psd_io": true,
+            "/rbf_io": true,
             "/root/rig_hierarchy": true,
             "/setup/root": false,
+            "/shape_io": true,
+            "/skin_data_io": true,
             "/tools_window/tools/control_shapes/control_shapes_io": true,
             "/tools_window/tools/control_shapes/control_shapes_io/export": true,
             "/tools_window/tools/control_shapes/control_shapes_io/import": true,
@@ -315,7 +328,7 @@
             "attrs": {
                 "pose_filepath": {
                     "type": "raw",
-                    "value": "${file::${psd_path}/${psd_filename}.pose}"
+                    "value": "${file::${psd_path}/${psd_filename}.ypose}"
                 }
             },
             "code": [
@@ -346,6 +359,64 @@
                 "        )"
             ]
         },
+        "/psd_io": {
+            "instance": "",
+            "child_order": [
+                "shape_io",
+                "rbf_io"
+            ],
+            "attrs": {
+                "psd_directory": {
+                    "type": "raw",
+                    "value": "main"
+                },
+                "relative_path_stem": {
+                    "type": "raw",
+                    "value": "data/psd/name"
+                },
+                "system_name": {
+                    "type": "raw",
+                    "value": "Main"
+                }
+            }
+        },
+        "/psd_io/rbf_io": {
+            "instance": "/rbf_io",
+            "attrs": {
+                "filetype": {
+                    "type": "raw",
+                    "value": ".ypose"
+                },
+                "pair_name": {
+                    "value": "${system_name} RBF"
+                },
+                "pose_directory": {
+                    "value": "${psd_directory}"
+                },
+                "relative_filepath": {
+                    "value": "${relative_path_stem}${filetype}"
+                }
+            }
+        },
+        "/psd_io/shape_io": {
+            "instance": "/shape_io",
+            "attrs": {
+                "blendshape_directory": {
+                    "type": "raw",
+                    "value": "${psd_directory}"
+                },
+                "filetype": {
+                    "type": "raw",
+                    "value": ".yshape"
+                },
+                "pair_name": {
+                    "value": "${system_name} Shapes"
+                },
+                "relative_filepath": {
+                    "value": "${relative_path_stem}${filetype}"
+                }
+            }
+        },
         "/psd_layer": {
             "attrs": {
                 "blendshape": {
@@ -362,6 +433,39 @@
             },
             "code": [
                 "yrig.deformer.blendshape.create_blendshape(geometry=\"${geometry}\", name=\"${blendshape}\")"
+            ]
+        },
+        "/rbf_io": {
+            "instance": "/io_pair",
+            "child_order": [
+                "import",
+                "export"
+            ],
+            "attrs": {
+                "pair_name": {
+                    "value": "RBF"
+                },
+                "pose_directory": {},
+                "relative_filepath": {
+                    "value": "data/psd/name.ypose"
+                }
+            }
+        },
+        "/rbf_io/export": {
+            "code": [
+                "export_root_path = \"${export_root_path}\"",
+                "if not export_root_path or not Path(export_root_path).is_dir():",
+                "    raise ValueError(f\"Invalid directory: {export_root_path}\")",
+                "export_path = Path(\"${export_path}\")",
+                "",
+                "yrig.rbf.pose_interpolator.export_pose_file(export_path, directories=[\"${pose_directory}\"])"
+            ]
+        },
+        "/rbf_io/import": {
+            "code": [
+                "import_path = Path(\"${import_filepath}\")",
+                "",
+                "yrig.rbf.pose_interpolator.import_pose_file(import_path, directories=[\"${pose_directory}\"])"
             ]
         },
         "/setup": {
@@ -554,8 +658,12 @@
             "attrs": {
                 "blendshape": {},
                 "blendshape_directory": {},
+                "pair_name": {
+                    "value": "Shapes"
+                },
                 "relative_filepath": {
-                    "value": "data/psd"
+                    "type": "raw",
+                    "value": "data/psd/name.yshape"
                 }
             }
         },
@@ -584,14 +692,13 @@
                 "export"
             ],
             "attrs": {
+                "pair_name": {
+                    "value": "Skin Data"
+                },
                 "relative_filepath": {
                     "value": "data/skin"
                 },
-                "strip_suffix": {},
-                "text": {
-                    "type": "raw",
-                    "value": "Skin Data"
-                }
+                "strip_suffix": {}
             }
         },
         "/skin_data_io/export": {

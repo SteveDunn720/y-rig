@@ -6,7 +6,10 @@ from maya import cmds
 
 from yrig.maya_api.attribute import Attribute
 from yrig.maya_api.node import PoseInterpolatorManagerNode, PoseInterpolatorNode
-from yrig.rbf.pose_interpolator.serialize.directory import get_directory_indices
+from yrig.rbf.pose_interpolator.serialize.directory import (
+    filter_pose_interpolator_directory_data,
+    get_directory_indices,
+)
 from yrig.transform import get_transform
 
 from .data import (
@@ -191,11 +194,10 @@ def _import_directory(
     data: PoseInterpolatorDirectoryData,
     parent_directory_index: int,
     parent: str | None,
-    created: list[tuple[str, PoseInterpolatorNode]],
-) -> None:
+) -> list[tuple[str, PoseInterpolatorNode]]:
     """Create a directory (and everything below it) under parent_directory_index."""
     directory_index = add_pose_interpolator_directory(manager, data, parent_directory_index)
-    _import_directory_contents(manager, data, directory_index, parent, created)
+    return _import_directory_contents(manager, data, directory_index, parent)
 
 
 def _import_directory_contents(
@@ -203,14 +205,15 @@ def _import_directory_contents(
     data: PoseInterpolatorDirectoryData,
     parent_directory_index: int,
     parent: str | None,
-    created: list[tuple[str, PoseInterpolatorNode]],
-) -> None:
+) -> list[tuple[str, PoseInterpolatorNode]]:
+    created = []
     for child in data.directories:
-        _import_directory(manager, child, parent_directory_index, parent, created)
+        created.extend(_import_directory(manager, child, parent_directory_index, parent))
     for pose_interpolator_data in data.pose_interpolators:
         created.append(
             add_pose_interpolator(manager, pose_interpolator_data, parent, parent_directory_index)
         )
+    return created
 
 
 def apply_pose_interpolator_directory_data(
@@ -245,13 +248,11 @@ def apply_pose_interpolator_directory_data(
         ]
 
     import_all = directories is None and pose_interpolators is None
-    directory_names = set(directories or ())
-    pose_interpolator_names = set(pose_interpolators or ())
+    directory_names = set(directories) if directories is not None else None
+    pose_interpolator_names = set(pose_interpolators) if pose_interpolators is not None else None
 
-    created: list[tuple[str, PoseInterpolatorNode]] = []
-
-    if import_all:
-        _import_directory_contents(manager, data, parent_directory_index, parent, created)
-        return created
-
+    filtered_data = filter_pose_interpolator_directory_data(
+        data, directory_names, pose_interpolator_names
+    )
+    created = _import_directory_contents(manager, filtered_data, parent_directory_index, parent)
     return created

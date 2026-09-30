@@ -27,9 +27,9 @@
         "/apply/deformation/main/psd/body_psd": {
             "instance": "/psd_layer",
             "child_order": [
-                "hands",
                 "arms",
-                "legs"
+                "legs",
+                "hands"
             ],
             "attrs": {
                 "blendshape": {

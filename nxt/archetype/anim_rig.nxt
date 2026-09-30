@@ -335,10 +335,9 @@
                 "pose_filepath_str = \"${pose_filepath}\"",
                 "if pose_filepath_str:",
                 "    pose_filepath = Path(pose_filepath_str)",
-                "    yrig.rbf.pose_interpolator.import_maya_pose_file(",
+                "    yrig.rbf.pose_interpolator.import_pose_file(",
                 "        filepath = pose_filepath,",
                 "        parent = \"${psd_group}\",",
-                "        import_shapes = False,",
                 "    )"
             ]
         },

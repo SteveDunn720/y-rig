@@ -350,7 +350,6 @@ def apply_pose_interpolator_directory_data(
             parent_directory
         ]
 
-    import_all = directories is None and pose_interpolators is None
     directory_names = set(directories) if directories is not None else None
     pose_interpolator_names = set(pose_interpolators) if pose_interpolators is not None else None
 

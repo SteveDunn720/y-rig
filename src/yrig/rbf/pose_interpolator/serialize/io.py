@@ -19,6 +19,7 @@ def import_pose_file(
     pose_interpolators: Iterable[str] | None = None,
     parent_directory: str | None = None,
     create_folders: bool = True,
+    parent: str | None = None,
 ) -> None:
     """
     Import poseInterpolator data from a `.ypose` file.
@@ -35,6 +36,7 @@ def import_pose_file(
         pose_interpolators=pose_interpolators,
         parent_directory=parent_directory,
         create_folders=create_folders,
+        parent=parent,
     )
     log.info(f"Imported pose file from {filepath}")
 

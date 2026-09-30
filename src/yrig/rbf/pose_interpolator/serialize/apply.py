@@ -1,16 +1,19 @@
 import logging
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
+from enum import StrEnum
 
 from maya import cmds
 
 from yrig.maya_api.attribute import Attribute
 from yrig.maya_api.node import PoseInterpolatorManagerNode, PoseInterpolatorNode
+from yrig.rbf.pose_interpolator.core import resolve_pose_interpolator_shape
 from yrig.rbf.pose_interpolator.serialize.directory import (
     filter_pose_interpolator_directory_data,
+    find_child_directory_index,
     get_directory_indices,
 )
-from yrig.transform import get_transform
+from yrig.transform import create_transform, get_transform
 
 from .data import (
     PoseInterpolatorData,
@@ -18,6 +21,12 @@ from .data import (
 )
 
 log = logging.getLogger(__name__)
+
+
+class ExistingPolicy(StrEnum):
+    UPDATE = "update"
+    SKIP = "skip"
+    DUPLICATE = "duplicate"
 
 
 @contextmanager
@@ -169,6 +178,57 @@ def add_pose_interpolator(
     return pose_interpolator_transform, pose_interpolator
 
 
+def find_child_pose_interpolator(
+    manager: PoseInterpolatorManagerNode,
+    parent_directory_index: int,
+    name: str,
+) -> PoseInterpolatorNode | None:
+    """Return the poseInterpolator called ``name`` directly inside the directory, or None."""
+    child_indices = manager.pose_interpolator_directory[parent_directory_index].child_indices.get()
+    for child_index in child_indices:
+        if child_index < 0:  # negative entries are directories
+            continue
+        parent_attr = manager.pose_interpolator_parent[child_index]
+        source_attr = parent_attr.get_input()
+        if source_attr is None:
+            raise RuntimeError(f"Couldn't find a poseInterpolator connected to {source_attr}")
+        source_node = str(source_attr).split(".", 1)[0]
+        pose_interpolator_shape = resolve_pose_interpolator_shape(source_node)
+        pose_interpolator_transform = get_transform(pose_interpolator_shape)
+        if name in {pose_interpolator_shape, pose_interpolator_transform}:
+            source_node = str(source_attr).split(".", 1)[0]
+            resolve_pose_interpolator_shape(source_node)
+            return PoseInterpolatorNode.from_existing(source_node)
+    return None
+
+
+def merge_pose_interpolator(
+    manager: PoseInterpolatorManagerNode,
+    data: PoseInterpolatorData,
+    parent: str | None,
+    parent_directory_index: int,
+    existing_policy: ExistingPolicy = ExistingPolicy.UPDATE,
+) -> tuple[str, PoseInterpolatorNode] | None:
+    """
+    Add the poseInterpolator, or reuse an existing one with the same name in the directory.
+    Returns None if it already exists and the policy is "skip".
+    """
+    if existing_policy != "duplicate":
+        existing = find_child_pose_interpolator(manager, parent_directory_index, data.name)
+        if existing is not None:
+            if existing_policy == "skip":
+                return None
+            apply_pose_interpolator_data(existing, data)
+            transform = get_transform(str(existing))
+            if parent is not None:
+                current_parent = cmds.listRelatives(transform, parent=True, fullPath=True)
+                if not current_parent or current_parent[0] != cmds.ls(parent, long=True)[0]:
+                    transform = cmds.parent(transform, parent)[0]
+            return transform, existing
+
+    return add_pose_interpolator(manager, data, parent, parent_directory_index)
+
+
 def add_pose_interpolator_directory(
     manager: PoseInterpolatorManagerNode,
     data: PoseInterpolatorDirectoryData,
@@ -189,15 +249,40 @@ def add_pose_interpolator_directory(
     return directory_index
 
 
+def _get_or_create_folder(name: str, parent: str | None) -> str:
+    named = f"{name}_rbf"
+    path = f"{parent}|{named}" if parent else f"|{named}"
+    if cmds.objExists(path):
+        return cmds.ls(path, long=True)[0]
+    return create_transform(name, parent=parent)
+
+
 def _import_directory(
     manager: PoseInterpolatorManagerNode,
     data: PoseInterpolatorDirectoryData,
     parent_directory_index: int,
     parent: str | None,
+    create_folders: bool = False,
+    merge_directories: bool = True,
+    existing_policy: ExistingPolicy = ExistingPolicy.UPDATE,
 ) -> list[tuple[str, PoseInterpolatorNode]]:
     """Create a directory (and everything below it) under parent_directory_index."""
-    directory_index = add_pose_interpolator_directory(manager, data, parent_directory_index)
-    return _import_directory_contents(manager, data, directory_index, parent)
+    directory_index = None
+    if merge_directories:
+        directory_index = find_child_directory_index(manager, parent_directory_index, data.name)
+    if directory_index is None:
+        directory_index = add_pose_interpolator_directory(manager, data, parent_directory_index)
+
+    if create_folders:
+        parent = (
+            _get_or_create_folder(data.name, parent)
+            if merge_directories
+            else create_transform(data.name, parent=parent)
+        )
+
+    return _import_directory_contents(
+        manager, data, directory_index, parent, existing_policy=existing_policy
+    )
 
 
 def _import_directory_contents(
@@ -205,23 +290,41 @@ def _import_directory_contents(
     data: PoseInterpolatorDirectoryData,
     parent_directory_index: int,
     parent: str | None,
+    create_folders: bool = False,
+    merge_directories: bool = True,
+    existing_policy: ExistingPolicy = ExistingPolicy.UPDATE,
 ) -> list[tuple[str, PoseInterpolatorNode]]:
     created = []
     for child in data.directories:
-        created.extend(_import_directory(manager, child, parent_directory_index, parent))
-    for pose_interpolator_data in data.pose_interpolators:
-        created.append(
-            add_pose_interpolator(manager, pose_interpolator_data, parent, parent_directory_index)
+        created.extend(
+            _import_directory(
+                manager,
+                child,
+                parent_directory_index,
+                parent,
+                create_folders,
+                merge_directories,
+            )
         )
+    for pose_interpolator_data in data.pose_interpolators:
+        result = merge_pose_interpolator(
+            manager, pose_interpolator_data, parent, parent_directory_index, existing_policy
+        )
+        if result is not None:
+            created.append(result)
     return created
 
 
 def apply_pose_interpolator_directory_data(
     data: PoseInterpolatorDirectoryData,
+    *,
     directories: Iterable[str] | None = None,
     pose_interpolators: Iterable[str] | None = None,
     parent_directory: str | None = None,
     parent: str | None = None,
+    create_folders: bool = False,
+    merge_directories: bool = True,
+    existing_policy: ExistingPolicy = ExistingPolicy.UPDATE,
 ) -> list[tuple[str, PoseInterpolatorNode]]:
     """
     Import directory data into the poseInterpolatorManager.
@@ -254,5 +357,13 @@ def apply_pose_interpolator_directory_data(
     filtered_data = filter_pose_interpolator_directory_data(
         data, directory_names, pose_interpolator_names
     )
-    created = _import_directory_contents(manager, filtered_data, parent_directory_index, parent)
+    created = _import_directory_contents(
+        manager,
+        filtered_data,
+        parent_directory_index,
+        parent,
+        create_folders,
+        merge_directories,
+        existing_policy,
+    )
     return created

@@ -14,9 +14,11 @@ log = logging.getLogger(__name__)
 
 def import_pose_file(
     filepath: Path,
+    *,
     directories: Iterable[str] | None = None,
     pose_interpolators: Iterable[str] | None = None,
     parent_directory: str | None = None,
+    create_folders: bool = True,
 ) -> None:
     """
     Import poseInterpolator data from a `.ypose` file.
@@ -32,12 +34,14 @@ def import_pose_file(
         directories=directories,
         pose_interpolators=pose_interpolators,
         parent_directory=parent_directory,
+        create_folders=create_folders,
     )
     log.info(f"Imported pose file from {filepath}")
 
 
 def export_pose_file(
     filepath: Path,
+    *,
     directories: Iterable[str] | None = None,
     pose_interpolators: Iterable[str] | None = None,
     force: bool = False,

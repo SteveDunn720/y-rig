@@ -11,6 +11,23 @@ from .data import (
 )
 
 
+def find_child_directory_index(
+    manager: PoseInterpolatorManagerNode,
+    parent_directory_index: int,
+    name: str,
+) -> int | None:
+    """Return the index of the direct child directory called ``name``, or None."""
+    child_indices = manager.pose_interpolator_directory[parent_directory_index].child_indices.get()
+    for child_index in child_indices:
+        if child_index >= 0:  # positive entries are poseInterpolators
+            continue
+        directory_index = -child_index
+        directory = manager.pose_interpolator_directory[directory_index]
+        if directory.directory_name.get() == name:
+            return directory_index
+    return None
+
+
 def get_directory_indices(
     manager: PoseInterpolatorManagerNode,
     directories: set[str],

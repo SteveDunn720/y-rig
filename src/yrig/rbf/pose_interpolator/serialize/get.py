@@ -153,7 +153,7 @@ def _get_pose_interpolator_directory_data(
             if child_directory_data is not None:
                 child_directories.append(child_directory_data)
         else:
-            if export_all or child_index in pose_interpolator_indices:
+            if directory_selected or child_index in pose_interpolator_indices:
                 parent_attr = manager.pose_interpolator_parent[child_index]
                 source_attr = parent_attr.get_input()
                 if source_attr is None:

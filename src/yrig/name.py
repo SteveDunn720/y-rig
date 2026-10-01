@@ -89,3 +89,11 @@ def natural_sort_key(value: str) -> tuple[int | str, ...]:
         for part in NATURAL_SORT_REGEX.split(value)
         if part
     )
+
+
+def format_item_count(count: int, singular: str, plural: str | None = None) -> str:
+    """Format a count with the appropriate singular or plural noun."""
+    if plural is None:
+        plural = f"{singular}s"
+
+    return f"{count} {singular if count == 1 else plural}"

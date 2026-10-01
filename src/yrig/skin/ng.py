@@ -10,6 +10,7 @@ from maya.api.OpenMaya import MFnComponent
 from yrig.io import confirm_overwrite
 from yrig.io.json import export_json, load_json
 from yrig.maya_api.utils import get_dag_path
+from yrig.name import format_item_count
 from yrig.shape import get_components_of_shape
 from yrig.skin.core import (
     _resolve_skin_cluster,
@@ -230,7 +231,7 @@ def cleanup_ng_data_nodes() -> None:
     if ng_data_nodes:
         cmds.delete(ng_data_nodes)  # type: ignore
         log.info(
-            f"Removed {len(ng_data_nodes)} ngst2SkinLayerData node(s) from the scene: {ng_data_nodes}"
+            f"Removed {format_item_count(len(ng_data_nodes), 'ngst2SkinLayerData node')} from the scene: {ng_data_nodes}"
         )
 
 

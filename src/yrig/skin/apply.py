@@ -5,7 +5,7 @@ from typing import Any
 
 from yrig.build.progress import progress_step
 from yrig.maya_api.node import SkinCluster
-from yrig.name import get_short_name
+from yrig.name import format_item_count, get_short_name
 from yrig.skin.core import _resolve_skin_cluster, get_skin_clusters, skin_geometry
 from yrig.skin.ng import apply_ng_skin_weights, get_influences_from_ng_skin_weights
 from yrig.skin.serialize import (
@@ -116,7 +116,7 @@ def skin_and_apply_ng_weights(filepath: Path, mesh: str) -> SkinCluster:
         )
 
         skin_cluster = skin_geometry(valid_influences, mesh)
-        log.info(f"Skinned {mesh} to {len(valid_influences)} joint(s)")
+        log.info(f"Skinned {mesh} to {format_item_count(len(valid_influences), 'joint')}")
 
     apply_ng_skin_weights(filepath, mesh)
     log.info(f"Loaded ng skin file for {mesh} from {filepath}")

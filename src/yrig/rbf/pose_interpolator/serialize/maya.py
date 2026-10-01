@@ -4,6 +4,7 @@ from pathlib import Path
 from maya import cmds
 
 from yrig.deformer.blendshape import export_maya_shape_file, import_maya_shape_file
+from yrig.name import format_item_count
 from yrig.rbf.pose_interpolator.core import (
     _reslove_pose_index,
     _validate_pose_interpolators,
@@ -33,7 +34,9 @@ def import_maya_pose_file(
     current_pose_interps = set(cmds.ls(type="poseInterpolator") or [])
     created_pose_interps = current_pose_interps - existing_pose_interps
     group_pose_interpolators_by_directory(created_pose_interps, parent)
-    log.info(f"Imported {len(created_pose_interps)} pose interpolator(s) from {filepath}")
+    log.info(
+        f"Imported {format_item_count(len(created_pose_interps), 'pose interpolator')} from {filepath}"
+    )
     return created_pose_interps
 
 

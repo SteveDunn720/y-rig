@@ -2,6 +2,8 @@
 from maya import cmds
 from maya.api import OpenMaya as om
 
+from yrig.name import format_item_count
+
 
 def mesh_topology_signature(mesh: str) -> tuple:
     selection = om.MSelectionList()
@@ -64,11 +66,15 @@ def compare_namespace_meshes(namespace_a: str, namespace_b: str) -> None:
             print(f"  - {name}")
 
     if missing_a:
-        print(f"\nMISSING FROM {namespace_a}: ({len(missing_a)})")
+        print(
+            f"\nMISSING FROM {namespace_a} ({format_item_count(len(missing_a), 'mesh', 'meshes')}): "
+        )
         for name in missing_a:
             print(f"  - {name}")
 
     if missing_b:
-        print(f"\nMISSING FROM {namespace_b} ({len(missing_b)}):")
+        print(
+            f"\nMISSING FROM {namespace_b} ({format_item_count(len(missing_b), 'mesh', 'meshes')}):"
+        )
         for name in missing_b:
             print(f"  - {name}")

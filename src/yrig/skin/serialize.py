@@ -14,7 +14,7 @@ from yrig.maya_api.enum import (
     SkinClusterWeightDistribution,
 )
 from yrig.maya_api.node import SkinCluster
-from yrig.name import natural_sort_key
+from yrig.name import format_item_count, natural_sort_key
 from yrig.shape import get_shape
 from yrig.skin.core import (
     get_skin_cluster,
@@ -55,7 +55,7 @@ def _validate_influences(
     missing = set(influence_names) - set(valid)
     if missing:
         missing_message = (
-            f"[{geometry}] Missing {len(missing)} influence(s) that were defined in its bind data: "
+            f"[{geometry}] Missing {format_item_count(len(missing), 'influence')} that were defined in its bind data: "
             f"{sorted(missing, key=natural_sort_key)}"
         )
         if error_on_missing:

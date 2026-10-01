@@ -14,7 +14,9 @@ log = logging.getLogger(__name__)
 SPLIT_PARENT_ATTR = "split_parent"
 
 
-def import_maya_file(filepath: Path, keep_namespace: bool = False) -> list[str]:
+def import_maya_file(
+    filepath: Path, *, keep_namespace: bool = False, namespace: str | None = None
+) -> list[str]:
     """Import a Maya file and return the nodes created by the import.
 
     Args:
@@ -29,9 +31,17 @@ def import_maya_file(filepath: Path, keep_namespace: bool = False) -> list[str]:
         raise FileNotFoundError(f"No maya file was found at {filepath}")
     if filepath.is_dir():
         raise IsADirectoryError(f"Found directory instead of file at {filepath}")
+
+    kwargs = {}
+    if namespace:
+        kwargs["namespace"] = namespace
     try:
         imported_nodes: list[str] = cmds.file(  # type: ignore
-            str(filepath), i=True, defaultNamespace=not keep_namespace, returnNewNodes=True
+            str(filepath),
+            i=True,
+            defaultNamespace=not keep_namespace,
+            returnNewNodes=True,
+            **kwargs,  # type: ignore
         )
     except RuntimeError as exc:
         raise RuntimeError(f"Failed to import the maya file at {filepath}") from exc
@@ -73,6 +83,7 @@ def _remove_node_uuid_lines(filepath: Path) -> None:
 def export_maya_file(
     filepath: Path,
     nodes: Iterable[str] | None = None,
+    *,
     binary: bool = False,
     force: bool = False,
     write_node_uuid: bool = False,

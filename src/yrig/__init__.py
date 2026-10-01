@@ -8,6 +8,7 @@ from . import io as io
 from . import joint as joint
 from . import math as math
 from . import maya_api as maya_api
+from . import mesh as mesh
 from . import rbf as rbf
 from . import select as select
 from . import sets as sets

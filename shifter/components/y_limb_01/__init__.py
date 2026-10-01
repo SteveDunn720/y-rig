@@ -841,7 +841,7 @@ class Component(component.Main):
 
         if self.settings["upvrefarray"]:
             ref_names = self.settings["upvrefarray"].split(",")
-            ref_names = ["Auto"] + [ref_names]
+            ref_names = ["Auto", *ref_names]
             if len(ref_names) > 1:
                 self.upvref_att = self.addAnimEnumParam("upvref", "UpV Ref", 0, ref_names)
 

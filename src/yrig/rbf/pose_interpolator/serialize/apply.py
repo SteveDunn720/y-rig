@@ -1,4 +1,5 @@
 import logging
+import math
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from enum import StrEnum
@@ -27,6 +28,10 @@ class ExistingPolicy(StrEnum):
     UPDATE = "update"
     SKIP = "skip"
     DUPLICATE = "duplicate"
+
+
+IDENTITY_ROTATION = (0.0, 0.0, 0.0, 1.0)
+IDENTITY_TRANSLATION = (0.0, 0.0, 0.0)
 
 
 @contextmanager
@@ -81,6 +86,8 @@ def apply_pose_interpolator_data(
     node.output_smoothing.set(data.output_smoothing)
     node.regularization.set(data.regularization)
 
+    num_drivers = len(data.drivers)
+
     node.driver.clear()
     for index, driver_data in enumerate(data.drivers):
         driver = node.driver[index]
@@ -114,12 +121,19 @@ def apply_pose_interpolator_data(
         if pose_data.rotations:
             for index, rotation in enumerate(pose_data.rotations):
                 pose.pose_rotation[index].set(rotation)
+        else:
+            for index in range(num_drivers):
+                pose.pose_rotation[index].set((0, 0, 0, 1))
         if pose_data.translations:
             for index, translation in enumerate(pose_data.translations):
                 pose.pose_translation[index].set(translation)
+        else:
+            for index in range(num_drivers):
+                pose.pose_translation[index].set((0, 0, 0))
         pose.is_independent.set(pose_data.independent)
         pose.pose_rotation_falloff.set(pose_data.rotation_falloff)
-        pose.pose_translation_falloff.set(pose_data.translation_falloff)
+        if not math.isclose(pose_data.translation_falloff, 0):
+            pose.pose_translation_falloff.set(pose_data.translation_falloff)
         pose.pose_type.set(pose_data.pose_type)
         pose.pose_falloff.set(pose_data.gaussian_falloff)
         pose.is_enabled.set(pose_data.is_enabled)

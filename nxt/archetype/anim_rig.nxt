@@ -192,7 +192,8 @@
             },
             "code": [
                 "import_paths = [Path(filepath) for filepath in ${filelist::${control_shapes_filepath}}]",
-                "yrig.control.serialize.apply_control_shapes_files(import_paths)"
+                "yrig.control.serialize.apply_control_shapes_files(import_paths)",
+                "cmds.refresh()"
             ]
         },
         "/apply/deformation": {
@@ -949,6 +950,10 @@
         },
         "/tools_window/tools/visibility_sets_io": {
             "instance": "/io_pair",
+            "child_order": [
+                "export",
+                "import"
+            ],
             "attrs": {
                 "relative_filepath": {
                     "value": "data/visibility.ysets"

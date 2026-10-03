@@ -332,7 +332,7 @@ def export_control_shapes_file(
     }
     if not confirm_overwrite(filepath, force):
         return False
-    export_json(filepath, controls_shape_dict_data)
+    export_json(filepath, controls_shape_dict_data, compact=False)
     log.info(f"Successfully exported control shapes file to {filepath}")
     return True
 
@@ -360,6 +360,7 @@ def add_override_for_controls(
     export_json(
         filepath,
         {control: data.to_dict() for control, data in control_shapes.items()},
+        compact=False,
     )
     log.info(
         f"Successfully added overrides for control shape(s): {', '.join(resolved_controls)} to file at {filepath}"

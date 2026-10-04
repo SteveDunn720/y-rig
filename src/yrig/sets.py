@@ -163,3 +163,12 @@ def add_to_set(node: str | Iterable[str], set_name: str, parent: str | None = No
             cmds.sets(name=parent)
 
         cmds.sets(set_name, addElement=parent)
+
+
+def add_set(set_name: str, parent: str | None = None) -> None:
+    cmds.sets(empty=True, name=set_name)
+
+    if parent:
+        if not cmds.objExists(parent):
+            add_set(parent)
+        cmds.sets(set_name, addElement=parent)

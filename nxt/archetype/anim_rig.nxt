@@ -551,7 +551,7 @@
             "code": [
                 "control_set_name = \"${control_set}\"",
                 "if not cmds.objExists(control_set_name):",
-                "    cmds.sets(empty=True, name=control_set_name)"
+                "   yrig.sets.add_set(control_set_name, parent=\"${rig_set}\")"
             ]
         },
         "/setup/root/deformation": {
@@ -589,7 +589,7 @@
             "code": [
                 "rig_set = \"${deformers_set}\"",
                 "if not cmds.objExists(rig_set):",
-                "    cmds.sets(name=rig_set)"
+                "    yrig.sets.add_set(rig_set, parent=\"${rig_set}\")"
             ]
         },
         "/setup/root/deformation/static_joint": {
@@ -615,6 +615,7 @@
             "child_order": [
                 "smooth_preview"
             ],
+            "enabled": true,
             "attrs": {
                 "model_filepath": {
                     "comment": "Filepath to the Model to be imported.",

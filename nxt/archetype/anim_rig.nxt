@@ -241,14 +241,18 @@
         },
         "/apply/rest_pose": {
             "attrs": {
+                "control_set": {
+                    "type": "raw",
+                    "value": "${/setup/root/controls.control_set}"
+                },
                 "rest_pose": {
                     "type": "raw",
                     "value": "dagPose1"
                 }
             },
             "code": [
-                "if STAGE.control_list:",
-                "    cmds.dagPose(STAGE.control_list, name=\"${rest_pose}\", addToPose=True)"
+                "controls = cmds.sets(\"${control_set}\", query=True) or []",
+                "cmds.dagPose(controls, name=\"${rest_pose}\", addToPose=True)"
             ]
         },
         "/apply/visibility_sets": {
@@ -538,8 +542,16 @@
             ]
         },
         "/setup/root/controls": {
+            "attrs": {
+                "control_set": {
+                    "type": "raw",
+                    "value": "${rig_root}_controllers_grp"
+                }
+            },
             "code": [
-                "STAGE.control_list = []"
+                "control_set_name = \"${control_set}\"",
+                "if not cmds.objExists(control_set_name):",
+                "    cmds.sets(empty=True, name=control_set_name)"
             ]
         },
         "/setup/root/deformation": {

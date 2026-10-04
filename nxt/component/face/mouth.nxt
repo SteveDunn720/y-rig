@@ -106,8 +106,7 @@
                 "        face_mid = \"${face_mid}\",",
                 "        control_size=${control_size},",
                 "    )",
-                "    ",
-                "STAGE.control_list.extend(component_controls)"
+                "    "
             ]
         },
         "/mouth_component/skin_surface": {

@@ -33,12 +33,14 @@ def _get_bind_data(weights_filepath: Path) -> SkinBindData | None:
 def _validate_topology(
     geometry: str, bind_data: SkinBindData | None, error_on_topology_change: bool = True
 ) -> None:
-    if bind_data and error_on_topology_change and bind_data.topology_hash:
+    if bind_data and bind_data.topology_hash:
         geometry_hash = shape_topology_hash(geometry)
         if geometry_hash != bind_data.topology_hash:
-            raise RuntimeError(
-                f"The geometry '{geometry}' has different topology than defined in its bind data."
-            )
+            msg = f"The geometry '{geometry}' has different topology than defined in its bind data."
+            if error_on_topology_change:
+                raise RuntimeError(msg)
+            else:
+                log.warning(msg)
 
 
 def apply_skin_data(filepath: Path, geometry: str) -> None:
@@ -199,6 +201,7 @@ def skin_and_apply_weights_from_directories(
     skip_skinned_geometry: bool = True,
     fallback_skinning: Callable[[str], Any] | None = None,
     map_geo_to_file: Callable[[str], str] | None = None,
+    error_on_topology_change: bool = True,
 ) -> dict[str, Path | None]:
     """
     Skin geometry and apply saved weights from one or more directories.
@@ -228,12 +231,16 @@ def skin_and_apply_weights_from_directories(
                     ng_skin_filepath: Path = directory / f"{geo_mapped_file}.json"
                     yskin_filepath: Path = directory / f"{geo_mapped_file}.yskin"
                     if ng_skin_filepath.exists():
-                        skin_and_apply_ng_weights(ng_skin_filepath, geo)
+                        skin_and_apply_ng_weights(
+                            ng_skin_filepath, geo, error_on_topology_change=error_on_topology_change
+                        )
                         geo_applied_weight_files[geo] = ng_skin_filepath
                         skinned = True
                         break
                     elif yskin_filepath.exists():
-                        skin_and_apply_weights(yskin_filepath, geo)
+                        skin_and_apply_weights(
+                            yskin_filepath, geo, error_on_topology_change=error_on_topology_change
+                        )
                         geo_applied_weight_files[geo] = yskin_filepath
                         skinned = True
                         break

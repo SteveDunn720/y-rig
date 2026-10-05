@@ -25,6 +25,10 @@
         "/skin_geometry": {
             "instance": "",
             "attrs": {
+                "allow_topology_change": {
+                    "type": "bool",
+                    "value": "False"
+                },
                 "def_set": {
                     "comment": "The joints in this set will be what are used for fallback/default skinning.",
                     "type": "raw",
@@ -89,7 +93,9 @@
                 "    skin_directories, ",
                 "    geo_to_skin, ",
                 "    fallback_skinning=_fallback_skin if ${fallback_skinning} else None, ",
-                "    map_geo_to_file=_map_geo_to_file if strip_suffix else None)",
+                "    map_geo_to_file=_map_geo_to_file if strip_suffix else None,",
+                "    error_on_topology_change=not ${allow_topology_change},",
+                "    )",
                 ""
             ]
         },

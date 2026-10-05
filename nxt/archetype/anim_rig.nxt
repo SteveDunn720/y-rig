@@ -784,6 +784,13 @@
                 ")"
             ]
         },
+        "/skin_geometry": {
+            "attrs": {
+                "error_on_topology_change": {
+                    "value": "not ${dev_build}"
+                }
+            }
+        },
         "/tools_window/tools/control_shapes": {
             "instance": "/panel",
             "child_order": [

@@ -6,6 +6,7 @@ from typing import Any
 from yrig.build.progress import progress_step
 from yrig.maya_api.node import SkinCluster
 from yrig.name import format_item_count, get_short_name
+from yrig.shape import shape_topology_hash
 from yrig.skin.core import _resolve_skin_cluster, get_skin_clusters, skin_geometry
 from yrig.skin.ng import apply_ng_skin_weights, get_influences_from_ng_skin_weights
 from yrig.skin.serialize import (
@@ -27,6 +28,17 @@ def _get_bind_data(weights_filepath: Path) -> SkinBindData | None:
         return load_skin_bind_data(bind_filepath)
     else:
         return None
+
+
+def _validate_topology(
+    geometry: str, bind_data: SkinBindData | None, error_on_topology_change: bool = True
+) -> None:
+    if bind_data and error_on_topology_change and bind_data.topology_hash:
+        geometry_hash = shape_topology_hash(geometry)
+        if geometry_hash != bind_data.topology_hash:
+            raise RuntimeError(
+                f"The geometry '{geometry}' has different topology than defined in its bind data."
+            )
 
 
 def apply_skin_data(filepath: Path, geometry: str) -> None:
@@ -57,12 +69,16 @@ def apply_weights(filepath: Path, geometry: str) -> None:
     apply_skin_weight_data(skin_weight_data, geometry)
 
 
-def skin_and_apply_weights(filepath: Path, geometry: str) -> SkinCluster:
+def skin_and_apply_weights(
+    filepath: Path, geometry: str, *, error_on_topology_change: bool = True
+) -> SkinCluster:
     """
     Skin geometry using influences from a ``.yskin`` file and apply weights.
     """
-    skin_weight_data = load_skin_weight_data(filepath)
     skin_bind_data = _get_bind_data(filepath)
+    _validate_topology(geometry, skin_bind_data, error_on_topology_change)
+    skin_weight_data = load_skin_weight_data(filepath)
+
     if skin_bind_data is not None:
         skin_cluster = skin_geometry_from_bind_data(geometry, skin_bind_data)
     else:
@@ -97,13 +113,16 @@ def apply_ng_data(filepath: Path, mesh: str) -> None:
         apply_skin_bind_data(skin_cluster, bind_data)
 
 
-def skin_and_apply_ng_weights(filepath: Path, mesh: str) -> SkinCluster:
+def skin_and_apply_ng_weights(
+    filepath: Path, mesh: str, *, error_on_topology_change: bool = True
+) -> SkinCluster:
     """
     Skin geometry using influences from an ngSkinTools file and apply weights.
     """
     if not filepath.exists():
         raise FileNotFoundError(f"{filepath} doesn't exist")
     skin_bind_data = _get_bind_data(filepath)
+    _validate_topology(mesh, skin_bind_data, error_on_topology_change)
     if skin_bind_data is not None:
         skin_cluster = skin_geometry_from_bind_data(mesh, skin_bind_data)
     else:

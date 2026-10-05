@@ -1,3 +1,6 @@
+import json  # noqa
+import hashlib
+
 from maya import cmds
 from maya.api.OpenMaya import (
     MDagPath,
@@ -10,6 +13,7 @@ from maya.api.OpenMaya import (
     MObject,
 )
 
+from yrig.maya_api.utils import get_dag_path
 from yrig.select import maintain_selection
 
 
@@ -72,6 +76,62 @@ def get_components_of_shape(shape_dag_path: MDagPath) -> MObject:
         return component
     else:
         raise TypeError(f"Unsupported shape type: {shape_dag_path.node().apiTypeStr}")
+
+
+def shape_topology_signature(shape: str) -> tuple:
+    """Return a hashable signature describing a shape's topology."""
+    shape = get_shape(shape) or shape
+    dag_path = get_dag_path(shape)
+
+    if dag_path.hasFn(MFn.kMesh):
+        fn = MFnMesh(dag_path)
+        polygon_counts, polygon_connects = fn.getVertices()
+
+        return (
+            "mesh",
+            fn.numVertices,
+            fn.numPolygons,
+            tuple(polygon_counts),
+            tuple(polygon_connects),
+        )
+
+    if dag_path.hasFn(MFn.kNurbsCurve):
+        fn = MFnNurbsCurve(dag_path)
+
+        return (
+            "nurbsCurve",
+            fn.numCVs,
+            fn.degree,
+            fn.form,
+            fn.numSpans,
+            tuple(fn.knots()),
+        )
+
+    if dag_path.hasFn(MFn.kNurbsSurface):
+        fn = MFnNurbsSurface(dag_path)
+
+        return (
+            "nurbsSurface",
+            fn.numCVsInU,
+            fn.numCVsInV,
+            fn.degreeU,
+            fn.degreeV,
+            fn.formInU,
+            fn.formInV,
+            fn.numSpansInU,
+            fn.numSpansInV,
+            tuple(fn.knotsInU()),
+            tuple(fn.knotsInV()),
+        )
+
+    raise TypeError(f"Unsupported shape type: {dag_path.node().apiTypeStr}")
+
+
+def shape_topology_hash(shape: str) -> str:
+    """Return a SHA-256 hash of a shape's topology."""
+    signature = shape_topology_signature(shape)
+    signature_json = json.dumps(signature, separators=(",", ":"))
+    return hashlib.sha256(signature_json.encode()).hexdigest()
 
 
 def bake_shape(transform: str, zero_pivot: bool = True) -> None:

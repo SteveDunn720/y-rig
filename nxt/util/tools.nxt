@@ -179,7 +179,10 @@
                 "",
                 "selection = cmds.ls(selection=True)",
                 "for object in selection:",
-                "    face_color_from_texture(object)"
+                "    try:",
+                "        face_color_from_texture(object)",
+                "    except Exception as e:",
+                "        STAGE.log.warning(f\"Couldn't bake face colors for {object}, {e}\")"
             ]
         }
     }

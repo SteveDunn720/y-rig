@@ -104,7 +104,6 @@ def shape_topology_signature(shape: str) -> tuple:
             fn.degree,
             fn.form,
             fn.numSpans,
-            tuple(fn.knots()),
         )
 
     if dag_path.hasFn(MFn.kNurbsSurface):
@@ -120,8 +119,6 @@ def shape_topology_signature(shape: str) -> tuple:
             fn.formInV,
             fn.numSpansInU,
             fn.numSpansInV,
-            tuple(fn.knotsInU()),
-            tuple(fn.knotsInV()),
         )
 
     raise TypeError(f"Unsupported shape type: {dag_path.node().apiTypeStr}")

@@ -192,15 +192,16 @@
         "/build/middle/face/tongue": {
             "instance": "/tongue_component"
         },
-        "/cleanup": {
+        "/finalize": {
             "child_order": [
                 "delete_face_guides",
                 "hide_joints",
                 "model_override",
-                "skin_tools_data"
+                "skin_tools_data",
+                "versioning"
             ]
         },
-        "/cleanup/delete_face_guides": {
+        "/finalize/delete_face_guides": {
             "attrs": {
                 "face_guides_group": {
                     "type": "raw",

@@ -15,12 +15,12 @@
                 120.0,
                 0.0
             ],
+            "/attr_version": [
+                600.0,
+                -120.0
+            ],
             "/build": [
                 -360.0,
-                0.0
-            ],
-            "/cleanup": [
-                600.0,
                 0.0
             ],
             "/cleanup/control_shapes": [
@@ -34,6 +34,10 @@
             "/control_shapes": [
                 -2.4974733523247323,
                 95.12116921241874
+            ],
+            "/finalize": [
+                600.0,
+                0.0
             ],
             "/left": [
                 -140.88553886974233,
@@ -134,7 +138,7 @@
         },
         "collapse": {
             "/apply/deformation": false,
-            "/cleanup/hide_joints": true,
+            "/finalize/hide_joints": true,
             "/io_pair": true,
             "/psd_import": true,
             "/psd_import/shapes": true,
@@ -316,7 +320,7 @@
                 }
             }
         },
-        "/cleanup": {
+        "/finalize": {
             "execute_in": "/apply",
             "child_order": [
                 "hide_joints",
@@ -324,7 +328,7 @@
                 "skin_tools_data"
             ]
         },
-        "/cleanup/hide_joints": {
+        "/finalize/hide_joints": {
             "code": [
                 "if not ${dev_build}:",
                 "    # Hide Joints",
@@ -332,7 +336,7 @@
                 ""
             ]
         },
-        "/cleanup/model_override": {
+        "/finalize/model_override": {
             "code": [
                 "if not ${dev_build}:",
                 "    geo_group = \"${/setup/root/model.model_group}\"",
@@ -341,7 +345,7 @@
                 ""
             ]
         },
-        "/cleanup/skin_tools_data": {
+        "/finalize/skin_tools_data": {
             "code": [
                 "if not ${dev_build}:",
                 "    yrig.skin.ng.cleanup_ng_data_nodes()"

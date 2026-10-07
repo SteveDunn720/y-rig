@@ -166,3 +166,19 @@ def setup_rig_build_nxt_layer(
         layer=layer,
     )
     layer.save(filepath=filepath.as_posix())
+
+
+def open_nxt_editor(path: Path | Iterable[Path] | None = None) -> None:
+    from maya import cmds
+
+    from yrig.maya_api.utils import ensure_plugin_loaded
+
+    ensure_plugin_loaded("nxt_maya.py")
+    if path is None:
+        cmds.nxt_ui()  # type: ignore
+        return
+    elif isinstance(path, Path):
+        cmds.nxt_ui(path=str(path))  # type: ignore
+    else:
+        cmds.nxt_ui(path=[str(path) for path in path])  # type: ignore
+        return

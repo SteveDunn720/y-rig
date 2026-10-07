@@ -86,6 +86,7 @@ typeCheckingMode = "standard"
 reportMissingModuleSource = "information"
 
 [tool.ty.environment]
+root = ["./src"]
 extra-paths = [
   "/usr/autodesk/ApplicationPlugins/ngskintools2/Contents/scripts",
   "third_party/mgear/release/scripts/",

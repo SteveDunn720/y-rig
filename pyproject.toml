@@ -75,6 +75,9 @@ exclude = [
 [tool.ruff.lint.flake8-tidy-imports.banned-api.json]
 msg = "The built in json module is slow and doesn't have features we use in yrig. Use yrig.io.json instead."
 
+[tool.ruff.lint.flake8-tidy-imports.banned-api.shifter]
+msg = "yrig library code should not have a dependency on mgear shifter components"
+
 [tool.ty.environment]
 extra-paths = [
   "/usr/autodesk/ApplicationPlugins/ngskintools2/Contents/scripts",

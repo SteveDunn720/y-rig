@@ -235,7 +235,7 @@ def deboor_weights(
             (degenerate configuration).
     """
     if cv_weights is None:
-        cv_weights = {cv: 1 for cv in cvs}
+        cv_weights = dict.fromkeys(cvs, 1)
 
     # Run a modified version of de Boors algorithm
     cv_bases = [{cv: 1.0} for cv in cvs]  # initialize basis weights with a value of 1 for every cv
@@ -491,7 +491,7 @@ def tangent_on_spline_weights(
         remapped_weights.append((cv_ids[cv1], -alpha))
 
     # Add weights of corresponding CVs and only return those that are > 0
-    deduplicated_weights = {i: 0.0 for i in cv_ids}
+    deduplicated_weights = dict.fromkeys(cv_ids, 0.0)
     for item in remapped_weights:
         deduplicated_weights[item[0]] += item[1]
     deduplicated_weights = {key: value for key, value in deduplicated_weights.items() if value != 0}

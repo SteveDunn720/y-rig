@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 
@@ -15,7 +15,7 @@ _joint_collection: ContextVar[list[str] | None] = ContextVar("joint_collection",
 
 
 @contextmanager
-def collect_joints() -> Iterator[list[str]]:
+def collect_joints() -> Generator[list[str], None, None]:
     """
     Collect joints created inside this block.
 

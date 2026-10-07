@@ -164,9 +164,7 @@ def apply_blendshape_target_item_data(
 ) -> None:
 
     points_plug = get_plug(target_item.input_points_target)
-    points_to_apply = (
-        data.points if data.points else [(0, 0, 0)]
-    )  # Maya crashes if there are NO points
+    points_to_apply = data.points or [(0, 0, 0)]  # Maya crashes if there are NO points
     point_array: MPointArray = MPointArray()
     point_array.setLength(len(points_to_apply))
     for index, point in enumerate(points_to_apply):
@@ -174,9 +172,7 @@ def apply_blendshape_target_item_data(
     set_point_array(points_plug, point_array)
 
     component_plug = get_plug(target_item.input_components_target)
-    components_to_apply = (
-        data.components if data.components else [0]
-    )  # Maya crashes if there are NO components
+    components_to_apply = data.components or [0]  # Maya crashes if there are NO components
     set_component_list_indices(component_plug, components_to_apply)
 
 

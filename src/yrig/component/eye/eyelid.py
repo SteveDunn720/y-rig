@@ -365,8 +365,7 @@ class Eyelid:
         upper_pos: Any = get_position(transform=self.upper_guides.locator_list[3].name)
         lower_pos: Any = get_position(transform=self.lower_guides.locator_list[3].name)
 
-        pos_list.append(upper_pos)
-        pos_list.append(lower_pos)
+        pos_list.extend((upper_pos, lower_pos))
 
         blink_x: float = (upper_pos.x + lower_pos.x) / 2
         blink_y: float = (upper_pos.y + lower_pos.y) / 2

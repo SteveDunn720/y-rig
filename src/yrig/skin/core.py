@@ -48,7 +48,7 @@ def get_skin_clusters(geometry: str) -> list[str] | None:
     """
     history = cmds.listHistory(geometry, pruneDagObjects=True) or []
     skin_clusters = cmds.ls(history, type="skinCluster")  # type: ignore
-    return skin_clusters if skin_clusters else None
+    return skin_clusters or None
 
 
 def get_skin_cluster(geometry: str) -> str | None:
@@ -135,11 +135,17 @@ def skin_geometry(
         raise RuntimeError(
             f"{geometry} is not a shape node! This function expects a transform with a shape or a shape."
         )
-    if not bind_joints:
+    if isinstance(bind_joints, str):
+        raise TypeError(
+            f"bind_joints must be an iterable of joint names, not a single string: {bind_joints!r}"
+        )
+
+    bind_joints_resolved = tuple(bind_joints)
+    if not bind_joints_resolved:
         raise ValueError("The provided bind_joints list was empty")
     mode = (2 if weight_blend else 1) if dual_quaternion else 0
     skin_cluster: str = cmds.skinCluster(  # type: ignore
-        *bind_joints,
+        *bind_joints_resolved,
         shape,
         toSelectedBones=True,
         skinMethod=mode,

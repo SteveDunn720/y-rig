@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -22,8 +23,6 @@ from yrig.transform import create_transform, get_shapes, partial_path_name
 from yrig.transform.matrix import get_world_matrix
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from yrig.transform.structs import Direction
 
 CONTROL_SUFFIX = "_ctl"
@@ -35,7 +34,7 @@ _control_collection: ContextVar[list[Control] | None] = ContextVar(
 
 
 @contextmanager
-def collect_controls() -> Iterator[list[Control]]:
+def collect_controls() -> Generator[list[Control], None, None]:
     """
     Collect controls created inside this block.
 

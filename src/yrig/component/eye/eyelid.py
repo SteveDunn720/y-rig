@@ -342,6 +342,7 @@ class Eyelid:
             ],
             ignore_handles=True,
             align_normals=True,
+            mirror=True if self.side == "R" else False,
         )
 
         self.lower_guides = GuideCurve(
@@ -358,6 +359,7 @@ class Eyelid:
             ],
             ignore_handles=True,
             align_normals=True,
+            mirror=True if self.side == "R" else False,
         )
 
         pos_list = []

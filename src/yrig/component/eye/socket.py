@@ -236,6 +236,7 @@ class Socket:
                 ],
                 ignore_handles=True,
                 align_normals=True,
+                mirror=True if self.side == "R" else False,
             )
             jnt_list = []
             for i, guide in enumerate(curveguides.locator_list):

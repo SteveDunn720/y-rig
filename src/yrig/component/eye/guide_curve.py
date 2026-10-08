@@ -68,9 +68,53 @@ class GuideCurve:
     # BUILD
     # =========================================================
 
+    def enforce_curve_direction(self) -> bool:
+        """
+        Ensure the curve starts closest to the world X center
+        and progresses outward.
+
+        Works for both positive and negative X.
+
+        Returns:
+            bool: True if the curve was reversed.
+        """
+
+        cvs = cmds.ls(
+            f"{self.curve}.cv[*]",
+            flatten=True,
+        )
+
+        if len(cvs) < 2:
+            return False
+
+        start_pos = cmds.pointPosition(
+            cvs[0],
+            world=True,
+        )
+
+        end_pos = cmds.pointPosition(
+            cvs[-1],
+            world=True,
+        )
+
+        start_distance = abs(start_pos[0])
+        end_distance = abs(end_pos[0])
+
+        if start_distance > end_distance:
+            cmds.reverseCurve(
+                self.curve,
+                constructionHistory=False,
+                replaceOriginal=True,
+            )
+
+            return True
+
+        return False
+
     def build(self) -> None:
 
         self.duplicate_and_resample_curve()
+        self.enforce_curve_direction()
         self.create_group()
         self.create_locators()
 

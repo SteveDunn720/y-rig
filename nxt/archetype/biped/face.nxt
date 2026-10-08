@@ -70,6 +70,9 @@
             "attrs": {
                 "psd_filename": {
                     "value": "eyes"
+                },
+                "psd_path": {
+                    "value": "${rig_path}/data/eyes/psd"
                 }
             }
         },

@@ -38,6 +38,153 @@ class Socket:
     # -------------------
     # Helper Functions
     # -------------------
+
+    def create_socket_follow(
+        self,
+        default_mult: float = 0.5,
+    ) -> str:
+        """
+        Create a Workshop-style blended driver offset
+        for the socket controls.
+
+        0.0 = No follow
+        0.5 = Half follow
+        1.0 = Full follow
+
+        The follow hierarchy is positioned at the
+        main eye control's pivot.
+        """
+
+        driver = self.main_ctrl
+
+        # -------------------------------------------------
+        # Follow attribute
+        # -------------------------------------------------
+
+        if not cmds.attributeQuery(
+            "socket_follow",
+            node=driver,
+            exists=True,
+        ):
+            cmds.addAttr(
+                driver,
+                longName="socket_follow",
+                attributeType="double",
+                minValue=0.0,
+                maxValue=1.0,
+                defaultValue=default_mult,
+                keyable=True,
+            )
+
+        # -------------------------------------------------
+        # Create driver hierarchy
+        # -------------------------------------------------
+
+        # IMPORTANT:
+        # control_grp must not inherit transforms
+        # from the main eye control.
+
+        driver_pos = create_transform(
+            name=f"socket_{self.side}_follow_pos",
+            parent=self.control_grp,
+            transform=driver,
+        )
+
+        driver_offset = create_transform(
+            name=f"socket_{self.side}_follow_offset",
+            parent=driver_pos,
+            transform=driver,
+        )
+
+        # -------------------------------------------------
+        # Driver relative to parent space
+        # -------------------------------------------------
+
+        relative_matrix = cmds.createNode(
+            "multMatrix",
+            name=f"socket_{self.side}_follow_relative_mm",
+        )
+
+        cmds.connectAttr(
+            f"{driver}.worldMatrix[0]",
+            f"{relative_matrix}.matrixIn[0]",
+        )
+
+        cmds.connectAttr(
+            f"{self.control_grp}.worldInverseMatrix[0]",
+            f"{relative_matrix}.matrixIn[1]",
+        )
+
+        # -------------------------------------------------
+        # Store rest relative matrix
+        # -------------------------------------------------
+
+        rest_matrix = MMatrix(cmds.getAttr(f"{relative_matrix}.matrixSum"))
+
+        rest_inverse = cmds.createNode(
+            "inverseMatrix",
+            name=f"socket_{self.side}_follow_rest_inverse",
+        )
+
+        cmds.setAttr(
+            f"{rest_inverse}.inputMatrix",
+            *list(rest_matrix),
+            type="matrix",
+        )
+
+        # -------------------------------------------------
+        # Calculate driver delta
+        # -------------------------------------------------
+
+        delta_matrix = cmds.createNode(
+            "multMatrix",
+            name=f"socket_{self.side}_follow_delta_mm",
+        )
+
+        cmds.connectAttr(
+            f"{relative_matrix}.matrixSum",
+            f"{delta_matrix}.matrixIn[0]",
+        )
+
+        cmds.connectAttr(
+            f"{rest_inverse}.outputMatrix",
+            f"{delta_matrix}.matrixIn[1]",
+        )
+
+        # -------------------------------------------------
+        # Blend identity -> driver delta
+        # -------------------------------------------------
+
+        blend_matrix = cmds.createNode(
+            "blendMatrix",
+            name=f"socket_{self.side}_follow_bm",
+        )
+
+        cmds.connectAttr(
+            f"{delta_matrix}.matrixSum",
+            f"{blend_matrix}.target[0].targetMatrix",
+        )
+
+        cmds.connectAttr(
+            f"{driver}.socket_follow",
+            f"{blend_matrix}.target[0].weight",
+        )
+
+        # -------------------------------------------------
+        # Drive follow offset
+        # -------------------------------------------------
+
+        cmds.connectAttr(
+            f"{blend_matrix}.outputMatrix",
+            f"{driver_offset}.offsetParentMatrix",
+        )
+
+        self.socket_follow_pos = driver_pos
+        self.socket_follow_offset = driver_offset
+        self.socket_follow_blend = blend_matrix
+
+        return driver_offset
+
     def convert_to_matrix(
         self,
         pos: tuple[float, float, float] = (0, 0, 0),
@@ -266,6 +413,10 @@ class Socket:
         self.socket_splines = {}
         self.socket_pins = {}
 
+        self.socket_follow_grp = self.create_socket_follow(
+            default_mult=0.5,
+        )
+
         # -------------------------------------------------
         # Build guide curves
         # -------------------------------------------------
@@ -299,7 +450,7 @@ class Socket:
 
             control = create_control(
                 name=f"socket_{corner}_corner_{self.side}",
-                parent=self.main_ctrl,
+                parent=self.socket_follow_grp,
                 transform=guide.name,
                 size=self.control_size / 4,
                 control_shape="circle",
@@ -316,7 +467,7 @@ class Socket:
         for side in ["upper", "lower"]:
             control = create_control(
                 name=f"socket_{side}_{self.side}",
-                parent=self.main_ctrl,
+                parent=self.socket_follow_grp,
                 transform=self.guides[f"socket_mid_{side}"],
                 size=self.control_size / 2,
                 control_shape="round_square",

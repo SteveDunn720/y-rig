@@ -95,12 +95,17 @@ class GuideCurve:
                 )  # type:ignore
             )
 
-            locator.matrix = cmds.xform(
+            matrix = cmds.xform(
                 locator.name,
                 query=True,
                 worldSpace=True,
                 matrix=True,
             )
+
+            if not isinstance(matrix, (list, tuple)):
+                raise TypeError(f"Expected matrix, got {type(matrix).__name__}")
+
+            locator.matrix = [float(value) for value in matrix]
 
     def mirror_curve_for_build(self) -> None:
         """
@@ -140,7 +145,7 @@ class GuideCurve:
 
         cmds.setAttr(
             f"{self.group}.scaleX",
-            -1,
+            -1,  # type:ignore
         )
 
     def enforce_curve_direction(self) -> bool:

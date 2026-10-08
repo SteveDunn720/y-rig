@@ -3,12 +3,11 @@ import math
 from maya import cmds
 from maya.api.OpenMaya import MEulerRotation, MMatrix, MSpace, MTransformationMatrix, MVector
 
-from yrig.control import create_control, Control
+from yrig.control import Control, create_control
 from yrig.joint import create_joint
 from yrig.skin.split.tag import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
-from yrig.transform import create_transform, matrix_constraint
-from yrig.transform.utils import get_position
+from yrig.transform import create_transform
 
 from .guide_curve import GuideCurve
 
@@ -159,7 +158,7 @@ class Socket:
     def connect_socket_spline_follow(
         self,
         pin: str,
-        control,
+        control: Control,
     ) -> None:
         """
         Drive a socket control's NPO from a spline pin.
@@ -458,6 +457,6 @@ class Socket:
         # -------------------------------------------------
 
         self.sub_socket_set = cmds.sets(
-            [control.transform for control in self.sub_socket_control],
+            [control.transform for control in self.sub_socket_control],  # type:ignore
             name=f"socket_sub_{self.side}_set",
         )

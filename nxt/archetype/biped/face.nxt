@@ -197,10 +197,7 @@
         },
         "/finalize": {
             "child_order": [
-                "delete_face_guides",
-                "hide_joints",
-                "model_override",
-                "skin_tools_data"
+                "delete_face_guides"
             ]
         },
         "/finalize/delete_face_guides": {
@@ -257,7 +254,6 @@
                 "    cmds.parent(duplicated, \"${def_layer_group}\")",
                 "    geo_shape = get_shape(geo)",
                 "    geo_input = cmds.deformableShape(geo_shape, frontOfChain=True)[0] or f\"{geo_shape}.{cmds.deformableShape(geo_shape, localShapeInAttr=True)[0]}\"",
-                "    print(geo_input)",
                 "    duplicated_shape = get_shape(duplicated)",
                 "    duplicated_output = cmds.deformableShape(duplicated_shape, localShapeOutAttr=True)[0]",
                 "    cmds.connectAttr(f\"{duplicated_shape}.{duplicated_output}\", geo_input)",

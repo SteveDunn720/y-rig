@@ -1,5 +1,6 @@
 from . import (
     build,
+    cache,
     color,
     component,
     control,
@@ -23,6 +24,7 @@ from . import (
 
 __all__ = [
     "build",
+    "cache",
     "color",
     "component",
     "control",

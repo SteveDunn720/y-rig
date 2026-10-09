@@ -123,12 +123,14 @@
                 }
             },
             "code": [
+                "log = yrig.build.nxt_api.get_node_logger(\"${_nxtpath}\")",
+                "",
                 "guide_path = Path(\"${guide_filepath}\")",
                 "",
                 "run_shifter_build = True",
                 "body_rig_temp_filepath = Path(\"${body_rig_temp_filepath}\")",
                 "if ${build_caching} and \"${build_scope}\" == \"face\":",
-                "    if yrig.build.cache.is_cache_valid(body_rig_temp_filepath, guide_path):",
+                "    if yrig.cache.is_cache_valid(body_rig_temp_filepath, guide_path):",
                 "        yrig.io.import_maya_file(body_rig_temp_filepath)",
                 "        run_shifter_build = False",
                 "",
@@ -148,12 +150,12 @@
                 "                binary=True, ",
                 "                force=True,",
                 "            )",
-                "            yrig.build.cache.write_cache_metadata(",
+                "            yrig.cache.write_cache_metadata(",
                 "                body_rig_temp_filepath,",
                 "                guide_path,",
                 "            )",
                 "        except Exception as e:",
-                "            STAGE.log.warning(\"Couldn't export body build cache: {e}\")"
+                "            log.warning(\"Couldn't export body build cache: {e}\")"
             ]
         },
         "/setup/shifter_component_build/attribute_defaults": {

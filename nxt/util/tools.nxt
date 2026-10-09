@@ -182,7 +182,8 @@
                 "    try:",
                 "        face_color_from_texture(object)",
                 "    except Exception as e:",
-                "        STAGE.log.warning(f\"Couldn't bake face colors for {object}, {e}\")"
+                "        log = yrig.build.nxt_api.get_node_logger(\"${_nxtpath}\")",
+                "        log.warning(f\"Couldn't bake face colors for {object}, {e}\")"
             ]
         }
     }

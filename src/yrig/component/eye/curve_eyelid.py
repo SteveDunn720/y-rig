@@ -1,6 +1,4 @@
 import math
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Literal
 
 from maya import cmds
 from maya.api.OpenMaya import (
@@ -16,24 +14,7 @@ from maya.api.OpenMaya import (
 
 from yrig.control import ControlShape, create_control
 from yrig.joint import create_joint
-from yrig.maya_api.node import (
-    ConditionNode,
-    DecomposeMatrixNode,
-    MultiplyDivideNode,
-    MultMatrixNode,
-    PlusMinusAverageNode,
-    SumNode,
-)
-from yrig.skin.split.tag import tag_for_weight_split
-from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.transform import create_transform
-from yrig.transform.constraint import matrix_constraint
-from yrig.transform.utils import get_position
-
-from .guide_curve import GuideCurve
-
-if TYPE_CHECKING:
-    from yrig.control.core import Control
 
 
 class Eyelid:

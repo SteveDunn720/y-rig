@@ -6,9 +6,9 @@ from yrig.maya_api.node import BlendColorsNode, MultiplyDivideNode, SumNode
 from yrig.transform import create_transform
 from yrig.transform.constraint import matrix_constraint
 
+from .curve_eyelid import Eyelid
 from .eyeball import Eyeball
 from .socket import Socket
-from .curve_eyelid import Eyelid
 
 
 class Eye:

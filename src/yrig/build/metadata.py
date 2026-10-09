@@ -54,7 +54,7 @@ def write_rig_build_metadata(metadata_node: str, build_path: Path | None) -> str
 
         cmds.setAttr(
             f"{metadata_node}.{attribute_name}",
-            value or "unkown",
+            value or "unknown",
             type="string",
         )
 

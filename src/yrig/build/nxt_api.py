@@ -51,6 +51,11 @@ def nxt_file_roots(
                 os.environ["NXT_FILE_ROOTS"] = default_value
 
 
+def get_node_logger(node_path: str) -> logging.Logger:
+    """Get a logger for an NXT node."""
+    return logging.getLogger(f"{__name__}.{node_path.strip('/').replace('/', '.')}")
+
+
 # We wrap the NXT execution so we can have nice progress reporting :)
 class ProgressStage(Stage):
     def execute_nodes(self, node_paths, layer, parameters=None):  # noqa: ANN001, ANN201

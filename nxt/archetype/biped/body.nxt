@@ -123,6 +123,8 @@
                 }
             },
             "code": [
+                "log = yrig.build.nxt_api.get_node_logger(\"${_nxtpath}\")",
+                "",
                 "guide_path = Path(\"${guide_filepath}\")",
                 "",
                 "run_shifter_build = True",
@@ -153,7 +155,7 @@
                 "                guide_path,",
                 "            )",
                 "        except Exception as e:",
-                "            STAGE.log.warning(\"Couldn't export body build cache: {e}\")"
+                "            log.warning(\"Couldn't export body build cache: {e}\")"
             ]
         },
         "/setup/shifter_component_build/attribute_defaults": {

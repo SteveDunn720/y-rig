@@ -325,7 +325,8 @@
             "child_order": [
                 "hide_joints",
                 "model_override",
-                "skin_tools_data"
+                "skin_tools_data",
+                "lock_attrs"
             ]
         },
         "/finalize/hide_joints": {
@@ -334,6 +335,84 @@
                 "    # Hide Joints",
                 "    cmds.setAttr(\"${/setup/root.rig_root}.jnt_vis\", False)  # type: ignore",
                 ""
+            ]
+        },
+        "/finalize/lock_attrs": {
+            "attrs": {
+                "ignored_nodes": {
+                    "type": "list",
+                    "value": "[\"${/setup/root.rig_root}\"]"
+                }
+            },
+            "code": [
+                "DEFAULT_NODES = getattr(STAGE, \"default_nodes\", {})",
+                "log = yrig.build.nxt_api.get_node_logger(\"${_nxtpath}\")",
+                "",
+                "def is_connected(plug: str) -> bool:",
+                "    try:",
+                "        if cmds.listConnections(plug, source=True, destination=True):",
+                "            return True",
+                "        node, attr = plug.split(\".\", 1)",
+                "        parent: list[float] = cmds.attributeQuery(attr.split(\".\")[-1], node=node, listParent=True)  # type: ignore",
+                "        if parent:",
+                "            return bool(cmds.listConnections(f\"{node}.{parent[0]}\", source=True, destination=True))",
+                "    except (RuntimeError, ValueError):",
+                "        # Can't be resolved, so treat it as \"don't touch\"",
+                "        return True",
+                "    return False",
+                "",
+                "",
+                "def lock_non_control_attrs(ignored_nodes: set[str]) -> list[str] | None:",
+                "    controls = yrig.control.get_tagged_controls()",
+                "    if not controls:",
+                "        log.warning(\"No controller tags found - aborting so nothing gets locked by mistake.\")",
+                "        return",
+                "",
+                "    nodes = cmds.ls(type=\"transform\") or []",
+                "    locked = []",
+                "    skipped = []",
+                "",
+                "    for node in nodes:",
+                "        short = node.split(\"|\")[-1]",
+                "        if short in DEFAULT_NODES or short in ignored_nodes:",
+                "            continue",
+                "",
+                "        # Controls are left completely untouched",
+                "        if node in controls:",
+                "            continue",
+                "",
+                "        keyable = set(cmds.listAttr(node, keyable=True) or [])",
+                "        channel_box = set(cmds.listAttr(node, channelBox=True) or [])",
+                "",
+                "        for attr in sorted(keyable | channel_box):",
+                "            plug = f\"{node}.{attr}\"",
+                "",
+                "            # Unindexed multi/compound names (e.g. constraint \"target.xxx\") don't resolve",
+                "            if not cmds.objExists(plug):",
+                "                skipped.append(plug)",
+                "                continue",
+                "",
+                "            try:",
+                "                if cmds.getAttr(plug, lock=True):",
+                "                    continue",
+                "            except (RuntimeError, ValueError):",
+                "                skipped.append(plug)",
+                "                continue",
+                "",
+                "            if is_connected(plug):",
+                "                continue",
+                "",
+                "            locked.append(plug)",
+                "            try:",
+                "                cmds.setAttr(plug, lock=True, keyable=False)",
+                "            except RuntimeError as e:",
+                "                log.warning(f\"Could not lock {plug}: {e}\")",
+                "    return locked",
+                "",
+                "if not ${dev_build}:",
+                "    locked = lock_non_control_attrs(ignored_nodes=set(${ignored_nodes}))",
+                "    if locked:",
+                "        log.info(f\"Locked {len(locked)} attributes.\")"
             ]
         },
         "/finalize/model_override": {
@@ -512,7 +591,8 @@
         },
         "/setup/new_scene": {
             "code": [
-                "cmds.file(new=True, force=True)"
+                "cmds.file(new=True, force=True)",
+                "STAGE.default_nodes = set(cmds.ls())"
             ]
         },
         "/setup/root": {

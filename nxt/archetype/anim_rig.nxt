@@ -139,6 +139,8 @@
         "collapse": {
             "/apply/deformation": false,
             "/finalize/hide_joints": true,
+            "/finalize/metadata": true,
+            "/finalize/metadata/build_commit": true,
             "/io_pair": true,
             "/psd_import": true,
             "/psd_import/shapes": true,
@@ -326,6 +328,7 @@
                 "hide_joints",
                 "model_override",
                 "skin_tools_data",
+                "metadata",
                 "lock_attrs"
             ]
         },
@@ -413,6 +416,47 @@
                 "    locked = lock_non_control_attrs(ignored_nodes=set(${ignored_nodes}))",
                 "    if locked:",
                 "        log.info(f\"Locked {len(locked)} attributes.\")"
+            ]
+        },
+        "/finalize/metadata": {
+            "child_order": [
+                "build_commit"
+            ],
+            "attrs": {
+                "metadata_node": {
+                    "type": "raw",
+                    "value": "METADATA"
+                },
+                "rig_root": {
+                    "type": "raw",
+                    "value": "${/setup/root.rig_root}"
+                }
+            },
+            "code": [
+                "metadata_node = cmds.createNode(\"network\", name=\"${metadata_node}\")",
+                "cmds.addAttr(",
+                "    metadata_node,",
+                "    longName=\"rig_root\",",
+                "    attributeType=\"message\",",
+                ")",
+                "rig_root = \"${rig_root}\"",
+                "cmds.connectAttr(",
+                "    f\"{rig_root}.message\",",
+                "    f\"{metadata_node}.rig_root\",",
+                ")"
+            ]
+        },
+        "/finalize/metadata/build_commit": {
+            "attrs": {
+                "build_path": {
+                    "type": "raw",
+                    "value": "${file::${rig_path}}"
+                }
+            },
+            "code": [
+                "build_path_str = \"${build_path}\"",
+                "build_path = Path(build_path_str) if build_path_str else None",
+                "yrig.build.metadata.write_rig_build_metadata(\"${metadata_node}\", build_path)"
             ]
         },
         "/finalize/model_override": {

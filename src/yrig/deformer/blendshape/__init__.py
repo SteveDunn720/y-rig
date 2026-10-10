@@ -7,6 +7,7 @@ from .core import (
     set_target_weights,
 )
 from .serialize import (
+    batch_export_blendshapes,
     export_blendshape,
     get_blendshape_data,
     import_blendshape,
@@ -14,6 +15,7 @@ from .serialize import (
 )
 
 __all__ = [
+    "batch_export_blendshapes",
     "core",
     "create_blendshape",
     "export_blendshape",

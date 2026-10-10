@@ -7,6 +7,7 @@ from yrig.deformer.blendshape.core import connect_to_psd_network
 from yrig.io import confirm_overwrite
 from yrig.io.json import export_json, load_json
 from yrig.maya_api.node import BlendShapeNode
+from yrig.shape import get_shape
 
 from .apply import apply_blendshape_data
 from .data import BlendShapeData
@@ -18,6 +19,7 @@ log = logging.getLogger(__name__)
 def import_blendshape(
     filepath: Path,
     blendshape: str | BlendShapeNode,
+    *,
     directories: Collection[str] | None = None,
     targets: Collection[str] | None = None,
     parent_directory: str | None = None,
@@ -39,6 +41,7 @@ def import_blendshape(
 def export_blendshape(
     filepath: Path,
     blendshape: str | BlendShapeNode,
+    *,
     directories: Collection[str] | None = None,
     targets: Iterable[str | int] | None = None,
     force: bool = False,
@@ -97,3 +100,33 @@ def import_blendshapes_from_directories(
                         f"Couldn't find a .yshape file named '{geo_mapped_file}' for {geometry} in any of the checked directories: {directories}"
                     )
     return geo_applied_files
+
+
+def batch_export_blendshapes(
+    geometry: Iterable[str],
+    directory: Path,
+    geo_to_blendshape: Callable[[str], str | BlendShapeNode],
+    *,
+    force: bool = False,
+    geo_to_filename: Callable[[str], str] | None = None,
+    directories: Collection[str] | None = None,
+    targets: Iterable[str | int] | None = None,
+) -> dict[str, Path]:
+
+    export_directory = directory
+    export_directory.mkdir(parents=True, exist_ok=True)
+
+    exported_files: dict[str, Path] = {}
+    for geo in geometry:
+        shape = get_shape(geo)
+        if shape is None:
+            log.warning(f"No shape found for {geo}, skipping blendshape export.")
+            continue
+        filename = geo_to_filename(geo) if geo_to_filename else geo
+        filepath = export_directory / f"{filename}.yshape"
+        blendshape = geo_to_blendshape(geo)
+        export_blendshape(
+            filepath, blendshape, force=force, directories=directories, targets=targets
+        )
+        exported_files[geo] = filepath
+    return exported_files

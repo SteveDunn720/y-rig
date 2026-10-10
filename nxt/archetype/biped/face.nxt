@@ -573,7 +573,7 @@
         "/tools_window/biped/face/psd/eye_psd_io": {
             "instance": "/psd_io",
             "attrs": {
-                "psd_directory": {
+                "psd_system": {
                     "value": "eyes"
                 },
                 "relative_path_stem": {

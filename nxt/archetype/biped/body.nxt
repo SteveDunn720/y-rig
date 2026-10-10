@@ -25,6 +25,9 @@
     },
     "nodes": {
         "/apply/deformation/main/psd": {
+            "child_order": [
+                "body"
+            ],
             "attrs": {
                 "geometry": {
                     "value": "[\"body_geo\"]"
@@ -188,10 +191,6 @@
                 "leg_psd_io"
             ],
             "attrs": {
-                "blendshape": {
-                    "type": "raw",
-                    "value": "${/apply/deformation/main/psd/body_psd.blendshape}"
-                },
                 "text": {
                     "value": "PSD"
                 }
@@ -200,10 +199,11 @@
         "/tools_window/biped/body/psd/arm_psd_io": {
             "instance": "/psd_io",
             "attrs": {
-                "psd_directory": {
+                "psd_system": {
                     "value": "arms"
                 },
                 "relative_path_stem": {
+                    "type": "raw",
                     "value": "data/body/psd/arms"
                 },
                 "system_name": {
@@ -222,7 +222,7 @@
                     "type": "raw",
                     "value": "body_psd"
                 },
-                "psd_directory": {
+                "psd_system": {
                     "value": "hands"
                 },
                 "relative_path_stem": {
@@ -239,7 +239,7 @@
         "/tools_window/biped/body/psd/leg_psd_io": {
             "instance": "/psd_io",
             "attrs": {
-                "psd_directory": {
+                "psd_system": {
                     "value": "legs"
                 },
                 "relative_path_stem": {

@@ -87,7 +87,7 @@
                 "    log.info(f\"Default skinned {geometry}\")",
                 "",
                 "strip_suffix = \"${strip_suffix}\"",
-                "def _map_geo_to_file(geometry: str):",
+                "def _geo_to_filename(geometry: str):",
                 "    return geometry.removesuffix(strip_suffix)",
                 "",
                 "",
@@ -96,7 +96,7 @@
                 "    skin_directories, ",
                 "    geo_to_skin, ",
                 "    fallback_skinning=_fallback_skin if ${fallback_skinning} else None, ",
-                "    map_geo_to_file=_map_geo_to_file if strip_suffix else None,",
+                "    geo_to_filename=_geo_to_filename if strip_suffix else None,",
                 "    error_on_topology_change=not ${allow_topology_change},",
                 "    )",
                 ""

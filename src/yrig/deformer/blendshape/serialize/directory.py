@@ -97,7 +97,7 @@ def prune_blendshape_directory_dict(
             ],
         )
         for index, data in directory_data.items()
-        if index == 0 or -index in needed_indices or index in group_indices_to_keep
+        if index == 0 or -index in needed_indices
     }
 
     return pruned_directory_data

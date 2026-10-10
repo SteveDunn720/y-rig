@@ -149,7 +149,7 @@ def apply_skin_data_from_directories(
     directories: Sequence[Path],
     geometry: Sequence[str],
     *,
-    map_geo_to_file: Callable[[str], str] | None = None,
+    geo_to_filename: Callable[[str], str] | None = None,
 ) -> dict[str, Path]:
     """
     Apply saved weights from one or more directories.
@@ -159,7 +159,7 @@ def apply_skin_data_from_directories(
         directories: Directories to search for weight files, in search order.
         geometry: Geometry to skin and apply weights to.
         skip_skinned_geometry: Whether to skip geometry that already has a skin cluster.
-        map_geo_to_file: Optional function that maps a geometry name to the corresponding weight file name.
+        geo_to_filename: Optional function that maps a geometry name to the corresponding weight file name.
 
     Returns:
         Dictionary mapping geometry that had skin weights applied -> the skin weight file applied.
@@ -174,7 +174,7 @@ def apply_skin_data_from_directories(
                     )
                 applied: bool = False
                 for directory in directories:
-                    geo_mapped_file = map_geo_to_file(geo) if map_geo_to_file is not None else geo
+                    geo_mapped_file = geo_to_filename(geo) if geo_to_filename is not None else geo
                     ng_skin_filepath: Path = directory / f"{geo_mapped_file}.json"
                     yskin_filepath: Path = directory / f"{geo_mapped_file}.yskin"
                     if ng_skin_filepath.exists():
@@ -200,7 +200,7 @@ def skin_and_apply_weights_from_directories(
     *,
     skip_skinned_geometry: bool = True,
     fallback_skinning: Callable[[str], Any] | None = None,
-    map_geo_to_file: Callable[[str], str] | None = None,
+    geo_to_filename: Callable[[str], str] | None = None,
     error_on_topology_change: bool = True,
 ) -> dict[str, Path | None]:
     """
@@ -213,7 +213,7 @@ def skin_and_apply_weights_from_directories(
         geometry: Geometry to skin and apply weights to.
         skip_skinned_geometry: Whether to skip geometry that already has a skin cluster.
         fallback_skinning: Optional function called for geometry with no saved weight file.
-        map_geo_to_file: Optional function that maps a geometry name to the corresponding weight file name.
+        geo_to_file: Optional function that maps a geometry name to the corresponding weight file name.
 
     Returns:
         Returns:
@@ -227,7 +227,7 @@ def skin_and_apply_weights_from_directories(
                     continue
                 skinned: bool = False
                 for directory in directories:
-                    geo_mapped_file = map_geo_to_file(geo) if map_geo_to_file is not None else geo
+                    geo_mapped_file = geo_to_filename(geo) if geo_to_filename is not None else geo
                     ng_skin_filepath: Path = directory / f"{geo_mapped_file}.json"
                     yskin_filepath: Path = directory / f"{geo_mapped_file}.yskin"
                     if ng_skin_filepath.exists():

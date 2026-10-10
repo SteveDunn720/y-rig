@@ -16,7 +16,7 @@
     ],
     "meta_data": {
         "positions": {
-            "/eyes_psd": [
+            "/eyes": [
                 400,
                 20
             ]
@@ -65,14 +65,24 @@
         "/apply/deformation/face/skin/split": {
             "instance": "/split_skin_weights"
         },
-        "/apply/deformation/main/psd/body_psd/eyes": {
-            "instance": "/psd_import",
+        "/apply/deformation/main/psd/face": {
+            "child_order": [
+                "eyes"
+            ],
             "attrs": {
-                "psd_filename": {
-                    "value": "eyes"
-                },
                 "psd_path": {
                     "value": "${rig_path}/data/face/psd"
+                }
+            }
+        },
+        "/apply/deformation/main/psd/face/eyes": {
+            "instance": "/psd_import",
+            "attrs": {
+                "psd_path": {
+                    "value": "${rig_path}/data/face/psd"
+                },
+                "psd_system": {
+                    "value": "eyes"
                 }
             }
         },
@@ -553,7 +563,7 @@
             "attrs": {
                 "blendshape": {
                     "type": "raw",
-                    "value": "body_psd"
+                    "value": "${/apply/deformation/main/psd/body_psd.blendshape}"
                 },
                 "text": {
                     "value": "PSD"
@@ -563,7 +573,7 @@
         "/tools_window/biped/face/psd/eye_psd_io": {
             "instance": "/psd_io",
             "attrs": {
-                "psd_directory": {
+                "psd_system": {
                     "value": "eyes"
                 },
                 "relative_path_stem": {

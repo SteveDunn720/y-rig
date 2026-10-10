@@ -15,6 +15,10 @@
                 120.0,
                 0.0
             ],
+            "/apply/deformation/main/psd": [
+                0.0,
+                0.0
+            ],
             "/attr_version": [
                 600.0,
                 -120.0
@@ -111,10 +115,6 @@
                 -2900.0,
                 -1340.0
             ],
-            "/skin_geometry": [
-                120.0,
-                -180.0
-            ],
             "/split_skin_weights": [
                 120.0,
                 -240.0
@@ -143,6 +143,7 @@
             "/finalize/metadata/build_commit": true,
             "/io_pair": true,
             "/psd_import": true,
+            "/psd_import/pose_intepolators": true,
             "/psd_import/shapes": true,
             "/psd_io": true,
             "/rbf_io": true,
@@ -214,19 +215,7 @@
             ]
         },
         "/apply/deformation/main/psd": {
-            "attrs": {
-                "psd_group": {
-                    "type": "raw",
-                    "value": "psd"
-                },
-                "psd_group_parent": {
-                    "type": "raw",
-                    "value": "${/setup/root.rig_root}"
-                }
-            },
-            "code": [
-                "yrig.transform.create_transform(name=\"${psd_group}\", parent=\"${psd_group_parent}\")"
-            ]
+            "instance": "/psd_layer"
         },
         "/apply/deformation/main/skin": {
             "instance": "/skin_geometry",
@@ -480,14 +469,37 @@
                 "pose_intepolators"
             ],
             "attrs": {
-                "psd_filename": {}
+                "geometry": {
+                    "type": "list",
+                    "value": "[]"
+                },
+                "psd_layer": {
+                    "type": "raw",
+                    "value": "main_psd"
+                },
+                "psd_path": {
+                    "type": "raw",
+                    "value": "${rig_path}/data/psd"
+                },
+                "psd_system": {
+                    "type": "raw",
+                    "value": "main"
+                },
+                "psd_system_path": {
+                    "type": "raw",
+                    "value": "${psd_path}/${psd_system}"
+                }
             }
         },
         "/psd_import/pose_intepolators": {
             "attrs": {
                 "pose_filepath": {
                     "type": "raw",
-                    "value": "${file::${psd_path}/${psd_filename}.ypose}"
+                    "value": "${file::${psd_system_path}/${psd_system}.ypose}"
+                },
+                "rbf_group": {
+                    "type": "raw",
+                    "value": "${/setup/root/deformation/rbf.rbf_group}"
                 }
             },
             "code": [
@@ -496,25 +508,41 @@
                 "    pose_filepath = Path(pose_filepath_str)",
                 "    yrig.rbf.pose_interpolator.import_pose_file(",
                 "        filepath = pose_filepath,",
-                "        parent = \"${psd_group}\",",
+                "        parent = \"${rbf_group}\",",
                 "    )"
             ]
         },
         "/psd_import/shapes": {
             "attrs": {
-                "yshape_filepath": {
+                "psd_network": {
                     "type": "raw",
-                    "value": "${file::${psd_path}/${psd_filename}.yshape}"
+                    "value": "${psd_system}_psd"
+                },
+                "resolved_yshape_directories": {
+                    "type": "raw",
+                    "value": "${filelist::${yshape_directory}}"
+                },
+                "yshape_directory": {
+                    "type": "raw",
+                    "value": "${file::${psd_system_path}}"
                 }
             },
             "code": [
-                "shape_filepath_str = \"${yshape_filepath}\"",
-                "if shape_filepath_str:",
-                "    shape_filepath = Path(shape_filepath_str)",
-                "    yrig.deformer.blendshape.import_blendshape(",
-                "        filepath=shape_filepath,",
-                "        blendshape=\"${blendshape}\",",
-                "        )"
+                "from yrig.deformer.blendshape import import_blendshapes_from_directories",
+                "",
+                "shape_directories = [Path(dir) for dir in ${resolved_yshape_directories}]",
+                "geometry = ${geometry}",
+                "",
+                "def _geo_to_blendshape(geo: str):",
+                "    return f\"{geo}_${psd_layer}\"",
+                "    ",
+                "if shape_directories and geometry:",
+                "    import_blendshapes_from_directories(",
+                "        shape_directories,",
+                "        geometry,",
+                "        geo_to_blendshape=_geo_to_blendshape,",
+                "        psd_network=\"${psd_network}\",",
+                "    )"
             ]
         },
         "/psd_io": {
@@ -577,12 +605,13 @@
         },
         "/psd_layer": {
             "attrs": {
-                "blendshape": {
-                    "type": "raw",
-                    "value": "psd"
-                },
                 "geometry": {
-                    "type": "raw"
+                    "type": "list",
+                    "value": "[]"
+                },
+                "psd_layer": {
+                    "type": "raw",
+                    "value": "main_psd"
                 },
                 "psd_path": {
                     "type": "raw",
@@ -590,7 +619,10 @@
                 }
             },
             "code": [
-                "yrig.deformer.blendshape.create_blendshape(geometry=\"${geometry}\", name=\"${blendshape}\")"
+                "psd_layer = \"${psd_layer}\"",
+                "",
+                "for geo in ${geometry}:",
+                "    yrig.deformer.blendshape.create_blendshape(geometry=geo, name=f\"{geo}_{psd_layer}\")"
             ]
         },
         "/rbf_io": {
@@ -685,7 +717,8 @@
         "/setup/root/deformation": {
             "child_order": [
                 "static_joint",
-                "main"
+                "main",
+                "rbf"
             ],
             "attrs": {
                 "joint_group": {
@@ -718,6 +751,17 @@
                 "rig_set = \"${deformers_set}\"",
                 "if not cmds.objExists(rig_set):",
                 "    yrig.sets.add_set(rig_set, parent=\"${rig_set}\")"
+            ]
+        },
+        "/setup/root/deformation/rbf": {
+            "attrs": {
+                "rbf_group": {
+                    "type": "raw",
+                    "value": "rbf"
+                }
+            },
+            "code": [
+                "yrig.transform.create_transform(name=\"${rbf_group}\", parent=\"${rig_root}\")"
             ]
         },
         "/setup/root/deformation/static_joint": {

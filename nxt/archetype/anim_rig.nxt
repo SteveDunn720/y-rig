@@ -335,6 +335,10 @@
         },
         "/finalize/lock_attrs": {
             "attrs": {
+                "ignored_attrs": {
+                    "type": "list",
+                    "value": "[\"visibility\"]"
+                },
                 "ignored_nodes": {
                     "type": "list",
                     "value": "[\"${/setup/root.rig_root}\"]"
@@ -358,7 +362,7 @@
                 "    return False",
                 "",
                 "",
-                "def lock_non_control_attrs(ignored_nodes: set[str]) -> list[str] | None:",
+                "def lock_non_control_attrs(ignored_nodes: set[str], ignored_attrs: set[str]) -> list[str] | None:",
                 "    controls = yrig.control.get_tagged_controls()",
                 "    if not controls:",
                 "        log.warning(\"No controller tags found - aborting so nothing gets locked by mistake.\")",
@@ -380,7 +384,7 @@
                 "        keyable = set(cmds.listAttr(node, keyable=True) or [])",
                 "        channel_box = set(cmds.listAttr(node, channelBox=True) or [])",
                 "",
-                "        for attr in sorted(keyable | channel_box):",
+                "        for attr in sorted((keyable | channel_box) - ignored_attrs):",
                 "            plug = f\"{node}.{attr}\"",
                 "",
                 "            # Unindexed multi/compound names (e.g. constraint \"target.xxx\") don't resolve",
@@ -400,13 +404,13 @@
                 "",
                 "            locked.append(plug)",
                 "            try:",
-                "                cmds.setAttr(plug, lock=True, keyable=False)",
+                "                cmds.setAttr(plug, lock=True)",
                 "            except RuntimeError as e:",
                 "                log.warning(f\"Could not lock {plug}: {e}\")",
                 "    return locked",
                 "",
                 "if not ${dev_build}:",
-                "    locked = lock_non_control_attrs(ignored_nodes=set(${ignored_nodes}))",
+                "    locked = lock_non_control_attrs(ignored_nodes=set(${ignored_nodes}), ignored_attrs=set(\"visibility\"))",
                 "    if locked:",
                 "        log.info(f\"Locked {len(locked)} attributes.\")"
             ]

@@ -16,6 +16,8 @@ from yrig.control import ControlShape, create_control
 from yrig.joint import create_joint
 from yrig.transform import create_transform
 
+from .ik import create_ik_single_chain
+
 
 class Eyelid:
     def __init__(
@@ -51,6 +53,282 @@ class Eyelid:
     # -------------------
     # Helper Functions
     # -------------------
+
+    def build_eyelid_ik(
+        self,
+        sub_divisions: int = 7,
+    ) -> None:
+        """
+        Build single-chain IK joints for the upper/lower eyelids.
+
+        Each chain:
+            - Starts at the eye center.
+            - Ends at a sampled point on the eyelid.
+            - Has an IK handle pinned to the blendshape curve.
+
+        All IK chains are stored under the hidden eye setup group.
+
+        Requires:
+            self.setup_blink_curves()
+            self.build_blink_blendshapes()
+        """
+
+        if sub_divisions < 2:
+            raise ValueError("sub_divisions must be >= 2")
+
+        # -----------------------------------------------------
+        # Setup hierarchy
+        # -----------------------------------------------------
+
+        self.eye_ik_grp = create_transform(
+            name=f"eye_ik_{self.side}_grp",
+            parent=self.blink_setup_grp,
+        )
+
+        self.eyelid_ik = {
+            "upper": [],
+            "lower": [],
+        }
+
+        # -----------------------------------------------------
+        # Eye center position
+        # -----------------------------------------------------
+
+        center = cmds.xform(
+            self.guides["center_piv"],
+            query=True,
+            worldSpace=True,
+            translation=True,
+        )
+
+        # -----------------------------------------------------
+        # Build upper/lower chains
+        # -----------------------------------------------------
+
+        for vertical in ("upper", "lower"):
+            vertical_grp = create_transform(
+                name=f"{vertical}_ik_{self.side}_grp",
+                parent=self.eye_ik_grp,
+            )
+
+            rest_curve = self.blink_guides[f"eyelid_{vertical}_rest"]
+
+            animated_curve = self.blink_curves[vertical]
+
+            for i in range(sub_divisions):
+                percent = i / (sub_divisions - 1)
+
+                name = f"{vertical}_eyelid_{i:02d}_{self.side}"
+
+                # ---------------------------------------------
+                # Initial position on neutral/rest curve
+                # ---------------------------------------------
+
+                position = cmds.pointOnCurve(
+                    rest_curve,
+                    parameter=percent,
+                    turnOnPercentage=True,
+                    position=True,
+                )
+
+                # ---------------------------------------------
+                # Create root joint at eye center
+                # ---------------------------------------------
+
+                root_joint = cmds.createNode(
+                    "joint",
+                    name=f"{name}_root_jnt",
+                    parent=vertical_grp,
+                )
+
+                cmds.xform(
+                    root_joint,
+                    worldSpace=True,
+                    translation=center,  # type:ignore
+                )
+
+                # ---------------------------------------------
+                # Create end joint at eyelid position
+                # ---------------------------------------------
+
+                end_joint = cmds.createNode(
+                    "joint",
+                    name=f"{name}_end_jnt",
+                    parent=root_joint,
+                )
+
+                cmds.xform(
+                    end_joint,
+                    worldSpace=True,
+                    translation=position,  # type:ignore
+                )
+
+                # ---------------------------------------------
+                # Create single-chain IK
+                # ---------------------------------------------
+
+                ik = create_ik_single_chain(
+                    name=name,
+                    start_joint=root_joint,
+                    end_joint=end_joint,
+                )
+
+                cmds.parent(
+                    ik.handle,
+                    vertical_grp,
+                )
+
+                # ---------------------------------------------
+                # Create curve pin
+                # ---------------------------------------------
+
+                pin = create_transform(
+                    name=f"{name}_pin",
+                    parent=vertical_grp,
+                )
+
+                cmds.xform(
+                    pin,
+                    worldSpace=True,
+                    translation=position,  # type:ignore
+                )
+
+                self.pin_transform_to_curve(
+                    curve=animated_curve,
+                    transform=pin,
+                    parameter=percent,
+                )
+
+                # ---------------------------------------------
+                # Pin IK handle to animated curve
+                # ---------------------------------------------
+
+                cmds.pointConstraint(
+                    pin,
+                    ik.handle,
+                    maintainOffset=False,
+                )
+
+                # ---------------------------------------------
+                # Store results
+                # ---------------------------------------------
+
+                self.eyelid_ik[vertical].append(
+                    {
+                        "root_joint": root_joint,
+                        "end_joint": end_joint,
+                        "ik": ik,
+                        "pin": pin,
+                        "parameter": percent,
+                    }
+                )
+
+    def pin_transform_to_curve(
+        self,
+        curve: str,
+        transform: str,
+        parameter: float,
+    ) -> str:
+        """
+        Pin a transform to a normalized arc-length position
+        on a deforming NURBS curve.
+
+        Uses pointOnCurveInfo and parent-space conversion.
+
+        Args:
+            curve: Deforming NURBS curve.
+            transform: Transform to drive.
+            parameter: Normalized position from 0 to 1.
+
+        Returns:
+            Created pointOnCurveInfo node.
+        """
+
+        shapes = (
+            cmds.listRelatives(
+                curve,
+                shapes=True,
+                noIntermediate=True,
+                type="nurbsCurve",
+                fullPath=True,
+            )
+            or []
+        )
+
+        if not shapes:
+            raise ValueError(f"No NURBS curve found: {curve}")
+
+        shape = shapes[0]
+
+        # -----------------------------------------------------
+        # Evaluate curve position
+        # -----------------------------------------------------
+
+        poc = cmds.createNode(
+            "pointOnCurveInfo",
+            name=f"{transform}_POC",
+        )
+
+        cmds.connectAttr(
+            f"{shape}.worldSpace[0]",
+            f"{poc}.inputCurve",
+        )
+
+        cmds.setAttr(
+            f"{poc}.turnOnPercentage",
+            True,  # type:ignore
+        )
+
+        cmds.setAttr(
+            f"{poc}.parameter",
+            parameter,  # type:ignore
+        )
+
+        # -----------------------------------------------------
+        # Convert world position to parent-local position
+        # -----------------------------------------------------
+
+        compose = cmds.createNode(
+            "composeMatrix",
+            name=f"{transform}_CM",
+        )
+
+        cmds.connectAttr(
+            f"{poc}.position",
+            f"{compose}.inputTranslate",
+        )
+
+        mult = cmds.createNode(
+            "multMatrix",
+            name=f"{transform}_MM",
+        )
+
+        cmds.connectAttr(
+            f"{compose}.outputMatrix",
+            f"{mult}.matrixIn[0]",
+        )
+
+        cmds.connectAttr(
+            f"{transform}.parentInverseMatrix[0]",
+            f"{mult}.matrixIn[1]",
+        )
+
+        decompose = cmds.createNode(
+            "decomposeMatrix",
+            name=f"{transform}_DCM",
+        )
+
+        cmds.connectAttr(
+            f"{mult}.matrixSum",
+            f"{decompose}.inputMatrix",
+        )
+
+        cmds.connectAttr(
+            f"{decompose}.outputTranslate",
+            f"{transform}.translate",
+        )
+
+        return poc
 
     def get_curve_mid_y(self, curve: str) -> float:
         """Get the world-space Y of a curve's arc-length midpoint."""
@@ -746,6 +1024,10 @@ class Eyelid:
 
         # Connect blink controls to blendshape curves
         self.build_blink_blendshapes(extension=2.0)
+
+        self.build_eyelid_ik(
+            sub_divisions=sub_divisions,
+        )
 
         for vertical in ["upper", "lower"]:
             for i in range(sub_divisions):

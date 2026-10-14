@@ -1,3 +1,4 @@
+from yrig.skin.split.tag import tag_for_weight_split
 import math
 
 from maya import cmds
@@ -11,8 +12,10 @@ from maya.api.OpenMaya import (
     MTransformationMatrix,
     MVector,
 )
+from maya.api.OpenMaya import MMatrix
 
-from yrig.control import ControlShape, create_control
+from yrig.maya_api.node.matrix import DecomposeMatrixNode, MultMatrixNode
+from yrig.control import ControlShape, create_control, Control
 from yrig.joint import create_joint
 from yrig.transform import create_transform
 
@@ -54,10 +57,450 @@ class Eyelid:
     # Helper Functions
     # -------------------
 
-    def build_eyelid_ik(
+    def create_sub_control_ik_driver(
         self,
-        sub_divisions: int = 7,
+        control: Control,
+        end_joint: str,
+    ) -> str:
+        """
+        Insert an SDK group between control.offset
+        and control.transform.
+
+        Drive the SDK from the IK end joint using Maya
+        multMatrix and decomposeMatrix nodes.
+
+        Preserve the control's original world transform.
+        """
+
+        offset = control.offset
+        transform = control.transform
+
+        # ---------------------------------------------------------
+        # Capture original world matrices
+        # ---------------------------------------------------------
+
+        control_world = MMatrix(
+            cmds.xform(
+                transform,
+                query=True,
+                worldSpace=True,
+                matrix=True,
+            )
+        )
+
+        joint_world = MMatrix(cmds.getAttr(f"{end_joint}.worldMatrix[0]"))
+
+        # ---------------------------------------------------------
+        # Insert SDK group
+        # ---------------------------------------------------------
+
+        sdk = cmds.createNode(
+            "transform",
+            name=f"{transform}_sdk",
+            parent=offset,
+        )
+
+        cmds.xform(
+            sdk,
+            worldSpace=True,
+            matrix=list(control_world),
+        )
+
+        cmds.parent(
+            transform,
+            sdk,
+            absolute=True,
+        )
+
+        # ---------------------------------------------------------
+        # Calculate rest offset
+        #
+        # Maya matrix convention:
+        #
+        # controlWorld = restOffset * jointWorld
+        # ---------------------------------------------------------
+
+        rest_offset = control_world * joint_world.inverse()
+
+        # ---------------------------------------------------------
+        # MultMatrix
+        # ---------------------------------------------------------
+
+        mult = cmds.createNode(
+            "multMatrix",
+            name=f"{transform}_ik_MM",
+        )
+
+        cmds.setAttr(
+            f"{mult}.matrixIn[0]",
+            *list(rest_offset),
+            type="matrix",
+        )
+
+        cmds.connectAttr(
+            f"{end_joint}.worldMatrix[0]",
+            f"{mult}.matrixIn[1]",
+        )
+
+        cmds.connectAttr(
+            f"{sdk}.parentInverseMatrix[0]",
+            f"{mult}.matrixIn[2]",
+        )
+
+        # ---------------------------------------------------------
+        # DecomposeMatrix
+        # ---------------------------------------------------------
+
+        decompose = cmds.createNode(
+            "decomposeMatrix",
+            name=f"{transform}_ik_DCM",
+        )
+
+        cmds.connectAttr(
+            f"{mult}.matrixSum",
+            f"{decompose}.inputMatrix",
+        )
+
+        cmds.connectAttr(
+            f"{sdk}.rotateOrder",
+            f"{decompose}.inputRotateOrder",
+        )
+
+        # ---------------------------------------------------------
+        # Drive SDK translation and rotation
+        # ---------------------------------------------------------
+
+        cmds.connectAttr(
+            f"{decompose}.outputTranslate",
+            f"{sdk}.translate",
+        )
+
+        cmds.connectAttr(
+            f"{decompose}.outputRotate",
+            f"{sdk}.rotate",
+        )
+
+        # ---------------------------------------------------------
+        # Store SDK reference
+        # ---------------------------------------------------------
+
+        control.sdk = sdk
+
+        return sdk
+
+    def connect_sub_controls_to_ik(self) -> None:
+        """
+        Connect upper/lower sub-eyelid controls
+        to their corresponding IK end joints.
+        """
+
+        self.sub_control_sdks = {
+            "upper": [],
+            "lower": [],
+        }
+
+        for vertical in ("upper", "lower"):
+            controls = self.sub_eyelid_controls[vertical]
+            chains = self.eyelid_ik[vertical]
+
+            if len(controls) != len(chains):
+                raise ValueError(
+                    f"{vertical} eyelid control/IK count mismatch: "
+                    f"{len(controls)} controls, "
+                    f"{len(chains)} IK chains."
+                )
+
+            for control, chain in zip(
+                controls,
+                chains,
+                strict=True,
+            ):
+                sdk = self.create_sub_control_ik_driver(
+                    control=control,
+                    end_joint=chain["end_joint"],
+                )
+
+                self.sub_control_sdks[vertical].append(sdk)
+
+    def orient_ik_end_to_curve(
+        self,
+        name: str,
+        curve: str,
+        end_joint: str,
+        parameter: float,
+        parent: str,
+    ) -> str:
+        """
+        Orient the IK end joint from the curve tangent.
+
+        Translation remains controlled by the IK solver.
+        """
+
+        driver = create_transform(
+            name=f"{name}_orient_driver",
+            parent=parent,
+        )
+
+        # Initialize at the joint's world orientation.
+        cmds.xform(
+            driver,
+            worldSpace=True,
+            matrix=cmds.xform(
+                end_joint,
+                query=True,
+                worldSpace=True,
+                matrix=True,
+            ),  # type:ignore
+        )
+
+        cmds.pointOnCurve(
+            curve,
+            parameter=parameter,
+            turnOnPercentage=True,
+            position=True,
+        )
+
+        cmds.tangentConstraint(
+            curve,
+            driver,
+            aimVector=(1, 0, 0),
+            upVector=(0, 1, 0),
+            worldUpType="vector",
+            worldUpVector=(0, 1, 0),
+        )
+
+        cmds.orientConstraint(
+            driver,
+            end_joint,
+            maintainOffset=True,
+        )
+
+        return driver
+
+    def connect_ik_stretch_compress(
+        self,
+        name: str,
+        root_joint: str,
+        end_joint: str,
+        ik_handle: str,
+        control: str,
+        rest_length: float,
     ) -> None:
+        """
+        Add optional stretch/compression to a single-chain IK.
+
+        Stretch and compression are controlled independently.
+
+        Args:
+            name: Node name prefix.
+            root_joint: Start joint.
+            end_joint: End joint.
+            ik_handle: IK handle transform.
+            control: Blink control transform.
+            rest_length: Original root-to-end distance.
+        """
+
+        if rest_length <= 0.000001:
+            raise ValueError(f"Invalid IK rest length for {name}: {rest_length}")
+
+        # ---------------------------------------------------------
+        # Current distance
+        # ---------------------------------------------------------
+
+        distance = cmds.createNode(
+            "distanceBetween",
+            name=f"{name}_distance_DB",
+        )
+
+        # Capture root joint's world matrix at build time.
+        root_world_matrix = cmds.getAttr(f"{root_joint}.worldMatrix[0]")
+
+        # Store the matrix as a static value.
+        cmds.setAttr(
+            f"{distance}.inMatrix1",
+            *root_world_matrix,
+            type="matrix",
+        )
+
+        cmds.connectAttr(
+            f"{ik_handle}.worldMatrix[0]",
+            f"{distance}.inMatrix2",
+        )
+
+        # ---------------------------------------------------------
+        # Current distance / rest distance
+        # ---------------------------------------------------------
+
+        ratio = cmds.createNode(
+            "multiplyDivide",
+            name=f"{name}_length_ratio_MD",
+        )
+
+        cmds.setAttr(
+            f"{ratio}.operation",
+            2,  # Divide #type:ignore
+        )
+
+        cmds.connectAttr(
+            f"{distance}.distance",
+            f"{ratio}.input1X",
+        )
+
+        cmds.setAttr(
+            f"{ratio}.input2X",
+            rest_length,  # type:ignore
+        )
+
+        # ---------------------------------------------------------
+        # Select stretch vs compression multiplier
+        # ---------------------------------------------------------
+
+        condition = cmds.createNode(
+            "condition",
+            name=f"{name}_length_mode_CON",
+        )
+
+        cmds.setAttr(
+            f"{condition}.operation",
+            2,  # Greater than #type:ignore
+        )
+
+        cmds.connectAttr(
+            f"{ratio}.outputX",
+            f"{condition}.firstTerm",
+        )
+
+        cmds.setAttr(
+            f"{condition}.secondTerm",
+            1.0,  # type:ignore
+        )
+
+        cmds.connectAttr(
+            f"{control}.stretch",
+            f"{condition}.colorIfTrueR",
+        )
+
+        cmds.connectAttr(
+            f"{control}.compress",
+            f"{condition}.colorIfFalseR",
+        )
+
+        # ---------------------------------------------------------
+        # Blend between rest ratio (1) and current ratio
+        # ---------------------------------------------------------
+
+        blend = cmds.createNode(
+            "blendColors",
+            name=f"{name}_length_blend_BLC",
+        )
+
+        cmds.connectAttr(
+            f"{condition}.outColorR",
+            f"{blend}.blender",
+        )
+
+        cmds.connectAttr(
+            f"{ratio}.outputX",
+            f"{blend}.color1R",
+        )
+
+        cmds.setAttr(
+            f"{blend}.color2R",
+            1.0,  # type:ignore
+        )
+
+        # ---------------------------------------------------------
+        # Store original length on root joint
+        # ---------------------------------------------------------
+
+        if not cmds.attributeQuery(
+            "restLength",
+            node=root_joint,
+            exists=True,
+        ):
+            cmds.addAttr(
+                root_joint,
+                longName="restLength",
+                attributeType="double",
+                defaultValue=rest_length,
+            )
+
+        cmds.setAttr(
+            f"{root_joint}.restLength",
+            rest_length,  # type:ignore
+        )
+
+        cmds.setAttr(
+            f"{root_joint}.restLength",
+            lock=True,
+        )
+
+        # ---------------------------------------------------------
+        # Apply length multiplier
+        # ---------------------------------------------------------
+
+        length_mult = cmds.createNode(
+            "multiplyDivide",
+            name=f"{name}_length_MD",
+        )
+
+        cmds.setAttr(
+            f"{length_mult}.operation",
+            1,  # Multiply #type:ignore
+        )
+
+        cmds.connectAttr(
+            f"{blend}.outputR",
+            f"{length_mult}.input1X",
+        )
+
+        # Use the original signed local joint translation.
+        # This supports joints oriented along different axes.
+        translate = cmds.getAttr(f"{end_joint}.translate")[0]
+
+        axis = max(
+            "XYZ",
+            key=lambda a: abs(translate["XYZ".index(a)]),
+        )
+
+        original_value = translate["XYZ".index(axis)]
+
+        cmds.setAttr(
+            f"{length_mult}.input2X",
+            original_value,
+        )
+
+        cmds.connectAttr(
+            f"{length_mult}.outputX",
+            f"{end_joint}.translate{axis}",
+            force=True,
+        )
+
+    def add_blink_length_attributes(self) -> None:
+        """Add stretch/compression controls to both blink controls."""
+
+        for vertical in ("upper", "lower"):
+            control = self.blink_controls[vertical].transform
+
+            for attr in ("stretch", "compress"):
+                if cmds.attributeQuery(
+                    attr,
+                    node=control,
+                    exists=True,
+                ):
+                    continue
+
+                cmds.addAttr(
+                    control,
+                    longName=attr,
+                    attributeType="double",
+                    minValue=0.0,
+                    maxValue=1.0,
+                    defaultValue=0.0,
+                    keyable=True,
+                )
+
+    def build_eyelid_ik(self, sub_divisions: int = 11, major_division: int = 7) -> None:
         """
         Build single-chain IK joints for the upper/lower eyelids.
 
@@ -212,6 +655,25 @@ class Eyelid:
                 # ---------------------------------------------
                 # Store results
                 # ---------------------------------------------
+
+                # -----------------------------------------------------
+                # Rest length
+                # -----------------------------------------------------
+
+                rest_length = sum((position[i] - center[i]) ** 2 for i in range(3)) ** 0.5  # type:ignore
+
+                # -----------------------------------------------------
+                # Stretch/compression
+                # -----------------------------------------------------
+
+                """self.connect_ik_stretch_compress(
+                    name=name,
+                    root_joint=root_joint,
+                    end_joint=end_joint,
+                    ik_handle=ik.handle,
+                    control=self.blink_controls[vertical].transform,
+                    rest_length=rest_length,
+                )"""
 
                 self.eyelid_ik[vertical].append(
                     {
@@ -980,7 +1442,10 @@ class Eyelid:
         # Set up look follow
         #######
 
-        self.sub_eyelid_controls = []
+        self.sub_eyelid_controls = {
+            "upper": [],
+            "lower": [],
+        }
         self.sub_joints = []
 
         self.look_offset = create_transform(
@@ -1025,11 +1490,14 @@ class Eyelid:
         # Connect blink controls to blendshape curves
         self.build_blink_blendshapes(extension=2.0)
 
+        # self.add_blink_length_attributes()
+
         self.build_eyelid_ik(
             sub_divisions=sub_divisions,
         )
 
         for vertical in ["upper", "lower"]:
+            joints = []
             for i in range(sub_divisions):
                 percent = i / (sub_divisions - 1)
                 matrix = self.get_curve_point_matrix(
@@ -1052,5 +1520,25 @@ class Eyelid:
                     transform=sub_ctrl.transform,
                 )
 
-                self.sub_eyelid_controls.append(sub_ctrl)
+                self.sub_eyelid_controls[vertical].append(sub_ctrl)
                 self.sub_joints.append(sub_jnt)
+                joints.append(sub_jnt)
+
+            lead_name = f"inner_corner_{vertical}_eyelid_{self.side}_jnt"
+
+            lead_joint = cmds.rename(
+                joints[0],
+                lead_name,
+            )
+
+            # Update stored reference after renaming.
+            joints[0] = lead_joint
+
+            # Tag the lead influence and its split targets.
+            tag_for_weight_split(
+                influence=lead_joint,
+                split_influences=joints,
+            )
+
+        # After sub-controls have been created
+        self.connect_sub_controls_to_ik()

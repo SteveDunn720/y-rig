@@ -1,4 +1,3 @@
-from yrig.skin.split.tag import tag_for_weight_split
 import math
 
 from maya import cmds
@@ -12,11 +11,10 @@ from maya.api.OpenMaya import (
     MTransformationMatrix,
     MVector,
 )
-from maya.api.OpenMaya import MMatrix
 
-from yrig.maya_api.node.matrix import DecomposeMatrixNode, MultMatrixNode
-from yrig.control import ControlShape, create_control, Control
+from yrig.control import Control, ControlShape, create_control
 from yrig.joint import create_joint
+from yrig.skin.split.tag import tag_for_weight_split
 from yrig.transform import create_transform
 
 from .ik import create_ik_single_chain
@@ -103,7 +101,7 @@ class Eyelid:
         cmds.xform(
             sdk,
             worldSpace=True,
-            matrix=list(control_world),
+            matrix=list(control_world),  # type:ignore
         )
 
         cmds.parent(
@@ -184,7 +182,7 @@ class Eyelid:
         # Store SDK reference
         # ---------------------------------------------------------
 
-        control.sdk = sdk
+        control.sdk = sdk  # type:ignore
 
         return sdk
 

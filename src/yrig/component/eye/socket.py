@@ -130,8 +130,8 @@ class Socket:
             parent=follow_pos,
             transform=driver,
         )
-        cmds.setAttr(f"{follow_offset}.translate", 0, 0, 0, type="double3")
-        cmds.setAttr(f"{follow_offset}.rotate", 0, 0, 0, type="double3")
+        cmds.setAttr(f"{follow_offset}.translate", 0, 0, 0, type="double3")  # type:ignore
+        cmds.setAttr(f"{follow_offset}.rotate", 0, 0, 0, type="double3")  # type:ignore
 
         controls_grp = create_transform(
             name=f"socket_{self.side}_controls_grp",
@@ -304,6 +304,6 @@ class Socket:
             )
 
         self.sub_socket_set = cmds.sets(
-            [control.transform for control in self.sub_socket_control],
+            [control.transform for control in self.sub_socket_control],  # type:ignore
             name=f"socket_sub_{self.side}_set",
         )

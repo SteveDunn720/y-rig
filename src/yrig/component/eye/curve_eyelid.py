@@ -55,6 +55,213 @@ class Eyelid:
     # Helper Functions
     # -------------------
 
+    def create_expression_control_pair(
+        self,
+        name: str,
+        matrix: MMatrix,
+        control_parent: str,
+        fake_parent: str,
+        size: float,
+    ) -> tuple[Control, str]:
+        """Create matching real and fake expression controls.
+
+        The fake hierarchy contains:
+            offset -> driver
+
+        Both hierarchies share the same world-space rest pose.
+        No driving connections are created.
+        """
+
+        # ---------------------------------------------------------
+        # Real control
+        # ---------------------------------------------------------
+
+        control = create_control(
+            name=name,
+            parent=control_parent,
+            transform=matrix,
+            size=size,
+            control_shape="circle",
+            direction="z",
+        )
+
+        # ---------------------------------------------------------
+        # Fake offset
+        # ---------------------------------------------------------
+
+        fake_offset = create_transform(
+            name=f"{name}_fake_offset",
+            parent=fake_parent,
+            transform=control.transform,
+        )
+
+        # ---------------------------------------------------------
+        # Fake driver
+        # ---------------------------------------------------------
+
+        fake_driver = create_transform(
+            name=f"{name}_fake_driver",
+            parent=fake_offset,
+            transform=control.transform,
+        )
+
+        return control, fake_driver
+
+    def build_expression_controls(self) -> None:
+        """Build major and macro eyelid expression controls.
+
+        Major controls:
+            - Shared inner corner
+            - Shared outer corner
+            - Upper midpoint
+            - Lower midpoint
+
+        Macro controls:
+            - Five per eyelid
+            - Parent under corresponding major controls
+
+        Fake hierarchies mirror the real control parenting.
+        No connections are created.
+        """
+
+        # ---------------------------------------------------------
+        # Setup groups
+        # ---------------------------------------------------------
+
+        self.expression_control_grp = create_transform(
+            name=f"expression_controls_{self.side}_grp",
+            parent=self.main_ctrl,
+        )
+
+        self.expression_driver_grp = create_transform(
+            name=f"expression_drivers_{self.side}_grp",
+            parent=self.eyes_setup_grp,
+        )
+
+        self.expression_major_controls = {}
+        self.expression_major_drivers = {}
+
+        self.expression_macro_controls = {
+            "upper": [],
+            "lower": [],
+        }
+
+        self.expression_macro_drivers = {
+            "upper": [],
+            "lower": [],
+        }
+
+        upper_curve = self.guides["eyelid_upper_rest"]
+        lower_curve = self.guides["eyelid_lower_rest"]
+
+        # ---------------------------------------------------------
+        # Shared corner controls
+        #
+        # Use the upper rest curve for both shared corners.
+        # ---------------------------------------------------------
+
+        for corner, parameter in (
+            ("inner_corner", 0.0),
+            ("outer_corner", 1.0),
+        ):
+            matrix = self.get_curve_point_matrix(
+                curve=upper_curve,
+                parameter=parameter,
+                tangent_orient=True,
+            )
+
+            control, driver = self.create_expression_control_pair(
+                name=f"{corner}_{self.side}",
+                matrix=matrix,
+                control_parent=self.expression_control_grp,
+                fake_parent=self.expression_driver_grp,
+                size=self.control_size * 0.2,
+            )
+
+            self.expression_major_controls[corner] = control
+            self.expression_major_drivers[corner] = driver
+
+        # ---------------------------------------------------------
+        # Upper/lower midpoint controls
+        # ---------------------------------------------------------
+
+        for vertical, curve in (
+            ("upper", upper_curve),
+            ("lower", lower_curve),
+        ):
+            matrix = self.get_curve_point_matrix(
+                curve=curve,
+                parameter=0.5,
+                tangent_orient=True,
+            )
+
+            control, driver = self.create_expression_control_pair(
+                name=f"{vertical}_mid_{self.side}",
+                matrix=matrix,
+                control_parent=self.expression_control_grp,
+                fake_parent=self.expression_driver_grp,
+                size=self.control_size * 0.25,
+            )
+
+            self.expression_major_controls[f"{vertical}_mid"] = control
+            self.expression_major_drivers[f"{vertical}_mid"] = driver
+
+        # ---------------------------------------------------------
+        # Macro controls
+        # ---------------------------------------------------------
+
+        macro_parameters = (
+            0.0,
+            0.25,
+            0.5,
+            0.75,
+            1.0,
+        )
+
+        for vertical, curve in (
+            ("upper", upper_curve),
+            ("lower", lower_curve),
+        ):
+            for index, parameter in enumerate(macro_parameters):
+                # ---------------------------------------------
+                # Choose major parent
+                # ---------------------------------------------
+
+                if index == 0:
+                    parent_key = "inner_corner"
+                elif index == 4:
+                    parent_key = "outer_corner"
+                else:
+                    parent_key = f"{vertical}_mid"
+
+                major_control = self.expression_major_controls[parent_key]
+                major_driver = self.expression_major_drivers[parent_key]
+
+                # ---------------------------------------------
+                # Curve rest matrix
+                # ---------------------------------------------
+
+                matrix = self.get_curve_point_matrix(
+                    curve=curve,
+                    parameter=parameter,
+                    tangent_orient=True,
+                )
+
+                # ---------------------------------------------
+                # Create real and fake controls
+                # ---------------------------------------------
+
+                control, driver = self.create_expression_control_pair(
+                    name=f"{vertical}_macro_{index:02d}_{self.side}",
+                    matrix=matrix,
+                    control_parent=major_control.transform,
+                    fake_parent=major_driver,
+                    size=self.control_size * 0.12,
+                )
+
+                self.expression_macro_controls[vertical].append(control)
+                self.expression_macro_drivers[vertical].append(driver)
+
     def create_sub_control_ik_driver(
         self,
         control: Control,
@@ -1511,3 +1718,6 @@ class Eyelid:
 
         # After sub-controls have been created
         self.connect_sub_controls_to_ik()
+
+        # Build expression control hierarchies.
+        self.build_expression_controls()

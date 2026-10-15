@@ -60,148 +60,84 @@ class Eyelid:
         control: Control,
         end_joint: str,
     ) -> str:
-        """
-        Drive a sub-control SDK using the IK end joint's
-        world-space movement relative to its rest position.
+        """Drive a real SDK using an IK-constrained proxy SDK.
 
-        The IK joint hierarchy remains at world origin.
+        The proxy hierarchy lives in the static eye setup.
 
-        The SDK:
-            - Preserves its original world transform.
-            - Receives no movement at the IK joint's rest pose.
-            - Follows the IK joint's movement from rest.
-            - Converts the movement into its parent's local space.
-            - Does not inherit extra movement from the IK driver
-            when its own parent hierarchy moves.
+        The proxy offset matches the real SDK's rest pose.
+        The proxy SDK follows the IK with maintainOffset=True.
+        Its local TR channels drive the real SDK directly.
         """
 
-        offset = control.offset
         transform = control.transform
 
         # ---------------------------------------------------------
-        # Capture original world matrices
-        # ---------------------------------------------------------
-
-        control_world = MMatrix(
-            cmds.xform(
-                transform,
-                query=True,
-                worldSpace=True,
-                matrix=True,
-            )
-        )
-
-        joint_rest_world = MMatrix(cmds.getAttr(f"{end_joint}.worldMatrix[0]"))
-
-        # ---------------------------------------------------------
-        # Insert SDK group
+        # Create the real SDK
         # ---------------------------------------------------------
 
         sdk = cmds.createNode(
             "transform",
             name=f"{transform}_sdk",
-            parent=offset,
-        )
-
-        cmds.xform(
-            sdk,
-            worldSpace=True,
-            matrix=tuple(control_world),
+            parent=control.offset,
         )
 
         cmds.parent(
             transform,
             sdk,
-            absolute=True,
+            relative=True,
         )
 
         # ---------------------------------------------------------
-        # Store inverse IK rest matrix
-        #
-        # This remains constant after rig build.
+        # Create proxy offset
         # ---------------------------------------------------------
 
-        rest_inverse = cmds.createNode(
-            "inverseMatrix",
-            name=f"{transform}_ik_rest_INV",
-        )
-
-        cmds.setAttr(
-            f"{rest_inverse}.inputMatrix",
-            *tuple(joint_rest_world),
-            type="matrix",
+        proxy_offset = create_transform(
+            name=f"{transform}_ik_offset",
+            parent=self.ik_driver_grp,  # type:ignore
+            transform=sdk,
         )
 
         # ---------------------------------------------------------
-        # Calculate IK movement from rest
+        # Create proxy SDK
         #
-        # delta = inverse(rest) * current
-        #
-        # At rest:
-        # delta = identity
+        # Same world transform as proxy offset.
+        # Local translate/rotate should be zero.
         # ---------------------------------------------------------
 
-        delta_mult = cmds.createNode(
-            "multMatrix",
-            name=f"{transform}_ik_delta_MM",
-        )
-
-        cmds.connectAttr(
-            f"{rest_inverse}.outputMatrix",
-            f"{delta_mult}.matrixIn[0]",
-        )
-
-        cmds.connectAttr(
-            f"{end_joint}.worldMatrix[0]",
-            f"{delta_mult}.matrixIn[1]",
+        proxy_sdk = create_transform(
+            name=f"{transform}_ik_sdk",
+            parent=proxy_offset,
+            transform=sdk,
         )
 
         # ---------------------------------------------------------
-        # Convert world-space delta into SDK parent space
-        #
-        # localDelta =
-        #     parentWorld * worldDelta * parentWorldInverse
-        #
-        # This prevents the parent's orientation from
-        # changing the direction of the IK movement.
+        # Constrain proxy SDK to IK end joint
         # ---------------------------------------------------------
 
-        local_mult = cmds.createNode(
-            "multMatrix",
-            name=f"{transform}_ik_local_MM",
-        )
-
-        cmds.connectAttr(
-            f"{offset}.worldMatrix[0]",
-            f"{local_mult}.matrixIn[0]",
-        )
-
-        cmds.connectAttr(
-            f"{delta_mult}.matrixSum",
-            f"{local_mult}.matrixIn[1]",
-        )
-
-        cmds.connectAttr(
-            f"{offset}.worldInverseMatrix[0]",
-            f"{local_mult}.matrixIn[2]",
+        cmds.parentConstraint(
+            end_joint,
+            proxy_sdk,
+            maintainOffset=True,
         )
 
         # ---------------------------------------------------------
-        # Apply delta through offsetParentMatrix
-        #
-        # The SDK's existing local transform stores
-        # its original placement.
-        #
-        # At rest, offsetParentMatrix receives identity.
+        # Drive real SDK from proxy SDK
         # ---------------------------------------------------------
 
         cmds.connectAttr(
-            f"{local_mult}.matrixSum",
-            f"{sdk}.offsetParentMatrix",
+            f"{proxy_sdk}.translate",
+            f"{sdk}.translate",
+            force=True,
+        )
+
+        cmds.connectAttr(
+            f"{proxy_sdk}.rotate",
+            f"{sdk}.rotate",
+            force=True,
         )
 
         # ---------------------------------------------------------
-        # Store SDK reference
+        # Store references
         # ---------------------------------------------------------
 
         control.sdk = sdk  # type: ignore
@@ -209,10 +145,12 @@ class Eyelid:
         return sdk
 
     def connect_sub_controls_to_ik(self) -> None:
-        """
-        Connect upper/lower sub-eyelid controls
-        to their corresponding IK end joints.
-        """
+        """Connect sub-controls to their IK proxy drivers."""
+
+        self.ik_driver_grp = create_transform(
+            name=f"eyelid_ik_drivers_{self.side}_grp",
+            parent=self.eyes_setup_grp,
+        )
 
         self.sub_control_sdks = {
             "upper": [],
@@ -587,6 +525,10 @@ class Eyelid:
                 # Initial position on neutral/rest curve
                 # ---------------------------------------------
 
+                # ---------------------------------------------
+                # Initial position and orientation
+                # ---------------------------------------------
+
                 position = cmds.pointOnCurve(
                     rest_curve,
                     parameter=percent,
@@ -594,36 +536,43 @@ class Eyelid:
                     position=True,
                 )
 
+                # Use the same matrix as the sub-control.
+                control_matrix = self.get_curve_point_matrix(
+                    curve=self.guides[f"eyelid_{vertical}_rest"],
+                    parameter=percent,
+                    tangent_orient=True,
+                )
+
+                # Root joint stays at the eye center.
+                root_matrix = MMatrix(control_matrix)
+
+                root_values = list(root_matrix)
+                root_values[12] = center[0]  # type:ignore
+                root_values[13] = center[1]  # type:ignore
+                root_values[14] = center[2]  # type:ignore
+
+                root_matrix = MMatrix(root_values)
+
                 # ---------------------------------------------
-                # Create root joint at eye center
+                # Create root joint
                 # ---------------------------------------------
 
-                root_joint = cmds.createNode(
-                    "joint",
-                    name=f"{name}_root_jnt",
+                root_joint = create_joint(
+                    name=f"{name}_root",
                     parent=vertical_grp,
-                )
-
-                cmds.xform(
-                    root_joint,
-                    worldSpace=True,
-                    translation=center,  # type:ignore
+                    transform=root_matrix,
+                    connect=False,
                 )
 
                 # ---------------------------------------------
-                # Create end joint at eyelid position
+                # Create end joint
                 # ---------------------------------------------
 
-                end_joint = cmds.createNode(
-                    "joint",
-                    name=f"{name}_end_jnt",
+                end_joint = create_joint(
+                    name=f"{name}_end",
                     parent=root_joint,
-                )
-
-                cmds.xform(
-                    end_joint,
-                    worldSpace=True,
-                    translation=position,  # type:ignore
+                    transform=control_matrix,
+                    connect=False,
                 )
 
                 # ---------------------------------------------

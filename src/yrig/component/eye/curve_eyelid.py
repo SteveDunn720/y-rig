@@ -61,13 +61,18 @@ class Eyelid:
         end_joint: str,
     ) -> str:
         """
-        Insert an SDK group between control.offset
-        and control.transform.
+        Drive a sub-control SDK using the IK end joint's
+        world-space movement relative to its rest position.
 
-        Drive the SDK from the IK end joint using Maya
-        multMatrix and decomposeMatrix nodes.
+        The IK joint hierarchy remains at world origin.
 
-        Preserve the control's original world transform.
+        The SDK:
+            - Preserves its original world transform.
+            - Receives no movement at the IK joint's rest pose.
+            - Follows the IK joint's movement from rest.
+            - Converts the movement into its parent's local space.
+            - Does not inherit extra movement from the IK driver
+            when its own parent hierarchy moves.
         """
 
         offset = control.offset
@@ -86,7 +91,7 @@ class Eyelid:
             )
         )
 
-        joint_world = MMatrix(cmds.getAttr(f"{end_joint}.worldMatrix[0]"))
+        joint_rest_world = MMatrix(cmds.getAttr(f"{end_joint}.worldMatrix[0]"))
 
         # ---------------------------------------------------------
         # Insert SDK group
@@ -101,7 +106,7 @@ class Eyelid:
         cmds.xform(
             sdk,
             worldSpace=True,
-            matrix=list(control_world),  # type:ignore
+            matrix=tuple(control_world),
         )
 
         cmds.parent(
@@ -111,78 +116,95 @@ class Eyelid:
         )
 
         # ---------------------------------------------------------
-        # Calculate rest offset
+        # Store inverse IK rest matrix
         #
-        # Maya matrix convention:
-        #
-        # controlWorld = restOffset * jointWorld
+        # This remains constant after rig build.
         # ---------------------------------------------------------
 
-        rest_offset = control_world * joint_world.inverse()
-
-        # ---------------------------------------------------------
-        # MultMatrix
-        # ---------------------------------------------------------
-
-        mult = cmds.createNode(
-            "multMatrix",
-            name=f"{transform}_ik_MM",
+        rest_inverse = cmds.createNode(
+            "inverseMatrix",
+            name=f"{transform}_ik_rest_INV",
         )
 
         cmds.setAttr(
-            f"{mult}.matrixIn[0]",
-            *list(rest_offset),
+            f"{rest_inverse}.inputMatrix",
+            *tuple(joint_rest_world),
             type="matrix",
+        )
+
+        # ---------------------------------------------------------
+        # Calculate IK movement from rest
+        #
+        # delta = inverse(rest) * current
+        #
+        # At rest:
+        # delta = identity
+        # ---------------------------------------------------------
+
+        delta_mult = cmds.createNode(
+            "multMatrix",
+            name=f"{transform}_ik_delta_MM",
+        )
+
+        cmds.connectAttr(
+            f"{rest_inverse}.outputMatrix",
+            f"{delta_mult}.matrixIn[0]",
         )
 
         cmds.connectAttr(
             f"{end_joint}.worldMatrix[0]",
-            f"{mult}.matrixIn[1]",
-        )
-
-        cmds.connectAttr(
-            f"{sdk}.parentInverseMatrix[0]",
-            f"{mult}.matrixIn[2]",
+            f"{delta_mult}.matrixIn[1]",
         )
 
         # ---------------------------------------------------------
-        # DecomposeMatrix
+        # Convert world-space delta into SDK parent space
+        #
+        # localDelta =
+        #     parentWorld * worldDelta * parentWorldInverse
+        #
+        # This prevents the parent's orientation from
+        # changing the direction of the IK movement.
         # ---------------------------------------------------------
 
-        decompose = cmds.createNode(
-            "decomposeMatrix",
-            name=f"{transform}_ik_DCM",
+        local_mult = cmds.createNode(
+            "multMatrix",
+            name=f"{transform}_ik_local_MM",
         )
 
         cmds.connectAttr(
-            f"{mult}.matrixSum",
-            f"{decompose}.inputMatrix",
+            f"{offset}.worldMatrix[0]",
+            f"{local_mult}.matrixIn[0]",
         )
 
         cmds.connectAttr(
-            f"{sdk}.rotateOrder",
-            f"{decompose}.inputRotateOrder",
+            f"{delta_mult}.matrixSum",
+            f"{local_mult}.matrixIn[1]",
+        )
+
+        cmds.connectAttr(
+            f"{offset}.worldInverseMatrix[0]",
+            f"{local_mult}.matrixIn[2]",
         )
 
         # ---------------------------------------------------------
-        # Drive SDK translation and rotation
+        # Apply delta through offsetParentMatrix
+        #
+        # The SDK's existing local transform stores
+        # its original placement.
+        #
+        # At rest, offsetParentMatrix receives identity.
         # ---------------------------------------------------------
 
         cmds.connectAttr(
-            f"{decompose}.outputTranslate",
-            f"{sdk}.translate",
-        )
-
-        cmds.connectAttr(
-            f"{decompose}.outputRotate",
-            f"{sdk}.rotate",
+            f"{local_mult}.matrixSum",
+            f"{sdk}.offsetParentMatrix",
         )
 
         # ---------------------------------------------------------
         # Store SDK reference
         # ---------------------------------------------------------
 
-        control.sdk = sdk  # type:ignore
+        control.sdk = sdk  # type: ignore
 
         return sdk
 

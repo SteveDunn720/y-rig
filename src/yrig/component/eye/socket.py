@@ -1,12 +1,9 @@
-import math
-
 from maya import cmds
-from maya.api.OpenMaya import MEulerRotation, MMatrix, MSpace, MTransformationMatrix, MVector
+from maya.api.OpenMaya import MFnNurbsCurve, MMatrix, MSelectionList, MSpace, MVector
 
 from yrig.control import Control, create_control
 from yrig.joint import create_joint
 from yrig.skin.split.tag import tag_for_weight_split
-from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.transform import create_transform
 
 from .guide_curve import GuideCurve
@@ -23,49 +20,96 @@ class Socket:
         component_grp: str,
         control_grp: str,
         control_size: float = 1.0,
+        divisions: int = 11,
     ) -> None:
-        if guides is None:
-            guides = {}
+        if divisions < 2:
+            raise ValueError("Socket divisions must be at least 2")
+
         self.side = side
-        self.guides = guides
+        self.guides = guides or {}
         self.main_ctrl = main_ctrl
-        self.control_size = control_size
         self.parent = parent
         self.joint_parent = joint_parent
         self.component_grp = component_grp
         self.control_grp = control_grp
+        self.control_size = control_size
+        self.divisions = divisions
 
-    # -------------------
-    # Helper Functions
-    # -------------------
-
-    def create_socket_follow(
+    def get_curve_point_matrix(
         self,
-        default_mult: float = 0.5,
-    ) -> str:
+        curve: str,
+        parameter: float,
+        tangent_orient: bool = True,
+    ) -> MMatrix:
+        """Sample a guide curve at a normalized *arc-length* fraction.
+
+        Match the eyelid's tangent-based X-axis orientation. The world-space
+        sample is static at build time; no live spline connections are made.
         """
-        Create a Workshop-style blended driver offset
-        for the socket controls.
+        if cmds.nodeType(curve) == "nurbsCurve":
+            shape = curve
+        else:
+            shapes = (
+                cmds.listRelatives(
+                    curve,
+                    shapes=True,
+                    noIntermediate=True,
+                    type="nurbsCurve",
+                    fullPath=True,
+                )
+                or []
+            )
+            if not shapes:
+                raise ValueError(f"No NURBS curve found: {curve}")
+            shape = shapes[0]
 
-        0.0 = No follow
-        0.5 = Half follow
-        1.0 = Full follow
+        selection = MSelectionList()
+        selection.add(shape)
+        fn_curve = MFnNurbsCurve(selection.getDagPath(0))
 
-        The follow hierarchy is positioned at the
-        main eye control's pivot.
-        """
+        fraction = max(0.0, min(1.0, parameter))
+        curve_parameter = fn_curve.findParamFromLength(fn_curve.length() * fraction)
+        position = fn_curve.getPointAtParam(curve_parameter, MSpace.kWorld)
 
+        if tangent_orient:
+            aim = fn_curve.tangent(curve_parameter, MSpace.kWorld).normal()
+            up = MVector(0, 1, 0)
+            if abs(aim * up) > 0.999:
+                up = MVector(0, 0, 1) if abs(aim.z) < 0.999 else MVector(1, 0, 0)
+            z_axis = (aim ^ up).normal()
+            y_axis = (z_axis ^ aim).normal()
+            x_axis = aim
+        else:
+            x_axis = MVector(1, 0, 0)
+            y_axis = MVector(0, 1, 0)
+            z_axis = MVector(0, 0, 1)
+
+        return MMatrix(
+            [
+                x_axis.x,
+                x_axis.y,
+                x_axis.z,
+                0.0,
+                y_axis.x,
+                y_axis.y,
+                y_axis.z,
+                0.0,
+                z_axis.x,
+                z_axis.y,
+                z_axis.z,
+                0.0,
+                position.x,
+                position.y,
+                position.z,
+                1.0,
+            ]
+        )
+
+    def create_socket_follow(self, default_mult: float = 0.1) -> str:
+        """Inherit control_grp once, and blend extra main-eye motion."""
         driver = self.main_ctrl
 
-        # -------------------------------------------------
-        # Follow attribute
-        # -------------------------------------------------
-
-        if not cmds.attributeQuery(
-            "socket_follow",
-            node=driver,
-            exists=True,
-        ):
+        if not cmds.attributeQuery("socket_follow", node=driver, exists=True):
             cmds.addAttr(
                 driver,
                 longName="socket_follow",
@@ -76,378 +120,98 @@ class Socket:
                 keyable=True,
             )
 
-        # -------------------------------------------------
-        # Create driver hierarchy
-        # -------------------------------------------------
-
-        # IMPORTANT:
-        # control_grp must not inherit transforms
-        # from the main eye control.
-
-        driver_pos = create_transform(
+        follow_pos = create_transform(
             name=f"socket_{self.side}_follow_pos",
             parent=self.control_grp,
             transform=driver,
         )
-
-        driver_offset = create_transform(
+        follow_offset = create_transform(
             name=f"socket_{self.side}_follow_offset",
-            parent=driver_pos,
+            parent=follow_pos,
             transform=driver,
         )
+        cmds.setAttr(f"{follow_offset}.translate", 0, 0, 0, type="double3")
+        cmds.setAttr(f"{follow_offset}.rotate", 0, 0, 0, type="double3")
 
-        # -------------------------------------------------
-        # Driver relative to parent space
-        # -------------------------------------------------
-
-        relative_matrix = cmds.createNode(
-            "multMatrix",
-            name=f"socket_{self.side}_follow_relative_mm",
+        controls_grp = create_transform(
+            name=f"socket_{self.side}_controls_grp",
+            parent=follow_offset,
         )
 
-        cmds.connectAttr(
-            f"{driver}.worldMatrix[0]",
-            f"{relative_matrix}.matrixIn[0]",
-        )
-
+        relative_mm = cmds.createNode("multMatrix", name=f"socket_{self.side}_follow_relative_mm")
+        cmds.connectAttr(f"{driver}.worldMatrix[0]", f"{relative_mm}.matrixIn[0]")
         cmds.connectAttr(
             f"{self.control_grp}.worldInverseMatrix[0]",
-            f"{relative_matrix}.matrixIn[1]",
+            f"{relative_mm}.matrixIn[1]",
         )
 
-        # -------------------------------------------------
-        # Store rest relative matrix
-        # -------------------------------------------------
-
-        rest_matrix = MMatrix(cmds.getAttr(f"{relative_matrix}.matrixSum"))
-
-        rest_inverse = cmds.createNode(
-            "inverseMatrix",
-            name=f"socket_{self.side}_follow_rest_inverse",
-        )
-
+        rest_relative = MMatrix(cmds.getAttr(f"{relative_mm}.matrixSum"))
+        delta_mm = cmds.createNode("multMatrix", name=f"socket_{self.side}_follow_delta_mm")
         cmds.setAttr(
-            f"{rest_inverse}.inputMatrix",
-            *list(rest_matrix),
+            f"{delta_mm}.matrixIn[0]",
+            *tuple(rest_relative.inverse()),
             type="matrix",
         )
+        cmds.connectAttr(f"{relative_mm}.matrixSum", f"{delta_mm}.matrixIn[1]")
 
-        # -------------------------------------------------
-        # Calculate driver delta
-        # -------------------------------------------------
+        blend = cmds.createNode("blendMatrix", name=f"socket_{self.side}_follow_bm")
+        cmds.connectAttr(f"{delta_mm}.matrixSum", f"{blend}.target[0].targetMatrix")
+        cmds.connectAttr(f"{driver}.socket_follow", f"{blend}.target[0].weight")
 
-        delta_matrix = cmds.createNode(
-            "multMatrix",
-            name=f"socket_{self.side}_follow_delta_mm",
-        )
+        local_mm = cmds.createNode("multMatrix", name=f"socket_{self.side}_follow_local_mm")
+        cmds.connectAttr(f"{follow_pos}.matrix", f"{local_mm}.matrixIn[0]")
+        cmds.connectAttr(f"{blend}.outputMatrix", f"{local_mm}.matrixIn[1]")
+        cmds.connectAttr(f"{follow_pos}.inverseMatrix", f"{local_mm}.matrixIn[2]")
+        cmds.connectAttr(f"{local_mm}.matrixSum", f"{follow_offset}.offsetParentMatrix")
 
-        cmds.connectAttr(
-            f"{relative_matrix}.matrixSum",
-            f"{delta_matrix}.matrixIn[0]",
-        )
-
-        cmds.connectAttr(
-            f"{rest_inverse}.outputMatrix",
-            f"{delta_matrix}.matrixIn[1]",
-        )
-
-        # -------------------------------------------------
-        # Blend identity -> driver delta
-        # -------------------------------------------------
-
-        blend_matrix = cmds.createNode(
-            "blendMatrix",
-            name=f"socket_{self.side}_follow_bm",
-        )
-
-        cmds.connectAttr(
-            f"{delta_matrix}.matrixSum",
-            f"{blend_matrix}.target[0].targetMatrix",
-        )
-
-        cmds.connectAttr(
-            f"{driver}.socket_follow",
-            f"{blend_matrix}.target[0].weight",
-        )
-
-        # -------------------------------------------------
-        # Drive follow offset
-        # -------------------------------------------------
-
-        cmds.connectAttr(
-            f"{blend_matrix}.outputMatrix",
-            f"{driver_offset}.offsetParentMatrix",
-        )
-
-        self.socket_follow_pos = driver_pos
-        self.socket_follow_offset = driver_offset
-        self.socket_follow_blend = blend_matrix
-
-        return driver_offset
-
-    def convert_to_matrix(
-        self,
-        pos: tuple[float, float, float] = (0, 0, 0),
-        rot: tuple[float, float, float] = (0, 0, 0),
-        scale: tuple[float, float, float] = (1, 1, 1),
-    ) -> MMatrix:
-        """
-        Build an MMatrix from translation, rotation, and scale.
-        """
-
-        m = MTransformationMatrix()
-
-        # Translation
-        m.setTranslation(MVector(*pos), MSpace.kWorld)
-
-        # Rotation (Euler degrees → radians internally handled by API)
-        euler = MEulerRotation(
-            math.radians(rot[0]),
-            math.radians(rot[1]),
-            math.radians(rot[2]),
-        )
-        m.setRotation(euler)
-
-        # Scale
-        m.setScale(scale, MSpace.kWorld)
-
-        return m.asMatrix()
-
-    def create_socket_spline_follow(
-        self,
-        control: Control,
-        name: str,
-    ) -> str:
-        """
-        Insert a spline-follow group above a socket control's NPO.
-
-        The follow group is initialized at the control's
-        existing parent position, not the control position.
-
-        This preserves the NPO's original rest transform.
-        """
-
-        npo = control.offset
-
-        parent = cmds.listRelatives(
-            npo,
-            parent=True,
-            fullPath=True,
-        )[0]
-
-        follow = create_transform(
-            name=f"{name}_spline_follow",
-            parent=parent,
-            transform=parent,
-        )
-
-        cmds.parent(
-            npo,
-            follow,
-        )
-
-        return follow
-
-    def sort_transforms_center_out(
-        self,
-        transforms: list[str],
-    ) -> list[str]:
-        """
-        Sort transforms from the character center outward
-        along world X.
-
-        Works for both positive and negative X.
-
-        Examples:
-            Left:   X = 1, 3, 5, 7
-            Right:  X = -1, -3, -5, -7
-
-        Returns:
-            A new sorted list of transform names.
-        """
-
-        return sorted(
-            transforms,
-            key=lambda transform: abs(
-                cmds.xform(
-                    transform,
-                    query=True,
-                    worldSpace=True,
-                    translation=True,
-                )[0]  # type:ignore
-            ),
-        )
-
-    def connect_socket_spline_delta(
-        self,
-        pin: str,
-        control: Control,
-        rest_matrix: list[float],
-        name: str,
-    ) -> None:
-        """
-        Drive a socket control NPO from a spline pin,
-        preserving the original rest position.
-
-        The control retains its existing parent hierarchy
-        and animator-facing local transforms.
-        """
-
-        pin_rest = MMatrix(
-            cmds.xform(
-                pin,
-                query=True,
-                worldSpace=True,
-                matrix=True,
-            )
-        )
-
-    def connect_socket_spline_follow(
-        self,
-        pin: str,
-        control: Control,
-    ) -> None:
-        """
-        Drive a socket control's NPO from a spline pin.
-
-        Preserve:
-            - Original NPO rest position
-            - Existing upper/lower parent hierarchy
-            - Animator-facing control channels
-
-        The spline is evaluated in world space and
-        converted into the NPO's parent space.
-        """
-
-        npo = control.offset
-
-        # ----------------------------------------
-        # Capture rest matrices
-        # ----------------------------------------
-
-        pin_rest = MMatrix(
-            cmds.xform(
-                pin,
-                query=True,
-                worldSpace=True,
-                matrix=True,
-            )
-        )
-
-        npo_rest = MMatrix(
-            cmds.xform(
-                npo,
-                query=True,
-                worldSpace=True,
-                matrix=True,
-            )
-        )
-
-        # Existing local channel matrix.
-        local_rest = MMatrix(cmds.getAttr(f"{npo}.matrix"))
-
-        # Difference between the original NPO
-        # position and spline's initial position.
-        rest_offset = npo_rest * pin_rest.inverse()
-
-        # ----------------------------------------
-        # Build matrix network
-        # ----------------------------------------
-
-        mm = cmds.createNode(
-            "multMatrix",
-            name=f"{npo}_spline_mm",
-        )
-
-        # Maya row-vector convention:
-        #
-        # OPM = local^-1
-        #       * restOffset
-        #       * pinWorld
-        #       * parentWorld^-1
-
-        cmds.setAttr(
-            f"{mm}.matrixIn[0]",
-            *list(local_rest.inverse()),
-            type="matrix",
-        )
-
-        cmds.setAttr(
-            f"{mm}.matrixIn[1]",
-            *list(rest_offset),
-            type="matrix",
-        )
-
-        cmds.connectAttr(
-            f"{pin}.worldMatrix[0]",
-            f"{mm}.matrixIn[2]",
-        )
-
-        parent = cmds.listRelatives(
-            npo,
-            parent=True,
-            fullPath=True,
-        )
-
-        if parent:
-            cmds.connectAttr(
-                f"{parent[0]}.worldInverseMatrix[0]",
-                f"{mm}.matrixIn[3]",
-            )
-
-        cmds.connectAttr(
-            f"{mm}.matrixSum",
-            f"{npo}.offsetParentMatrix",
-            force=True,
-        )
+        self.socket_follow_pos = follow_pos
+        self.socket_follow_offset = follow_offset
+        self.socket_follow_blend = blend
+        self.socket_controls_grp = controls_grp
+        return controls_grp
 
     def build_socket(self) -> None:
+        """Build socket drivers and evenly spaced sub-controls, without a spline."""
+        self.major_controls: dict[str, Control] = {}
+        self.parent_controls: dict[str, Control] = {}
+        self.corner_controls: dict[str, Control] = {}
+        self.main_joints: dict[str, str] = {}
+        self.sub_socket_control: list[Control] = []
+        self.sub_socket_controls: dict[str, list[Control]] = {"upper": [], "lower": []}
+        self.sub_socket_joints: dict[str, list[str]] = {"upper": [], "lower": []}
+        self.socket_driver_controls: list[Control] = []
 
-        self.major_controls = {}
-        self.parent_controls = {}
-        self.corner_controls = {}
-        self.main_joints = {}
+        self.socket_follow_grp = self.create_socket_follow(default_mult=0.1)
 
-        self.sub_socket_control = []
-        self.socket_driver_controls = []
-        self.socket_splines = {}
-        self.socket_pins = {}
-
-        self.socket_follow_grp = self.create_socket_follow(
-            default_mult=0.5,
+        # Every upper/lower sub-control is a direct child of this group.
+        self.sub_socket_controls_grp = create_transform(
+            name=f"sub_socket_controls_{self.side}_grp",
+            parent=self.socket_follow_grp,
         )
 
-        # -------------------------------------------------
-        # Build guide curves
-        # -------------------------------------------------
-
+        # Seven-point guides are retained ONLY to place the four main drivers.
         curve_guides = {}
-
-        for side in ["upper", "lower"]:
-            curve_guides[side] = GuideCurve(
-                curve=self.guides[f"socket_{side}_curve"],
+        for vertical in ("upper", "lower"):
+            curve_guides[vertical] = GuideCurve(
+                curve=self.guides[f"socket_{vertical}_curve"],
                 resample_amount=7,
                 output_names=[
-                    f"{side}_inner_corner",
-                    f"{side}_inner_01",
-                    f"{side}_inner_02",
-                    f"{side}_mid",
-                    f"{side}_outer_02",
-                    f"{side}_outer_01",
-                    f"{side}_outer_corner",
+                    f"{vertical}_inner_corner",
+                    f"{vertical}_inner_01",
+                    f"{vertical}_inner_02",
+                    f"{vertical}_mid",
+                    f"{vertical}_outer_02",
+                    f"{vertical}_outer_01",
+                    f"{vertical}_outer_corner",
                 ],
                 ignore_handles=True,
                 align_normals=True,
                 mirror=self.side == "R",
             )
 
-        # -------------------------------------------------
-        # Shared corner controls
-        # -------------------------------------------------
-
-        for corner, index in [("inner", 0), ("outer", -1)]:
+        # Main drivers are independent of the sub-controls.
+        for corner, index in (("inner", 0), ("outer", -1)):
             guide = curve_guides["upper"].locator_list[index]
-
             control = create_control(
                 name=f"socket_{corner}_corner_{self.side}",
                 parent=self.socket_follow_grp,
@@ -456,139 +220,76 @@ class Socket:
                 control_shape="circle",
                 direction="z",
             )
-
             self.corner_controls[corner] = control
             self.socket_driver_controls.append(control)
 
-        # -------------------------------------------------
-        # Upper and lower driver controls
-        # -------------------------------------------------
-
-        for side in ["upper", "lower"]:
+        for vertical in ("upper", "lower"):
             control = create_control(
-                name=f"socket_{side}_{self.side}",
+                name=f"socket_{vertical}_{self.side}",
                 parent=self.socket_follow_grp,
-                transform=self.guides[f"socket_mid_{side}"],
+                transform=self.guides[f"socket_mid_{vertical}"],
                 size=self.control_size / 2,
                 control_shape="round_square",
                 direction="z",
                 dimensions=(1, 0.2, 0.2),
             )
-
-            self.parent_controls[f"{side}_ctrl"] = control
+            self.parent_controls[f"{vertical}_ctrl"] = control
             self.socket_driver_controls.append(control)
-
             cmds.addAttr(
                 control.transform,
                 longName="sub_socket",
                 proxy=f"{self.main_ctrl}.sub_socket",
             )
 
-        # -------------------------------------------------
-        # Build intermediate controls and joints
-        # -------------------------------------------------
+        # Build evenly spaced sub-controls and their separate skeleton joints.
+        for vertical in ("upper", "lower"):
+            curve = self.guides[f"socket_{vertical}_curve"]
+            joints: list[str] = []
 
-        for side in ["upper", "lower"]:
-            guides = curve_guides[side].locator_list
+            for index in range(self.divisions):
+                percent = index / (self.divisions - 1)
+                matrix = self.get_curve_point_matrix(
+                    curve=curve,
+                    parameter=percent,
+                    tangent_orient=True,
+                )
+                name = f"socket_{vertical}_{index:02d}_{self.side}"
 
-            jnt_list = []
-            spline_connections = []
-
-            for i, guide in enumerate(guides):
-                if i == 0:
-                    control = self.corner_controls["inner"]
-
-                elif i == len(guides) - 1:
-                    control = self.corner_controls["outer"]
-
-                else:
-                    control = create_control(
-                        name=f"{guide.name}_{self.side}",
-                        parent=self.parent_controls[f"{side}_ctrl"],
-                        transform=guide.name,
-                        size=self.control_size / 8,
-                        control_shape="circle",
-                        direction="z",
-                    )
-
-                    self.major_controls[f"{guide.name}_ctrl"] = control
-                    self.sub_socket_control.append(control)
-
-                    name = f"{guide.name}_{self.side}"
-
-                    # Independent transform driven by the spline.
-                    pin = create_transform(
-                        name=f"{name}_spline_pin",
-                        parent=self.component_grp,
-                        transform=guide.name,
-                    )
-
-                    self.socket_pins[name] = pin
-
-                    spline_connections.append((pin, control))
-
+                control = create_control(
+                    name=name,
+                    parent=self.sub_socket_controls_grp,
+                    transform=matrix,
+                    size=self.control_size / 8,
+                    control_shape="circle",
+                    direction="z",
+                )
                 joint = create_joint(
-                    name=f"{guide.name}_{self.side}",
+                    name=name,
                     transform=control.transform,
                     parent=self.joint_parent,
                 )
+                self.major_controls[f"{name}_ctrl"] = control
+                self.sub_socket_control.append(control)
+                self.sub_socket_controls[vertical].append(control)
+                joints.append(joint)
 
-                self.main_joints[f"{guide.name}_jnt"] = joint
-                jnt_list.append(joint)
+            # Preserve the old inner-corner joint name ONLY for the lead.
+            lead_name = f"{vertical}_inner_corner_{self.side}_jnt"
+            lead_joint = cmds.rename(joints[0], lead_name)
+            joints[0] = lead_joint
+            self.sub_socket_joints[vertical] = joints
 
-            # -------------------------------------------------
-            # Matrix spline
-            # -------------------------------------------------
-
-            driver_list = self.sort_transforms_center_out(
-                [
-                    self.corner_controls["inner"].transform,
-                    self.parent_controls[f"{side}_ctrl"].transform,
-                    self.corner_controls["outer"].transform,
-                ]
-            )
-
-            pinned_transforms = self.sort_transforms_center_out(
-                [pin for pin, control in spline_connections]
-            )
-
-            self.socket_splines[side] = matrix_spline_from_transforms(
-                name=f"socket_{side}_{self.side}",
-                pinned_transforms=pinned_transforms,
-                cv_transforms=driver_list,
-                parent=self.component_grp,
-                degree=2,
-                stretch=False,
-                align_tangent=False,
-                interpolate_rotation=False,
-                interpolate_scale=False,
-            )
-
-            for pin, control in spline_connections:
-                self.connect_socket_spline_follow(
-                    pin=pin,
-                    control=control,
-                )
-
-            # -------------------------------------------------
-            # Weight splitting
-            # -------------------------------------------------
+            for index, joint in enumerate(joints):
+                key = lead_name if index == 0 else f"socket_{vertical}_{index:02d}_{self.side}_jnt"
+                self.main_joints[key] = joint
 
             tag_for_weight_split(
-                influence=jnt_list[0],
-                split_influences=jnt_list,
+                influence=lead_joint,
+                split_influences=joints,
             )
-
-        # -------------------------------------------------
-        # Cleanup guides
-        # -------------------------------------------------
 
         for guide_curve in curve_guides.values():
             cmds.delete(guide_curve.group)
-
-        # -------------------------------------------------
-        # Sub-socket visibility
-        # -------------------------------------------------
 
         for control in self.sub_socket_control:
             cmds.connectAttr(
@@ -596,18 +297,13 @@ class Socket:
                 f"{control.transform}.visibility",
                 force=True,
             )
-
             cmds.addAttr(
                 control.transform,
                 longName="sub_socket",
                 proxy=f"{self.main_ctrl}.sub_socket",
             )
 
-        # -------------------------------------------------
-        # Selection set
-        # -------------------------------------------------
-
         self.sub_socket_set = cmds.sets(
-            [control.transform for control in self.sub_socket_control],  # type:ignore
+            [control.transform for control in self.sub_socket_control],
             name=f"socket_sub_{self.side}_set",
         )

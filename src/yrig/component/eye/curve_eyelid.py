@@ -93,7 +93,7 @@ class Eyelid:
 
         proxy_offset = create_transform(
             name=f"{transform}_ik_offset",
-            parent=self.ik_driver_grp,  # type:ignore
+            parent=self.ik_driver_grp,
             transform=sdk,
         )
 

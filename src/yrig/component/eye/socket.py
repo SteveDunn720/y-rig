@@ -1,3 +1,4 @@
+from yrig.spline.matrix_spline.core import MatrixSpline
 from maya import cmds
 from maya.api.OpenMaya import MFnNurbsCurve, MMatrix, MSelectionList, MSpace, MVector
 
@@ -5,6 +6,7 @@ from yrig.control import Control, create_control
 from yrig.joint import create_joint
 from yrig.skin.split.tag import tag_for_weight_split
 from yrig.transform import create_transform
+from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 
 from .guide_curve import GuideCurve
 
@@ -34,6 +36,89 @@ class Socket:
         self.control_grp = control_grp
         self.control_size = control_size
         self.divisions = divisions
+
+    def create_eyelid_driver_spline(
+        self,
+        name: str,
+        curve: str,
+        inner_corner: str,
+        middle_control: str,
+        outer_corner: str,
+        sub_controls: list[str],
+        parent: str = "setup",
+    ) -> MatrixSpline:
+        """
+        Build an eyelid matrix spline using five CV drivers.
+
+        CV order:
+            inner corner
+            20% driver
+            middle control
+            80% driver
+            outer corner
+
+        The 20% and 80% drivers are parented under the middle
+        control while preserving their initial world positions.
+        """
+
+        drivers = []
+
+        for percent in (0.2, 0.8):
+            driver = create_transform(
+                name=f"{name}_{int(percent * 100)}_driver",
+                parent=middle_control,
+            )
+
+            # Evaluate position along the source curve.
+            shape = cmds.listRelatives(
+                curve,
+                shapes=True,
+                noIntermediate=True,
+                fullPath=True,
+            )[0]
+
+            min_u = cmds.getAttr(f"{shape}.minValue")
+            max_u = cmds.getAttr(f"{shape}.maxValue")
+
+            parameter = min_u + (max_u - min_u) * percent
+
+            position = cmds.pointOnCurve(
+                curve,
+                parameter=parameter,
+                position=True,
+            )
+
+            cmds.xform(
+                driver,
+                worldSpace=True,
+                translation=tuple(position),  # type:ignore
+            )
+
+            drivers.append(driver)
+
+        cv_transforms = [
+            inner_corner,
+            drivers[0],
+            middle_control,
+            drivers[1],
+            outer_corner,
+        ]
+
+        spline: MatrixSpline = matrix_spline_from_transforms(
+            name=f"{name}_spline",
+            cv_transforms=cv_transforms,
+            pinned_transforms=sub_controls,
+            parent=parent,
+            degree=3,
+            padded=False,
+            stretch=False,
+            arc_length=True,
+            align_tangent=True,
+            interpolate_rotation=True,
+            interpolate_scale=False,
+        )
+
+        return spline
 
     def get_curve_point_matrix(
         self,
@@ -307,3 +392,20 @@ class Socket:
             [control.transform for control in self.sub_socket_control],  # type:ignore
             name=f"socket_sub_{self.side}_set",
         )
+
+        # ---------------------------------------------------------
+        # Build upper and lower eyelid matrix splines
+        # ---------------------------------------------------------
+
+        self.socket_splines = {}
+
+        for vertical in ("upper", "lower"):
+            self.socket_splines[vertical] = self.create_eyelid_driver_spline(
+                name=f"socket_{vertical}_{self.side}",
+                curve=self.guides[f"socket_{vertical}_curve"],
+                inner_corner=self.corner_controls["inner"].transform,
+                middle_control=self.parent_controls[f"{vertical}_ctrl"].transform,
+                outer_corner=self.corner_controls["outer"].transform,
+                sub_controls=[control.transform for control in self.sub_socket_controls[vertical]],
+                parent="setup",
+            )

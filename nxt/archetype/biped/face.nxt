@@ -67,7 +67,8 @@
         },
         "/apply/deformation/main/psd/face": {
             "child_order": [
-                "eyes"
+                "eyes",
+                "mouth"
             ],
             "attrs": {
                 "psd_path": {
@@ -78,11 +79,16 @@
         "/apply/deformation/main/psd/face/eyes": {
             "instance": "/psd_import",
             "attrs": {
-                "psd_path": {
-                    "value": "${rig_path}/data/face/psd"
-                },
                 "psd_system": {
                     "value": "eyes"
+                }
+            }
+        },
+        "/apply/deformation/main/psd/face/mouth": {
+            "instance": "/psd_import",
+            "attrs": {
+                "psd_system": {
+                    "value": "mouth"
                 }
             }
         },
@@ -558,7 +564,8 @@
         "/tools_window/biped/face/psd": {
             "instance": "/panel",
             "child_order": [
-                "eye_psd_io"
+                "eye_psd_io",
+                "mouth_psd_io"
             ],
             "attrs": {
                 "blendshape": {
@@ -581,6 +588,23 @@
                 },
                 "system_name": {
                     "value": "Eye"
+                },
+                "text": {
+                    "value": "${title}"
+                }
+            }
+        },
+        "/tools_window/biped/face/psd/mouth_psd_io": {
+            "instance": "/psd_io",
+            "attrs": {
+                "psd_system": {
+                    "value": "mouth"
+                },
+                "relative_path_stem": {
+                    "value": "data/face/psd/mouth"
+                },
+                "system_name": {
+                    "value": "Mouth"
                 },
                 "text": {
                     "value": "${title}"

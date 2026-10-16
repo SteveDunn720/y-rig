@@ -26,6 +26,7 @@
             "/apply/deformation/main/psd/body_psd/eyes/shapes": true,
             "/apply/deformation/main/psd/eyes": true,
             "/apply/deformation/main/psd/face/eyes": true,
+            "/apply/deformation/main/psd/face/mouth": true,
             "/apply/deformation/main/psd/hands": true,
             "/apply/deformation/main/psd/legs": true,
             "/build/left": false,

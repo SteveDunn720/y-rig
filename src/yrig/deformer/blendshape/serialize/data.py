@@ -42,7 +42,7 @@ class BlendShapeTargetGroupData:
 
 @dataclass
 class BlendShapeTargetItemData:
-    components: list[int]
+    components: list[int | tuple[int, int]]
     points: list[tuple[float, float, float]]
 
 

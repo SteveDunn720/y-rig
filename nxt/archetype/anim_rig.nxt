@@ -251,7 +251,8 @@
             },
             "code": [
                 "controls = cmds.sets(\"${control_set}\", query=True) or []",
-                "cmds.dagPose(controls, name=\"${rest_pose}\", addToPose=True)"
+                "if controls:",
+                "    cmds.dagPose(controls, name=\"${rest_pose}\", addToPose=True)"
             ]
         },
         "/apply/visibility_sets": {
@@ -318,11 +319,25 @@
         "/finalize": {
             "execute_in": "/apply",
             "child_order": [
+                "delete_guides",
                 "hide_joints",
                 "model_override",
                 "skin_tools_data",
                 "metadata",
                 "lock_attrs"
+            ]
+        },
+        "/finalize/delete_guides": {
+            "attrs": {
+                "guides_group": {
+                    "type": "raw",
+                    "value": "${/setup/root/guides.guides_group}"
+                }
+            },
+            "code": [
+                "guides_group = \"${guides_group}\"",
+                "if cmds.objExists(guides_group):",
+                "    cmds.delete(guides_group)"
             ]
         },
         "/finalize/hide_joints": {
@@ -797,9 +812,19 @@
             "attrs": {
                 "guides_filepath": {
                     "type": "raw",
-                    "value": "${file::${rig_path}/data/guides.mb}"
+                    "value": "${file::${rig_path}/data/guides.ma}"
+                },
+                "guides_group": {
+                    "type": "raw",
+                    "value": "guides"
                 }
-            }
+            },
+            "code": [
+                "guides_filepath_str = \"${guides_filepath}\"",
+                "if guides_filepath_str:",
+                "    guides_filepath = Path(guides_filepath_str)",
+                "    yrig.io.import_maya_file(guides_filepath)"
+            ]
         },
         "/setup/root/model": {
             "child_order": [

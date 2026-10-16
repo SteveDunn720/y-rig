@@ -6,12 +6,19 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from maya.api.OpenMaya import (
+    MDagPath,
+    MFnComponent,
+    MFnComponentListData,
+    MFnDoubleIndexedComponent,
+    MObject,
+    MPlug,
     MPoint,
     MPointArray,
 )
 
 from yrig.maya_api.node import BlendShapeNode
-from yrig.maya_api.utils import get_plug, set_component_list_indices, set_point_array
+from yrig.maya_api.utils import get_dag_path, get_plug, set_point_array
+from yrig.shape import get_component_mfn_and_type_of_shape
 
 from .data import (
     BlendShapeData,
@@ -55,6 +62,21 @@ def preserve_all_target_directories(blendshape: BlendShapeNode) -> Generator[Non
             blendshape.target_directory[index].child_indices.set(child_indices)
 
 
+def set_component_list_indices(
+    plug: MPlug,
+    mfn_component_type: type[MFnComponent],
+    component_type: int,
+    indices: list[int | tuple[int, int]],
+) -> None:
+    fn_data: MFnComponentListData = MFnComponentListData()
+    data_mob: MObject = fn_data.create()
+    fn_comp = mfn_component_type()
+    comp_mob: MObject = fn_comp.create(component_type)
+    fn_comp.addElements(indices)
+    fn_data.add(comp_mob)
+    plug.setMObject(data_mob)
+
+
 def add_target_group(
     blendshape: BlendShapeNode,
     data: BlendShapeTargetGroupData,
@@ -66,8 +88,15 @@ def add_target_group(
 
     parent_directory = blendshape.target_directory[parent_directory_index]
     original_child_indices = parent_directory.child_indices.get()
+    input_geometry_attr = blendshape.input[input_target_index].input_geometry.get_input()
+    if input_geometry_attr is None:
+        raise RuntimeError(f"{input_geometry_attr} had no input geometry.")
+    input_geometry_node = str(input_geometry_attr).split(".", 1)[0]
+    input_geometry = get_dag_path(input_geometry_node)
     with preserve_all_target_directories(blendshape):
-        apply_blendshape_target_group_data(blendshape, data, input_target_index, target_group_index)
+        apply_blendshape_target_group_data(
+            blendshape, data, input_geometry, input_target_index, target_group_index
+        )
     parent_directory.child_indices.set([*original_child_indices, target_group_index])
     return target_group_index
 
@@ -160,6 +189,7 @@ def apply_directory_children(
 
 def apply_blendshape_target_item_data(
     data: BlendShapeTargetItemData,
+    input_geometry: MDagPath,
     target_item: BlendShapeInputTargetItemAttribute,
 ) -> None:
 
@@ -171,24 +201,32 @@ def apply_blendshape_target_item_data(
         point_array[index] = MPoint(*point)
     set_point_array(points_plug, point_array)
 
+    component_mfn, component_type = get_component_mfn_and_type_of_shape(input_geometry)
     component_plug = get_plug(target_item.input_components_target)
-    components_to_apply = data.components or [0]  # Maya crashes if there are NO components
-    set_component_list_indices(component_plug, components_to_apply)
+    # Maya crashes if there are NO components
+    components_to_apply: list[int | tuple[int, int]] = data.components or (
+        [(0, 0)] if component_mfn is MFnDoubleIndexedComponent else [0]
+    )
+    set_component_list_indices(component_plug, component_mfn, component_type, components_to_apply)
 
 
 def apply_blendshape_target_items_dict(
     data: dict[int, BlendShapeTargetItemData],
+    input_geometry: MDagPath,
     target_group: BlendShapeInputTargetGroupAttribute,
 ) -> None:
     for index, target_item in data.items():
         apply_blendshape_target_item_data(
-            data=target_item, target_item=target_group.input_target_item[index]
+            data=target_item,
+            input_geometry=input_geometry,
+            target_item=target_group.input_target_item[index],
         )
 
 
 def apply_blendshape_target_group_data(
     blendshape: BlendShapeNode,
     data: BlendShapeTargetGroupData,
+    input_geometry: MDagPath,
     input_target_index: int,
     target_group_index: int,
 ) -> None:
@@ -199,7 +237,7 @@ def apply_blendshape_target_group_data(
         target_group_index
     ]
     target_group.post_deformers_mode.set(data.mode)
-    apply_blendshape_target_items_dict(data.items, target_group)
+    apply_blendshape_target_items_dict(data.items, input_geometry, target_group)
 
 
 def get_parent_directory_index_from_name(

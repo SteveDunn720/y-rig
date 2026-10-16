@@ -55,6 +55,173 @@ class Eyelid:
     # Helper Functions
     # -------------------
 
+    def connect_major_controls(self) -> None:
+        """Connect real major controls to their fake drivers."""
+
+        for name, control in self.expression_major_controls.items():
+            fake_driver = self.expression_major_drivers[name]
+
+            cmds.connectAttr(
+                f"{control.transform}.translate",
+                f"{fake_driver}.translate",
+                force=True,
+            )
+
+            cmds.connectAttr(
+                f"{control.transform}.rotate",
+                f"{fake_driver}.rotate",
+                force=True,
+            )
+
+    def smooth_macro_curve_weights(self) -> None:
+        """Smooth upper and lower macro curve skin weights."""
+
+        for vertical in ("upper", "lower"):
+            self.smooth_curve_weights(
+                curve=self.blink_curves[vertical],
+                iterations=5,
+                strength=0.5,
+                preserve_ends=True,
+            )
+
+    def smooth_curve_weights(
+        self,
+        curve: str,
+        iterations: int = 5,
+        strength: float = 0.5,
+        preserve_ends: bool = True,
+    ) -> None:
+        """Smooth skin weights along a NURBS curve."""
+
+        strength = max(0.0, min(1.0, strength))
+
+        history = cmds.listHistory(curve) or []
+        skins = cmds.ls(history, type="skinCluster")  # type:ignore
+
+        if not skins:
+            raise ValueError(f"No skinCluster found on {curve}")
+
+        skin = skins[0]
+
+        influences = cmds.skinCluster(
+            skin,
+            query=True,
+            influence=True,
+        )
+
+        cvs = cmds.ls(
+            f"{curve}.cv[*]",
+            flatten=True,
+        )
+
+        if not cvs:
+            raise ValueError(f"No CVs found on {curve}")
+
+        for _ in range(iterations):
+            weights = [
+                [
+                    cmds.skinPercent(
+                        skin,
+                        cv,
+                        query=True,
+                        transform=joint,
+                    )
+                    for joint in influences  # type:ignore
+                ]
+                for cv in cvs
+            ]
+
+            for i, cv in enumerate(cvs):
+                if preserve_ends and i in (0, len(cvs) - 1):
+                    continue
+
+                neighbors = [weights[j] for j in (i - 1, i + 1) if 0 <= j < len(cvs)]
+
+                if not neighbors:
+                    continue
+
+                new_weights = []
+
+                for j, weight in enumerate(weights[i]):
+                    average = sum(neighbor[j] for neighbor in neighbors) / len(neighbors)  # type:ignore
+
+                    smoothed = weight * (1.0 - strength) + average * strength  # type:ignore
+
+                    new_weights.append(smoothed)
+
+                cmds.skinPercent(
+                    skin,
+                    cv,
+                    transformValue=list(zip(influences, new_weights)),  # type:ignore
+                    normalize=True,
+                )
+
+    def build_macro_joints(self) -> None:
+        """Create a driven joint for every upper/lower macro control."""
+
+        self.macro_joints = {
+            "upper": [],
+            "lower": [],
+        }
+
+        for vertical in ("upper", "lower"):
+            controls = self.expression_macro_controls[vertical]
+            fake_drivers = self.expression_macro_drivers[vertical]
+
+            for index, (control, fake_driver) in enumerate(
+                zip(controls, fake_drivers, strict=True)
+            ):
+                # ---------------------------------------------
+                # Real control drives fake control
+                # ---------------------------------------------
+
+                cmds.connectAttr(
+                    f"{control.transform}.translate",
+                    f"{fake_driver}.translate",
+                    force=True,
+                )
+
+                cmds.connectAttr(
+                    f"{control.transform}.rotate",
+                    f"{fake_driver}.rotate",
+                    force=True,
+                )
+
+                # ---------------------------------------------
+                # Fake control drives macro joint
+                # ---------------------------------------------
+
+                joint = create_joint(
+                    name=f"eyelid_{vertical}_macro_{index:02d}_{self.side}",
+                    parent=self.joint_parent,
+                    transform=fake_driver,
+                    connect=True,
+                )
+
+                self.macro_joints[vertical].append(joint)
+
+    def skin_macro_curves(self) -> None:
+        """Skin each eyelid curve to its five macro joints."""
+
+        self.macro_skin_clusters = {}
+
+        for vertical in ("upper", "lower"):
+            curve = self.blink_curves[vertical]
+            joints = self.macro_joints[vertical]
+
+            skin = cmds.skinCluster(
+                *joints,
+                curve,
+                toSelectedBones=True,
+                bindMethod=0,
+                skinMethod=0,
+                normalizeWeights=1,
+                maximumInfluences=5,
+                name=f"{vertical}_macro_{self.side}_skin",
+            )[0]  # type:ignore
+
+            self.macro_skin_clusters[vertical] = skin
+
     def create_expression_control_pair(
         self,
         name: str,
@@ -81,7 +248,7 @@ class Eyelid:
             parent=control_parent,
             transform=matrix,
             size=size,
-            control_shape="circle",
+            control_shape="hexagon",
             direction="z",
         )
 
@@ -128,10 +295,13 @@ class Eyelid:
         # Setup groups
         # ---------------------------------------------------------
 
-        self.expression_control_grp = create_transform(
-            name=f"expression_controls_{self.side}_grp",
-            parent=self.main_ctrl,
-        )
+        self.expression_control_grps = {}
+
+        for vertical in ("upper", "lower"):
+            self.expression_control_grps[vertical] = create_transform(
+                name=f"eyelid_{vertical}_expression_controls_{self.side}_grp",
+                parent=self.blink_controls[vertical].transform,
+            )
 
         self.expression_driver_grp = create_transform(
             name=f"expression_drivers_{self.side}_grp",
@@ -171,9 +341,9 @@ class Eyelid:
             )
 
             control, driver = self.create_expression_control_pair(
-                name=f"{corner}_{self.side}",
+                name=f"eyelid_{corner}_{self.side}",
                 matrix=matrix,
-                control_parent=self.expression_control_grp,
+                control_parent=self.expression_control_grps[vertical],
                 fake_parent=self.expression_driver_grp,
                 size=self.control_size * 0.2,
             )
@@ -196,9 +366,9 @@ class Eyelid:
             )
 
             control, driver = self.create_expression_control_pair(
-                name=f"{vertical}_mid_{self.side}",
+                name=f"eyelid_{vertical}_mid_{self.side}",
                 matrix=matrix,
-                control_parent=self.expression_control_grp,
+                control_parent=self.expression_control_grps[vertical],
                 fake_parent=self.expression_driver_grp,
                 size=self.control_size * 0.25,
             )
@@ -252,7 +422,7 @@ class Eyelid:
                 # ---------------------------------------------
 
                 control, driver = self.create_expression_control_pair(
-                    name=f"{vertical}_macro_{index:02d}_{self.side}",
+                    name=f"eyelid_{vertical}_macro_{index:02d}_{self.side}",
                     matrix=matrix,
                     control_parent=major_control.transform,
                     fake_parent=major_driver,
@@ -1630,8 +1800,8 @@ class Eyelid:
             transform=self.guides["center_piv"],
         )
         self.sub_grp = create_transform(
-            name=f"sub_controls_{self.side}",
-            parent=self.main_ctrl,
+            name=f"sub_eyelid_controls_{self.side}",
+            parent=self.look_offset,
             transform=self.guides["center_piv"],
         )
 
@@ -1721,3 +1891,8 @@ class Eyelid:
 
         # Build expression control hierarchies.
         self.build_expression_controls()
+
+        self.build_macro_joints()
+        self.skin_macro_curves()
+        self.smooth_macro_curve_weights()
+        self.connect_major_controls()

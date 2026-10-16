@@ -1,3 +1,4 @@
+from yrig.maya_api.node import SumNode
 import math
 
 from maya import cmds
@@ -55,23 +56,115 @@ class Eyelid:
     # Helper Functions
     # -------------------
 
+    def setup_sub_eyelid_visibility(self) -> None:
+        """Control sub-eyelid visibility from the main eye control."""
+
+        main_ctrl = self.main_ctrl
+
+        # Main visibility attributes
+        cmds.addAttr(
+            main_ctrl,
+            longName="eyelid_controls",
+            attributeType="enum",
+            enumName="-------------",
+            keyable=True,
+        )
+
+        cmds.addAttr(
+            main_ctrl,
+            longName="sub_eyelid_vis",
+            attributeType="bool",
+            defaultValue=False,
+            keyable=True,
+        )
+
+        visibility_attr = f"{main_ctrl}.sub_eyelid_vis"
+
+        # Proxy attribute on blink controls
+        for control in self.blink_controls.values():
+            cmds.addAttr(
+                control.transform,
+                longName="sub_eyelid",
+                proxy=visibility_attr,
+            )
+
+        # Sub-eyelid control visibility
+        for vertical in ("upper", "lower"):
+            for control in self.sub_eyelid_controls[vertical]:
+                cmds.connectAttr(
+                    visibility_attr,
+                    f"{control.transform}.visibility",
+                    force=True,
+                )
+
+                cmds.addAttr(
+                    control.transform,
+                    longName="sub_eyelid",
+                    proxy=visibility_attr,
+                )
+
     def connect_major_controls(self) -> None:
-        """Connect real major controls to their fake drivers."""
+        """Connect real major controls to fake drivers.
+
+        Mid controls receive additive blink translation X and rotation Z.
+        Other channels connect directly.
+        """
 
         for name, control in self.expression_major_controls.items():
             fake_driver = self.expression_major_drivers[name]
 
-            cmds.connectAttr(
-                f"{control.transform}.translate",
-                f"{fake_driver}.translate",
-                force=True,
-            )
+            # ---------------------------------------------------------
+            # Direct connections for all channels
+            # ---------------------------------------------------------
 
-            cmds.connectAttr(
-                f"{control.transform}.rotate",
-                f"{fake_driver}.rotate",
-                force=True,
-            )
+            for axis in "XYZ":
+                cmds.connectAttr(
+                    f"{control.transform}.translate{axis}",
+                    f"{fake_driver}.translate{axis}",
+                    force=True,
+                )
+
+                cmds.connectAttr(
+                    f"{control.transform}.rotate{axis}",
+                    f"{fake_driver}.rotate{axis}",
+                    force=True,
+                )
+
+            # ---------------------------------------------------------
+            # Additive behavior for upper/lower midpoint
+            # ---------------------------------------------------------
+
+            if name not in ("upper_mid", "lower_mid"):
+                continue
+
+            vertical = name.split("_")[0]
+            blink_control = self.blink_controls[vertical].transform
+
+            for attribute in ("translateX", "rotateZ"):
+                sum_node = SumNode.create(
+                    name=f"eyelid_{name}_{attribute}_{self.side}_SUM",
+                )
+
+                sum_node.input[0].connect_from(f"{control.transform}.{attribute}")
+                sum_node.input[1].connect_from(f"{blink_control}.{attribute}")
+
+                destination = f"{fake_driver}.{attribute}"
+
+                # Disconnect any existing incoming connection.
+                existing = (
+                    cmds.listConnections(
+                        destination,
+                        source=True,
+                        destination=False,
+                        plugs=True,
+                    )
+                    or []
+                )
+
+                for source in existing:
+                    cmds.disconnectAttr(source, destination)
+
+                sum_node.output.connect_to(destination)
 
     def smooth_macro_curve_weights(self) -> None:
         """Smooth upper and lower macro curve skin weights."""
@@ -1896,3 +1989,4 @@ class Eyelid:
         self.skin_macro_curves()
         self.smooth_macro_curve_weights()
         self.connect_major_controls()
+        self.setup_sub_eyelid_visibility()

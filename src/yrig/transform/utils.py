@@ -50,11 +50,10 @@ def create_transform(
     Returns:
         The created transform name.
     """
-    created_transform: str
     if parent:
-        created_transform = cmds.group(empty=True, name=name, parent=parent)
+        created_transform = cmds.createNode("transform", name=name, parent=parent, skipSelect=True)
     else:
-        created_transform = cmds.group(empty=True, name=name, world=True)
+        created_transform = cmds.createNode("transform", name=name, skipSelect=True)
     if transform is None:
         pass
     elif isinstance(transform, str):

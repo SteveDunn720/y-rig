@@ -56,10 +56,12 @@ def create_joint(
     radius: float = 1,
     add_to_set: bool = True,
 ) -> str:
-    joint = cmds.createNode("joint", name=f"{name}{JOINT_SUFFIX}")
-
     if parent is not None:
-        cmds.parent(joint, parent, relative=True)
+        joint = cmds.createNode(
+            "joint", name=f"{name}{JOINT_SUFFIX}", skipSelect=True, parent=parent
+        )
+    else:
+        joint = cmds.createNode("joint", name=f"{name}{JOINT_SUFFIX}", skipSelect=True)
     source_transform: str | None = None
     if transform is None:
         pass

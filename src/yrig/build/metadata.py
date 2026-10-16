@@ -16,7 +16,7 @@ def git_commit(path: Path) -> str | None:
 
     try:
         result = subprocess.run(
-            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            ["git", "-c", "safe.directory=*", "-C", str(path), "rev-parse", "HEAD"],
             check=True,
             capture_output=True,
             text=True,

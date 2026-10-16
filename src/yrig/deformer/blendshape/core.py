@@ -7,6 +7,7 @@ from maya.api.OpenMaya import (
     MSelectionList,
 )
 
+from yrig.maya_api.node import BlendShapeNode
 from yrig.select import maintain_selection
 
 
@@ -138,69 +139,6 @@ def get_name_to_target_index_map(blendshape: str) -> dict[str, int]:
     }
 
 
-def build_blendshape_networks(blendshape: str) -> dict[str, str]:
-    """
-    Creates one network node per blendshape type and connects
-    custom attributes to the corresponding blendshape targets.
-
-    Example:
-        mouth_l_up_07
-            -> mouth_l_nw.up_07
-
-        mouth_l_up_07_out_10
-            -> mouth_l_nw.up_07_out_10
-    """
-    network_nodes: dict[str, str] = {}
-
-    for alias, attr in get_blendshape_targets(blendshape).items():
-        parts = alias.split("_")
-
-        if len(parts) < 3:
-            cmds.warning(f"Invalid blendshape name: {alias}")
-            continue
-
-        target_type = "_".join(parts[:2])
-        target_name = "_".join(parts[2:])
-
-        network_name = f"{target_type}_nw"
-
-        if target_type not in network_nodes:
-            if cmds.objExists(network_name):
-                network_node = network_name
-            else:
-                network_node = cmds.createNode(
-                    "network",
-                    name=network_name,
-                )
-
-            network_nodes[target_type] = network_node
-
-        network_node = network_nodes[target_type]
-
-        if not cmds.attributeQuery(
-            target_name,
-            node=network_node,
-            exists=True,
-        ):
-            cmds.addAttr(
-                network_node,
-                longName=target_name,
-                attributeType="double",
-                defaultValue=0.0,
-                minValue=0.0,
-                maxValue=1.0,
-                keyable=True,
-            )
-
-        cmds.connectAttr(
-            f"{network_node}.{target_name}",
-            f"{blendshape}.{attr}",
-            force=True,
-        )
-
-    return network_nodes
-
-
 def get_target_weights(
     blendshape: str, target: str | int, input_index: int = 0
 ) -> dict[int, float]:
@@ -286,3 +224,36 @@ def connect_target_deltas(source_target_attr: str, driven_target_attr: str) -> N
                 f"{source_target_item_attr}[{index}].{attr}",
                 f"{driven_target_item_attr}[{index}].{attr}",
             )
+
+
+def connect_to_psd_network(
+    blendshape: str | BlendShapeNode, psd_network: str, create_missing: bool = True
+) -> tuple[str, list[str]]:
+    blendshape_node = (
+        blendshape
+        if isinstance(blendshape, BlendShapeNode)
+        else BlendShapeNode.from_existing(blendshape)
+    )
+    if cmds.objExists(psd_network):
+        resolved_psd_network = psd_network
+    else:
+        if create_missing:
+            resolved_psd_network = cmds.createNode("network", name=psd_network)
+            cmds.setAttr(f"{resolved_psd_network}.isHistoricallyInteresting", False)  # type: ignore
+        else:
+            raise RuntimeError(f"Couldn't find the node {psd_network}")
+    connected: list[str] = []
+    for weight_attr in blendshape_node.weight:
+        alias = weight_attr.get_alias()
+        if alias is not None:
+            input = weight_attr.get_input()
+            if not input:
+                network_alias_attr = f"{resolved_psd_network}.{alias}"
+                if not cmds.objExists(network_alias_attr):
+                    if create_missing:
+                        cmds.addAttr(resolved_psd_network, longName=alias, attributeType="float")
+                    else:
+                        continue
+                weight_attr.connect_from(network_alias_attr)
+                connected.append(network_alias_attr)
+    return resolved_psd_network, connected

@@ -16,7 +16,7 @@
     ],
     "meta_data": {
         "positions": {
-            "/eyes_psd": [
+            "/eyes": [
                 400,
                 20
             ]
@@ -65,14 +65,30 @@
         "/apply/deformation/face/skin/split": {
             "instance": "/split_skin_weights"
         },
-        "/apply/deformation/main/psd/body_psd/eyes": {
-            "instance": "/psd_import",
+        "/apply/deformation/main/psd/face": {
+            "child_order": [
+                "eyes",
+                "mouth"
+            ],
             "attrs": {
-                "psd_filename": {
-                    "value": "eyes"
-                },
                 "psd_path": {
                     "value": "${rig_path}/data/face/psd"
+                }
+            }
+        },
+        "/apply/deformation/main/psd/face/eyes": {
+            "instance": "/psd_import",
+            "attrs": {
+                "psd_system": {
+                    "value": "eyes"
+                }
+            }
+        },
+        "/apply/deformation/main/psd/face/mouth": {
+            "instance": "/psd_import",
+            "attrs": {
+                "psd_system": {
+                    "value": "mouth"
                 }
             }
         },
@@ -548,12 +564,13 @@
         "/tools_window/biped/face/psd": {
             "instance": "/panel",
             "child_order": [
-                "eye_psd_io"
+                "eye_psd_io",
+                "mouth_psd_io"
             ],
             "attrs": {
                 "blendshape": {
                     "type": "raw",
-                    "value": "body_psd"
+                    "value": "${/apply/deformation/main/psd/body_psd.blendshape}"
                 },
                 "text": {
                     "value": "PSD"
@@ -563,7 +580,7 @@
         "/tools_window/biped/face/psd/eye_psd_io": {
             "instance": "/psd_io",
             "attrs": {
-                "psd_directory": {
+                "psd_system": {
                     "value": "eyes"
                 },
                 "relative_path_stem": {
@@ -571,6 +588,23 @@
                 },
                 "system_name": {
                     "value": "Eye"
+                },
+                "text": {
+                    "value": "${title}"
+                }
+            }
+        },
+        "/tools_window/biped/face/psd/mouth_psd_io": {
+            "instance": "/psd_io",
+            "attrs": {
+                "psd_system": {
+                    "value": "mouth"
+                },
+                "relative_path_stem": {
+                    "value": "data/face/psd/mouth"
+                },
+                "system_name": {
+                    "value": "Mouth"
                 },
                 "text": {
                     "value": "${title}"

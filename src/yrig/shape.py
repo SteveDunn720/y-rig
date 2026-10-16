@@ -4,6 +4,7 @@ from maya import cmds
 from maya.api.OpenMaya import (
     MDagPath,
     MFn,
+    MFnComponent,
     MFnDoubleIndexedComponent,
     MFnMesh,
     MFnNurbsCurve,
@@ -48,6 +49,19 @@ def get_shape(object: str) -> str | None:
         return shape
     else:
         return None
+
+
+def get_component_mfn_and_type_of_shape(shape_dag_path: MDagPath) -> tuple[type[MFnComponent], int]:
+    if shape_dag_path.hasFn(MFn.kMesh):
+        return MFnSingleIndexedComponent, MFn.kMeshVertComponent
+
+    if shape_dag_path.hasFn(MFn.kNurbsCurve):
+        return MFnSingleIndexedComponent, MFn.kCurveCVComponent
+
+    if shape_dag_path.hasFn(MFn.kNurbsSurface):
+        return MFnDoubleIndexedComponent, MFn.kSurfaceCVComponent
+    else:
+        raise TypeError(f"Unsupported shape type: {shape_dag_path.node().apiTypeStr}")
 
 
 def get_components_of_shape(shape_dag_path: MDagPath) -> MObject:

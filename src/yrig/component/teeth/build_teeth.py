@@ -158,6 +158,14 @@ class TeethSpline:
             bottom_joints = all_joints[5:]
             cmds.connectAttr(f"{twist_fix_md}.outputX", f"{bottom_joints[0]}.rotateZ")
 
+        if "top" in guide:
+            twist_fix_top_md = cmds.createNode("multiplyDivide", name="twist_fix__top_md")
+            cmds.setAttr(f"{twist_fix_top_md}.input2X", 1)  # type: ignore
+            cmds.connectAttr("face_muppet_M_ctl" + ".rotateX", f"{twist_fix_top_md}.input1X")
+
+            top_joint = all_joints[:5]
+            cmds.connectAttr(f"{twist_fix_top_md}.outputX", f"{top_joint[0]}.rotateZ")
+
     def build_teeth(self) -> list[str]:
         all_joints = []
 

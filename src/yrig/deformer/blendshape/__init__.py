@@ -6,9 +6,16 @@ from .core import (
     import_maya_shape_file,
     set_target_weights,
 )
-from .serialize import export_blendshape, get_blendshape_data, import_blendshape
+from .serialize import (
+    batch_export_blendshapes,
+    export_blendshape,
+    get_blendshape_data,
+    import_blendshape,
+    import_blendshapes_from_directories,
+)
 
 __all__ = [
+    "batch_export_blendshapes",
     "core",
     "create_blendshape",
     "export_blendshape",
@@ -16,6 +23,7 @@ __all__ = [
     "get_blendshape_data",
     "get_target_weights",
     "import_blendshape",
+    "import_blendshapes_from_directories",
     "import_maya_shape_file",
     "set_target_weights",
 ]

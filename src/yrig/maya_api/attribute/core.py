@@ -137,8 +137,8 @@ class Attribute(Generic[T]):
         """Control whether this attribute is displayed in the channel box."""
         cmds.setAttr(self.attr_path, channelBox=enabled)
 
-    def get_alias(self) -> str:
-        return cmds.aliasAttr(self.attr_path, query=True)  # type: ignore
+    def get_alias(self) -> str | None:
+        return cmds.aliasAttr(self.attr_path, query=True) or None  # type: ignore
 
     def set_alias(self, alias: str) -> None:
         cmds.aliasAttr(alias, self.attr_path)

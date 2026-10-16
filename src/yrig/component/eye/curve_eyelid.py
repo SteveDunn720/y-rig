@@ -286,7 +286,7 @@ class Eyelid:
 
                 joint = create_joint(
                     name=f"eyelid_{vertical}_macro_{index:02d}_{self.side}",
-                    parent=self.joint_parent,
+                    parent=self.expression_driver_grp,
                     transform=fake_driver,
                     connect=True,
                 )

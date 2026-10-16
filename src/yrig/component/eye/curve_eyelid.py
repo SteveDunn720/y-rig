@@ -95,10 +95,6 @@ class Eyelid:
             raise RuntimeError("Upper and lower eyelids must have matching IK pin counts.")
 
         for index, (upper, lower) in enumerate(zip(upper_items, lower_items, strict=True)):
-            # Keep the corners fixed.
-            if index in (0, len(upper_items) - 1):
-                continue
-
             self.create_eyelid_collision_pair(
                 upper_pin=upper["pin"],
                 lower_pin=lower["pin"],

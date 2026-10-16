@@ -171,7 +171,7 @@ class Eyelid:
 
         for vertical in ("upper", "lower"):
             self.smooth_curve_weights(
-                curve=self.blink_curves[vertical],
+                curve=self.expression_rest_curves[vertical],
                 iterations=5,
                 strength=0.5,
                 preserve_ends=True,
@@ -299,7 +299,7 @@ class Eyelid:
         self.macro_skin_clusters = {}
 
         for vertical in ("upper", "lower"):
-            curve = self.blink_curves[vertical]
+            curve = self.expression_rest_curves[vertical]
             joints = self.macro_joints[vertical]
 
             skin = cmds.skinCluster(
@@ -1383,7 +1383,10 @@ class Eyelid:
             curve = self.blink_curves[vertical]
 
             # Use duplicated targets, not original guides.
-            targets = [self.blink_guides[key] for key in config["targets"]]
+            targets = [
+                *[self.blink_guides[key] for key in config["targets"]],
+                self.expression_rest_curves[vertical],
+            ]
 
             # -----------------------------------------------------
             # Create blendShape
@@ -1400,6 +1403,13 @@ class Eyelid:
             cmds.setAttr(
                 f"{blendshape}.weight",
                 size=len(targets),
+            )
+
+            expression_index = len(targets) - 1
+
+            cmds.setAttr(
+                f"{blendshape}.weight[{expression_index}]",
+                1.0,  # type:ignore
             )
 
             # -----------------------------------------------------
@@ -1625,6 +1635,21 @@ class Eyelid:
         # ----------------------------------------
         # Hide shared setup hierarchy
         # ----------------------------------------
+
+        self.expression_rest_curves = {}
+
+        for vertical in ("upper", "lower"):
+            rest_key = f"eyelid_{vertical}_rest"
+
+            curve = cmds.duplicate(
+                self.blink_guides[rest_key],
+                name=f"{vertical}_expression_rest_{self.side}",
+                returnRootsOnly=True,
+            )[0]
+
+            cmds.parent(curve, self.blink_setup_grp)
+
+            self.expression_rest_curves[vertical] = curve
 
         cmds.setAttr(
             f"{self.eyes_setup_grp}.visibility",

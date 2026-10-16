@@ -42,6 +42,8 @@ class Eye:
             "socket_lower_curve": f"socket_lower_curve_{self.side}",
             "socket_mid_upper": f"socket_upper_{self.side}",
             "socket_mid_lower": f"socket_lower_{self.side}",
+            "eyelid_upper_curve": f"eyelid_upper_curve_{self.side}",  # old eyelid curve names
+            "eyelid_lower_curve": f"eyelid_lower_curve_{self.side}",  # old eyelid curve names
             "eye_diam": f"eye_circ_{self.side}",
             "iris_diam": f"iris_circ_{self.side}",
             "pupil_diam": f"pupil_circ_{self.side}",

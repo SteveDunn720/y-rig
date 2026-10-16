@@ -1,4 +1,3 @@
-from yrig.maya_api.node import SumNode
 import math
 
 from maya import cmds
@@ -15,6 +14,7 @@ from maya.api.OpenMaya import (
 
 from yrig.control import Control, ControlShape, create_control
 from yrig.joint import create_joint
+from yrig.maya_api.node import SumNode
 from yrig.skin.split.tag import tag_for_weight_split
 from yrig.transform import create_transform
 

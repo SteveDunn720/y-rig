@@ -152,7 +152,7 @@ class Eyelid:
                 cmds.skinPercent(
                     skin,
                     cv,
-                    transformValue=list(zip(influences, new_weights)),  # type:ignore
+                    transformValue=list(zip(influences, new_weights, strict=True)),  # type:ignore
                     normalize=True,
                 )
 

@@ -56,6 +56,368 @@ class Eyelid:
     # Helper Functions
     # -------------------
 
+    def build_eyelid_collision(
+        self,
+        push: float = 0.5,
+    ) -> None:
+        """Build zero-gap collision between corresponding upper/lower IK pins.
+
+        Requires:
+            self.eyelid_ik["upper"]
+            self.eyelid_ik["lower"]
+
+        Each entry must contain:
+            "pin": curve-pinned transform
+            "collision": collision offset parented under the pin
+        """
+
+        # ---------------------------------------------------------
+        # Collision gap attribute
+        # ---------------------------------------------------------
+
+        if not cmds.attributeQuery(
+            "collisionGap",
+            node=self.main_ctrl,
+            exists=True,
+        ):
+            cmds.addAttr(
+                self.main_ctrl,
+                longName="collisionGap",
+                attributeType="double",
+                defaultValue=0.07,
+                keyable=True,
+            )
+
+        upper_items = self.eyelid_ik["upper"]
+        lower_items = self.eyelid_ik["lower"]
+
+        if len(upper_items) != len(lower_items):
+            raise RuntimeError("Upper and lower eyelids must have matching IK pin counts.")
+
+        for index, (upper, lower) in enumerate(zip(upper_items, lower_items, strict=True)):
+            # Keep the corners fixed.
+            if index in (0, len(upper_items) - 1):
+                continue
+
+            self.create_eyelid_collision_pair(
+                upper_pin=upper["pin"],
+                lower_pin=lower["pin"],
+                upper_collision=upper["collision"],
+                lower_collision=lower["collision"],
+                name=f"eyelid_collision_{index:02d}_{self.side}",
+                push=push,
+            )
+
+    def create_eyelid_collision_pair(
+        self,
+        upper_pin: str,
+        lower_pin: str,
+        upper_collision: str,
+        lower_collision: str,
+        name: str,
+        push: float = 0.5,
+    ) -> None:
+        """Blend upper/lower IK drivers to a shared midpoint when crossing.
+
+        Assumes upper_collision and lower_collision are independent
+        transforms, not children of their respective pins.
+        """
+
+        push = max(0.0, min(1.0, push))
+
+        # ---------------------------------------------------------
+        # 1. Create shared midpoint
+        # ---------------------------------------------------------
+
+        midpoint = cmds.createNode(
+            "transform",
+            name=f"{name}_midpoint",
+            parent=self.collision_grp,
+        )
+
+        midpoint_blend = cmds.createNode(
+            "blendMatrix",
+            name=f"{name}_midpoint_BM",
+        )
+
+        cmds.connectAttr(
+            f"{upper_pin}.worldMatrix[0]",
+            f"{midpoint_blend}.inputMatrix",
+        )
+
+        cmds.connectAttr(
+            f"{lower_pin}.worldMatrix[0]",
+            f"{midpoint_blend}.target[0].targetMatrix",
+        )
+
+        cmds.setAttr(
+            f"{midpoint_blend}.target[0].weight",
+            push,  # type:ignore
+        )
+
+        # Match the midpoint's parent space.
+        midpoint_mm = cmds.createNode(
+            "multMatrix",
+            name=f"{name}_midpoint_MM",
+        )
+
+        cmds.connectAttr(
+            f"{midpoint_blend}.outputMatrix",
+            f"{midpoint_mm}.matrixIn[0]",
+        )
+
+        cmds.connectAttr(
+            f"{self.collision_grp}.worldInverseMatrix[0]",
+            f"{midpoint_mm}.matrixIn[1]",
+        )
+
+        midpoint_dcm = cmds.createNode(
+            "decomposeMatrix",
+            name=f"{name}_midpoint_DCM",
+        )
+
+        cmds.connectAttr(
+            f"{midpoint_mm}.matrixSum",
+            f"{midpoint_dcm}.inputMatrix",
+        )
+
+        cmds.connectAttr(
+            f"{midpoint_dcm}.outputTranslate",
+            f"{midpoint}.translate",
+        )
+
+        cmds.connectAttr(
+            f"{midpoint_dcm}.outputRotate",
+            f"{midpoint}.rotate",
+        )
+
+        # ---------------------------------------------------------
+        # 2. Determine when upper/lower pins cross
+        # ---------------------------------------------------------
+
+        def get_local_y(pin: str, suffix: str) -> str:
+            mm = cmds.createNode(
+                "multMatrix",
+                name=f"{name}_{suffix}_compare_MM",
+            )
+
+            dcm = cmds.createNode(
+                "decomposeMatrix",
+                name=f"{name}_{suffix}_compare_DCM",
+            )
+
+            cmds.connectAttr(
+                f"{pin}.worldMatrix[0]",
+                f"{mm}.matrixIn[0]",
+            )
+
+            cmds.connectAttr(
+                f"{self.main_ctrl}.worldInverseMatrix[0]",
+                f"{mm}.matrixIn[1]",
+            )
+
+            cmds.connectAttr(
+                f"{mm}.matrixSum",
+                f"{dcm}.inputMatrix",
+            )
+
+            return f"{dcm}.outputTranslateY"
+
+        upper_y = get_local_y(upper_pin, "upper")
+        lower_y = get_local_y(lower_pin, "lower")
+
+        difference = cmds.createNode(
+            "plusMinusAverage",
+            name=f"{name}_difference_PMA",
+        )
+
+        cmds.setAttr(f"{difference}.operation", 2)  # type:ignore
+
+        cmds.connectAttr(
+            lower_y,
+            f"{difference}.input1D[0]",
+        )
+
+        cmds.connectAttr(
+            upper_y,
+            f"{difference}.input1D[1]",
+        )
+
+        # ---------------------------------------------------------
+        # Smooth collision activation
+        # ---------------------------------------------------------
+
+        soft_distance = self.control_size * 0.1
+
+        collision_remap = cmds.createNode(
+            "remapValue",
+            name=f"{name}_collision_RMV",
+        )
+
+        cmds.setAttr(
+            f"{collision_remap}.inputMin",
+            -soft_distance,  # type:ignore
+        )
+
+        cmds.setAttr(
+            f"{collision_remap}.inputMax",
+            0.0,  # type:ignore
+        )
+
+        cmds.setAttr(
+            f"{collision_remap}.outputMin",
+            0.0,  # type:ignore
+        )
+
+        cmds.setAttr(
+            f"{collision_remap}.outputMax",
+            1.0,  # type:ignore
+        )
+
+        cmds.connectAttr(
+            f"{difference}.output1D",
+            f"{collision_remap}.inputValue",
+        )
+
+        # Smooth interpolation
+        cmds.setAttr(
+            f"{collision_remap}.value[0].value_Interp",
+            3,  # type:ignore
+        )
+
+        cmds.setAttr(
+            f"{collision_remap}.value[1].value_Interp",
+            3,  # type:ignore
+        )
+
+        collision_weight = f"{collision_remap}.outValue"
+
+        # ---------------------------------------------------------
+        # 3. Blend each collision driver to the midpoint
+        # ---------------------------------------------------------
+
+        for pin, collision, suffix in (
+            (upper_pin, upper_collision, "upper"),
+            (lower_pin, lower_collision, "lower"),
+        ):
+            blend = cmds.createNode(
+                "blendMatrix",
+                name=f"{name}_{suffix}_collision_BM",
+            )
+
+            cmds.connectAttr(
+                f"{pin}.worldMatrix[0]",
+                f"{blend}.inputMatrix",
+            )
+
+            cmds.connectAttr(
+                f"{midpoint}.worldMatrix[0]",
+                f"{blend}.target[0].targetMatrix",
+            )
+
+            cmds.connectAttr(
+                collision_weight,
+                f"{blend}.target[0].weight",
+            )
+
+            parent = cmds.listRelatives(
+                collision,
+                parent=True,
+                fullPath=True,
+            )
+
+            mm = cmds.createNode(
+                "multMatrix",
+                name=f"{name}_{suffix}_local_MM",
+            )
+
+            cmds.connectAttr(
+                f"{blend}.outputMatrix",
+                f"{mm}.matrixIn[0]",
+            )
+
+            if parent:
+                cmds.connectAttr(
+                    f"{parent[0]}.worldInverseMatrix[0]",
+                    f"{mm}.matrixIn[1]",
+                )
+
+            dcm = cmds.createNode(
+                "decomposeMatrix",
+                name=f"{name}_{suffix}_local_DCM",
+            )
+
+            cmds.connectAttr(
+                f"{mm}.matrixSum",
+                f"{dcm}.inputMatrix",
+            )
+
+            # ---------------------------------------------------------
+            # Collision gap offset
+            # ---------------------------------------------------------
+
+            gap_mult = cmds.createNode(
+                "multiplyDivide",
+                name=f"{name}_{suffix}_gap_MD",
+            )
+
+            # Upper moves downward, lower moves upward.
+            direction = -0.5 if suffix == "upper" else 0.5
+
+            cmds.connectAttr(
+                f"{self.main_ctrl}.collisionGap",
+                f"{gap_mult}.input1X",
+            )
+
+            cmds.setAttr(
+                f"{gap_mult}.input2X",
+                direction,  # type:ignore
+            )
+
+            # Only apply the gap while collision is active.
+            gap_active = cmds.createNode(
+                "multiplyDivide",
+                name=f"{name}_{suffix}_gap_active_MD",
+            )
+
+            cmds.connectAttr(
+                f"{gap_mult}.outputX",
+                f"{gap_active}.input1X",
+            )
+
+            cmds.connectAttr(
+                collision_weight,
+                f"{gap_active}.input2X",
+            )
+
+            # Add the offset to the existing collision translation.
+            gap_sum = cmds.createNode(
+                "plusMinusAverage",
+                name=f"{name}_{suffix}_gap_PMA",
+            )
+
+            cmds.connectAttr(
+                f"{dcm}.outputTranslate",
+                f"{gap_sum}.input3D[0]",
+            )
+
+            cmds.connectAttr(
+                f"{gap_active}.outputX",
+                f"{gap_sum}.input3D[1].input3Dy",
+            )
+
+            cmds.connectAttr(
+                f"{gap_sum}.output3D",
+                f"{collision}.translate",
+                force=True,
+            )
+
+            cmds.connectAttr(
+                f"{dcm}.outputRotate",
+                f"{collision}.rotate",
+                force=True,
+            )
+
     def setup_sub_eyelid_visibility(self) -> None:
         """Control sub-eyelid visibility from the main eye control."""
 
@@ -956,6 +1318,11 @@ class Eyelid:
             parent=self.blink_setup_grp,
         )
 
+        self.collision_grp = create_transform(
+            name=f"eyelid_collision_{self.side}_grp",
+            parent=self.component_grp,
+        )
+
         self.eyelid_ik = {
             "upper": [],
             "lower": [],
@@ -1069,6 +1436,12 @@ class Eyelid:
                     parent=vertical_grp,
                 )
 
+                collision = create_transform(
+                    name=f"{name}_collision",
+                    parent=self.collision_grp,
+                    transform=pin,
+                )
+
                 cmds.xform(
                     pin,
                     worldSpace=True,
@@ -1086,7 +1459,7 @@ class Eyelid:
                 # ---------------------------------------------
 
                 cmds.pointConstraint(
-                    pin,
+                    collision,
                     ik.handle,
                     maintainOffset=False,
                 )
@@ -1121,6 +1494,7 @@ class Eyelid:
                         "ik": ik,
                         "pin": pin,
                         "parameter": percent,
+                        "collision": collision,
                     }
                 )
 
@@ -1900,7 +2274,7 @@ class Eyelid:
 
     def build(
         self,
-        sub_divisions: int = 7,
+        sub_divisions: int = 11,
     ) -> None:
         #######
         # Set up look follow
@@ -1958,6 +2332,10 @@ class Eyelid:
 
         self.build_eyelid_ik(
             sub_divisions=sub_divisions,
+        )
+
+        self.build_eyelid_collision(
+            push=0.5,
         )
 
         for vertical in ["upper", "lower"]:

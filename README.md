@@ -22,7 +22,7 @@ Make sure to run this BEFORE you build a rig with mGear if you're developing a c
 Shifter's reload component function will reload the components but won't update them to the ones in a new path if you change
 the MGEAR_SHIFTER_COMPONENT_PATH environment variable at runtime.
 
-```
+```py
 # Run to import yrig and its components
 import sys
 import os
@@ -41,7 +41,7 @@ os.environ["MGEAR_SHIFTER_COMPONENT_PATH"] = str(component_path)
 
 During development if you have made changes to the yrig library, you can re-import to test your changes immediately.
 
-```
+```py
 # Run to reload yrig during development
 import sys
 modules = [name for name in sys.modules.keys() if name.startswith("yrig")]
@@ -52,7 +52,7 @@ import yrig
 
 You can also open a debug port to set breakpoints and test yrig library code.
 
-```
+```py
 # Run to open debug port
 import os
 from pathlib import Path

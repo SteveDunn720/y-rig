@@ -11,6 +11,9 @@ This repository contains three main parts:
 The main aim being to expand on the feature set of an established rig build system (mGear),
 without needing the high maintanence burden of a fork.
 
+## Documentation
+Find the documentation for this project [here](https://michaelharmonart.github.io/yrig/docs/)
+
 ## Developing/Using y-rig
 
 After cloning this repo to a convenient place, run `git config --local core.hooksPath .githooks/` to set up the githooks, these will then install the needed dependencies.  

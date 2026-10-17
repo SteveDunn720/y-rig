@@ -6,8 +6,8 @@ from yrig.maya_api.node import BlendColorsNode, MultiplyDivideNode, SumNode
 from yrig.transform import create_transform
 from yrig.transform.constraint import matrix_constraint
 
+from .curve_eyelid import Eyelid
 from .eyeball import Eyeball
-from .eyelid import Eyelid
 from .socket import Socket
 
 
@@ -33,12 +33,17 @@ class Eye:
             "root_name": f"eye_root_{side}",
             "center_piv": f"eye_center_{self.side}",
             "aim": f"eye_aim_{self.side}",
-            "eyelid_upper_curve": f"eyelid_upper_curve_{self.side}",
-            "eyelid_lower_curve": f"eyelid_lower_curve_{self.side}",
+            "eyelid_upblink": f"eyelid_upblink_{self.side}",
+            "eyelid_upper_rest": f"eyelid_upper_rest_{self.side}",
+            "eyelid_blink": f"eyelid_blink_{self.side}",
+            "eyelid_lower_rest": f"eyelid_lower_rest_{self.side}",
+            "eyelid_downblink": f"eyelid_downblink_{self.side}",
             "socket_upper_curve": f"socket_upper_curve_{self.side}",
             "socket_lower_curve": f"socket_lower_curve_{self.side}",
             "socket_mid_upper": f"socket_upper_{self.side}",
             "socket_mid_lower": f"socket_lower_{self.side}",
+            "eyelid_upper_curve": f"eyelid_upper_curve_{self.side}",  # old eyelid curve names
+            "eyelid_lower_curve": f"eyelid_lower_curve_{self.side}",  # old eyelid curve names
             "eye_diam": f"eye_circ_{self.side}",
             "iris_diam": f"iris_circ_{self.side}",
             "pupil_diam": f"pupil_circ_{self.side}",
@@ -103,7 +108,16 @@ class Eye:
         self.create_controls()
         self.create_joints()
 
-        self.eyelid = Eyelid(
+        for vis_attr in ["sub_blink", "sub_eyelid", "sub_socket"]:
+            cmds.addAttr(
+                self.main_ctrl.transform,
+                longName=vis_attr,
+                attributeType="bool",
+                defaultValue=False,
+                keyable=True,
+            )
+
+        """self.eyelid = Eyelid(
             side=self.side,
             guides=self.guides,
             control_size=self.control_size,
@@ -114,7 +128,19 @@ class Eye:
             control_grp=self.control_grp,
         )
 
-        self.eyelid.build_blink()
+        self.eyelid.build_blink()"""
+
+        self.eyelid = Eyelid(
+            side=self.side,
+            guides=self.guides,
+            control_size=self.control_size,
+            main_ctrl=self.main_ctrl.transform,
+            parent=self.main_grp,
+            joint_parent=self.main_jnt,
+            component_grp=self.component_grp,
+            control_grp=self.control_grp,
+        )
+        self.eyelid.build()
 
         self.socket = Socket(
             side=self.side,

@@ -710,7 +710,8 @@
                 "model",
                 "guides",
                 "controls",
-                "deformation"
+                "deformation",
+                "logic"
             ],
             "attrs": {
                 "rig_root": {
@@ -824,6 +825,19 @@
                 "if guides_filepath_str:",
                 "    guides_filepath = Path(guides_filepath_str)",
                 "    yrig.io.import_maya_file(guides_filepath)"
+            ]
+        },
+        "/setup/root/logic": {
+            "attrs": {
+                "logic_group": {
+                    "type": "raw",
+                    "value": "logic"
+                }
+            },
+            "code": [
+                "if not cmds.objExists(\"${logic_group}\"):",
+                "    logic_group = yrig.transform.create_transform(\"${logic_group}\", parent=\"${rig_root}\")",
+                "    cmds.hide(logic_group)"
             ]
         },
         "/setup/root/model": {

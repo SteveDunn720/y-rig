@@ -12,7 +12,7 @@ The main aim being to expand on the feature set of an established rig build syst
 without needing the high maintanence burden of a fork.
 
 ## Documentation
-Find the documentation for this project [here](https://michaelharmonart.github.io/yrig/docs/)
+Find the documentation for this project [here](https://michaelharmonart.github.io/y-rig/docs/)
 
 ## Developing/Using y-rig
 

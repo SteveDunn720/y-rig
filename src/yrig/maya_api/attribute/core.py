@@ -454,14 +454,12 @@ class Vector2Attribute(Attribute[tuple[float, float]]):
 class Vector3Attribute(Attribute[tuple[float, float, float]]):
     """A Maya attribute with three values (XYZ)"""
 
-    def __init__(
-        self, attr_path: str, scalar_type: type[ScalarAttribute] = ScalarAttribute
-    ) -> None:
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-        self.x = scalar_type(f"{attr_path}X")
-        self.y = scalar_type(f"{attr_path}Y")
-        self.z = scalar_type(f"{attr_path}Z")
+        self.x = ScalarAttribute(f"{attr_path}X")
+        self.y = ScalarAttribute(f"{attr_path}Y")
+        self.z = ScalarAttribute(f"{attr_path}Z")
 
     def get(self) -> tuple[float, float, float]:
         """Get the value of this attribute."""
@@ -474,46 +472,16 @@ class Vector3Attribute(Attribute[tuple[float, float, float]]):
         cmds.setAttr(self.attr_path, *value)  # type: ignore
 
 
-class Double3Attribute(Vector3Attribute):
-    """A Maya double3 attribute."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path, DoubleAttribute)
-
-
-class Float3Attribute(Vector3Attribute):
-    """A Maya float3 attribute."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path, FloatAttribute)
-
-
 class Vector4Attribute(Attribute[tuple[float, float, float, float]]):
     """A Maya attribute of the type double4 (XYZW)"""
 
-    def __init__(
-        self, attr_path: str, scalar_type: type[ScalarAttribute] = ScalarAttribute
-    ) -> None:
+    def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-        self.x = scalar_type(f"{attr_path}X")
-        self.y = scalar_type(f"{attr_path}Y")
-        self.z = scalar_type(f"{attr_path}Z")
-        self.w = scalar_type(f"{attr_path}W")
-
-
-class Double4Attribute(Vector4Attribute):
-    """A Maya double4 attribute."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path, DoubleAttribute)
-
-
-class Float4Attribute(Vector4Attribute):
-    """A Maya float3 attribute."""
-
-    def __init__(self, attr_path: str) -> None:
-        super().__init__(attr_path, FloatAttribute)
+        self.x = ScalarAttribute(f"{attr_path}X")
+        self.y = ScalarAttribute(f"{attr_path}Y")
+        self.z = ScalarAttribute(f"{attr_path}Z")
+        self.w = ScalarAttribute(f"{attr_path}W")
 
 
 class QuatAttribute(Attribute[tuple[float, float, float, float]]):

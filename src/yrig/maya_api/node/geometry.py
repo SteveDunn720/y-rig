@@ -2,7 +2,6 @@ from yrig.maya_api.attribute import (
     ArrayAttribute,
     BooleanAttribute,
     ClosestPointOnSurfaceResultAttribute,
-    Double3Attribute,
     EnumAttribute,
     GeometryAttribute,
     MatrixAttribute,
@@ -105,7 +104,7 @@ class NearestPointOnCurveNode(Node):
     def _setup_attributes(self) -> None:
 
         self.input_curve = NurbsCurveAttribute(f"{self.name}.inputCurve")
-        self.in_position = Double3Attribute(f"{self.name}.inPosition")
+        self.in_position = Vector3Attribute(f"{self.name}.inPosition")
         self.result = NearestPointOnCurveResultAttribute(f"{self.name}.result")
 
 

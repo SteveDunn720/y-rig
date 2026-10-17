@@ -7,7 +7,6 @@ from yrig.maya_api.enum import (
 from .core import (
     Attribute,
     BooleanAttribute,
-    Double3Attribute,
     DoubleAttribute,
     EnumAttribute,
     MatrixAttribute,
@@ -58,7 +57,7 @@ class NearestPointOnCurveResultAttribute(Attribute):
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-        self.position = Double3Attribute(f"{attr_path}.position")
+        self.position = Vector3Attribute(f"{attr_path}.position")
         self.parameter = DoubleAttribute(f"{attr_path}.parameter")
 
 

@@ -1,6 +1,5 @@
 from maya import cmds
 
-from yrig.maya_api.attribute import Double3Attribute, DoubleAttribute
 from yrig.maya_api.enum import (
     AimMatrixAxisMode,
 )
@@ -8,6 +7,8 @@ from yrig.maya_api.enum import (
 from .core import (
     Attribute,
     BooleanAttribute,
+    Double3Attribute,
+    DoubleAttribute,
     EnumAttribute,
     MatrixAttribute,
     ScalarAttribute,

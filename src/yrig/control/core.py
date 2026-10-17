@@ -13,6 +13,7 @@ from yrig.build.mgear_api.control import add_ctl
 from yrig.color.convert import (
     byte_color_to_rgb,
     hex_to_byte_color,
+    linear_srgb_to_rec2020,
     srgb_to_linear_color,
 )
 from yrig.control.serialize import ControlShape, create_curve
@@ -189,7 +190,9 @@ def set_override_color(
     control: str | Control, color: tuple[float, float, float] | str, override_shapes: bool = False
 ) -> None:
     if isinstance(color, str):
-        resolved_color = srgb_to_linear_color(byte_color_to_rgb(hex_to_byte_color(color)))
+        resolved_color = linear_srgb_to_rec2020(
+            srgb_to_linear_color(byte_color_to_rgb(hex_to_byte_color(color)))
+        )
     else:
         resolved_color = color
     if override_shapes:

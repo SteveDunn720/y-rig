@@ -12,12 +12,13 @@ The main aim being to expand on the feature set of an established rig build syst
 without needing the high maintanence burden of a fork.
 
 ## Documentation
+
 Find the documentation for this project [here](https://michaelharmonart.github.io/y-rig/docs/)
 
 ## Developing/Using y-rig
 
 > [!WARNING]
-> You probably have important things to do, but before you touch this codebase, please read [this foundational document on the y-rig approach](https://michaelharmonart.github.io/y-rig/docs/development/getting-started/).
+> You probably have important things to do, but before you touch this codebase, please read [this foundational document on the y-rig approach](https://michaelharmonart.github.io/y-rig/docs/approach/).
 
 After cloning this repo to a convenient place, run `git config --local core.hooksPath .githooks/` to set up the githooks, these will then install the needed dependencies.  
 You'll also need to install mGear. See [mGear Website](https://mgear-framework.com/).

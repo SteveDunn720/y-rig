@@ -1,12 +1,16 @@
 ---
-weight: 100
-title: "Getting started developing with y-rig"
+weight: 10
+title: "Getting Started Developing with y-rig"
 description: ""
-icon: "article"
+icon: "terminal"
 date: "2026-10-17T16:50:59-06:00"
 lastmod: "2026-10-17T16:50:59-06:00"
 toc: true
 ---
+
+{{% alert context="warning" %}}
+You probably have important things to do, but before you touch this codebase, please read [this foundational document on the y-rig approach]({{< ref path="docs/approach.md" >}}).
+{{% /alert %}}
 
 After cloning the y-rig repo to a convenient place, run `git config --local core.hooksPath .githooks/` to set up the githooks,
 these will then install the needed dependencies and sync your working directory dependencies on every checkout.

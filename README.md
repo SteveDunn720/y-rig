@@ -16,6 +16,9 @@ Find the documentation for this project [here](https://michaelharmonart.github.i
 
 ## Developing/Using y-rig
 
+> [!WARNING]
+> You probably have important things to do, but before you touch this codebase, please read [this foundational document on the y-rig approach](https://michaelharmonart.github.io/y-rig/docs/development/getting-started/).
+
 After cloning this repo to a convenient place, run `git config --local core.hooksPath .githooks/` to set up the githooks, these will then install the needed dependencies.  
 You'll also need to install mGear. See [mGear Website](https://mgear-framework.com/).
 To have LSP support for the mgear module make sure to pull the submodule as well: `git submodule update --init --recursive`

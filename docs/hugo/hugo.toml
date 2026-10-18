@@ -19,3 +19,8 @@ title = 'y-rig Docs'
 [params.docs]
     darkMode = true
     prismTheme = "lotusdocs"
+
+[markup]
+    [markup.goldmark]
+    [markup.goldmark.renderer]
+        unsafe = true

@@ -436,7 +436,7 @@
                 "    return locked",
                 "",
                 "if not ${dev_build}:",
-                "    locked = lock_non_control_attrs(ignored_nodes=set(${ignored_nodes}), ignored_attrs=set(\"visibility\"))",
+                "    locked = lock_non_control_attrs(ignored_nodes=set(${ignored_nodes}), ignored_attrs=set(${ignored_attrs}))",
                 "    if locked:",
                 "        log.info(f\"Locked {len(locked)} attributes.\")"
             ]

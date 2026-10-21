@@ -12,6 +12,8 @@ from nxt.runtime import ExitGraph, ExitNode, InvalidNodeError
 from nxt.session import Session
 from nxt.stage import Stage, logger, run
 
+from nxt import nxt_path
+
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
@@ -79,6 +81,10 @@ class ProgressStage(Stage):
         """
         if not isinstance(layer, CompLayer):
             raise ValueError("Execute Nodes requires a comp layer.")  # noqa
+        # Path expansions and inferred comps are cached for the duration of
+        # a run, so start each run looking at things as they are now.
+        nxt_path.clear_file_expand_cache()
+        self._inferred_comp_cache = {}
         if not layer.runtime:
             dup_comp = self.build_stage(layer.layer_idx())
             runtime_layer: CompLayer = self.setup_runtime_layer(dup_comp, parameters=parameters)

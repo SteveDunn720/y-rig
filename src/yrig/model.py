@@ -49,7 +49,12 @@ def group_top_level_nodes(group_name: str = "geo", nodes: list[str] | None = Non
 def merge_group(group: str, name: str | None = None) -> str | None:
     """Replace `group` with a single mesh called `name`."""
     target_name = name or get_short_name(group)
-    resolved_group = cmds.ls(group, long=True)[0]
+    matches = cmds.ls(group, long=True) or []
+    if len(matches) != 1:
+        raise ValueError(
+            f"Couldn't resolve a path for {group}, got {len(matches)} matches ({matches}): "
+        )
+    resolved_group = matches[0]
 
     shapes: list[str] = cmds.listRelatives(
         resolved_group, allDescendents=True, type="mesh", noIntermediate=True, fullPath=True

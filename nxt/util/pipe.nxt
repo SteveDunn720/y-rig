@@ -78,7 +78,7 @@
             "code": [
                 "filepath = Path(\"${model_usd_filepath}\")",
                 "",
-                "self.imported_top_level_prims = yrig.io.import_model_usd(filepath)"
+                "self.imported_top_level_prims = yrig.io.import_model_usd(filepath, instances=False)"
             ]
         },
         "/tools_window/tools/pipe/ingest_model/merge_groups": {

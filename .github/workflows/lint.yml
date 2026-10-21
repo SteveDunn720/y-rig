@@ -5,10 +5,16 @@ on:
     branches: ["main"]
     paths:
       - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/lint.yml"
   pull_request:
     branches: ["main"]
     paths:
       - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/lint.yml"
 
 permissions:
   contents: read

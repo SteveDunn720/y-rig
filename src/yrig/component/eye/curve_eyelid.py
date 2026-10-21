@@ -730,18 +730,15 @@ class Eyelid:
     def build_expression_controls(self) -> None:
         """Build major and macro eyelid expression controls.
 
-        Major controls:
-            - Shared inner corner
-            - Shared outer corner
-            - Upper midpoint
-            - Lower midpoint
+        Optional placement guides are discovered by Maya node name:
 
-        Macro controls:
-            - Five per eyelid
-            - Parent under corresponding major controls
+            {vertical}_macro_{index:02d}_{side}
 
-        Fake hierarchies mirror the real control parenting.
-        No connections are created.
+        Corners use guide indices 00 and 05.
+        Midpoint major controls share guide 02 with macro index 2.
+
+        If a guide is missing, placement falls back to the rest curve.
+        Explicit guides provide both position and orientation.
         """
 
         # ---------------------------------------------------------
@@ -777,26 +774,87 @@ class Eyelid:
         upper_curve = self.guides["eyelid_upper_rest"]
         lower_curve = self.guides["eyelid_lower_rest"]
 
+        curves = {
+            "upper": upper_curve,
+            "lower": lower_curve,
+        }
+
+        macro_parameters = (0.0, 0.25, 0.5, 0.75, 1.0)
+
         # ---------------------------------------------------------
-        # Shared corner controls
-        #
-        # Use the upper rest curve for both shared corners.
+        # Guide / curve placement
         # ---------------------------------------------------------
 
-        for corner, parameter in (
-            ("inner_corner", 0.0),
-            ("outer_corner", 1.0),
-        ):
-            matrix = self.get_curve_point_matrix(
-                curve=upper_curve,
+        def get_placement_matrix(
+            vertical: str,
+            guide_index: int,
+            parameter: float,
+        ) -> MMatrix:
+            """Use a named guide when available, otherwise sample the curve."""
+
+            guide_name = f"{vertical}_macro_{guide_index:02d}_{self.side}"
+
+            matches = cmds.ls(guide_name, long=True, type="transform") or []
+
+            if len(matches) > 1:
+                raise RuntimeError(f"Multiple expression guides found: {guide_name}")
+
+            if matches:
+                return MMatrix(
+                    cmds.xform(
+                        matches[0],
+                        query=True,
+                        worldSpace=True,
+                        matrix=True,
+                    )
+                )
+
+            return self.get_curve_point_matrix(
+                curve=curves[vertical],
                 parameter=parameter,
                 tangent_orient=self.orient_sub_expression_controls,
             )
 
+        # ---------------------------------------------------------
+        # Cache macro placement matrices
+        # ---------------------------------------------------------
+
+        macro_matrices = {
+            "upper": {},
+            "lower": {},
+        }
+
+        for vertical in ("upper", "lower"):
+            for index, parameter in enumerate(macro_parameters):
+                # Macro index 4 uses guide 05.
+                guide_index = 5 if index == 4 else index
+
+                # Shared corners use the upper eyelid placement.
+                if index in (0, 4):
+                    placement_vertical = "upper"
+                else:
+                    placement_vertical = vertical
+
+                macro_matrices[vertical][index] = get_placement_matrix(
+                    vertical=placement_vertical,
+                    guide_index=guide_index,
+                    parameter=parameter,
+                )
+
+        # ---------------------------------------------------------
+        # Shared corner controls
+        # ---------------------------------------------------------
+
+        for corner, index in (
+            ("inner_corner", 0),
+            ("outer_corner", 4),
+        ):
+            matrix = macro_matrices["upper"][index]
+
             control, driver = self.create_expression_control_pair(
                 name=f"eyelid_{corner}_{self.side}",
                 matrix=matrix,
-                control_parent=self.expression_control_grps[vertical],
+                control_parent=self.expression_control_grps["upper"],
                 fake_parent=self.expression_driver_grp,
                 size=self.control_size * 0.2,
             )
@@ -808,15 +866,8 @@ class Eyelid:
         # Upper/lower midpoint controls
         # ---------------------------------------------------------
 
-        for vertical, curve in (
-            ("upper", upper_curve),
-            ("lower", lower_curve),
-        ):
-            matrix = self.get_curve_point_matrix(
-                curve=curve,
-                parameter=0.5,
-                tangent_orient=self.orient_sub_expression_controls,
-            )
+        for vertical in ("upper", "lower"):
+            matrix = macro_matrices[vertical][2]
 
             control, driver = self.create_expression_control_pair(
                 name=f"eyelid_{vertical}_mid_{self.side}",
@@ -833,23 +884,8 @@ class Eyelid:
         # Macro controls
         # ---------------------------------------------------------
 
-        macro_parameters = (
-            0.0,
-            0.25,
-            0.5,
-            0.75,
-            1.0,
-        )
-
-        for vertical, curve in (
-            ("upper", upper_curve),
-            ("lower", lower_curve),
-        ):
-            for index, parameter in enumerate(macro_parameters):
-                # ---------------------------------------------
-                # Choose major parent
-                # ---------------------------------------------
-
+        for vertical in ("upper", "lower"):
+            for index in range(5):
                 if index == 0:
                     parent_key = "inner_corner"
                 elif index == 4:
@@ -860,19 +896,7 @@ class Eyelid:
                 major_control = self.expression_major_controls[parent_key]
                 major_driver = self.expression_major_drivers[parent_key]
 
-                # ---------------------------------------------
-                # Curve rest matrix
-                # ---------------------------------------------
-
-                matrix = self.get_curve_point_matrix(
-                    curve=curve,
-                    parameter=parameter,
-                    tangent_orient=self.orient_sub_expression_controls,
-                )
-
-                # ---------------------------------------------
-                # Create real and fake controls
-                # ---------------------------------------------
+                matrix = macro_matrices[vertical][index]
 
                 control, driver = self.create_expression_control_pair(
                     name=f"eyelid_{vertical}_macro_{index:02d}_{self.side}",
@@ -1658,6 +1682,39 @@ class Eyelid:
             )
 
         return f"{node}.outValue"
+
+    def get_expression_placement_matrix(
+        self,
+        vertical: str,
+        index: int,
+        parameter: float,
+        curve: str,
+    ) -> MMatrix:
+        """Get expression control placement from an explicit guide or curve."""
+
+        # Only interior macro controls can use explicit guides.
+        if index in (1, 2, 3):
+            guide_name = f"{vertical}_macro_{index:02d}_{self.side}"
+
+            # Support either guide names or guide objects stored in self.guides.
+            guide = self.guides.get(guide_name)
+
+            if guide and cmds.objExists(guide):
+                return MMatrix(
+                    cmds.xform(
+                        guide,
+                        query=True,
+                        worldSpace=True,
+                        matrix=True,
+                    )
+                )
+
+        # Existing curve-based fallback.
+        return self.get_curve_point_matrix(
+            curve=curve,
+            parameter=parameter,
+            tangent_orient=self.orient_sub_expression_controls,
+        )
 
     def build_blink_blendshapes(
         self,

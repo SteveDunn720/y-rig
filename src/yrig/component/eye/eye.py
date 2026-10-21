@@ -29,7 +29,7 @@ class Eye:
         self.control_size: float = control_size
         self.parent_jnt: str = parent_jnt
         self.look_parent: str = look_parent
-        self.guides: dict[str, str] = {
+        self.guides: dict = {
             "root_name": f"eye_root_{side}",
             "center_piv": f"eye_center_{self.side}",
             "aim": f"eye_aim_{self.side}",
@@ -47,6 +47,14 @@ class Eye:
             "eye_diam": f"eye_circ_{self.side}",
             "iris_diam": f"iris_circ_{self.side}",
             "pupil_diam": f"pupil_circ_{self.side}",
+            "sub_blink": [
+                f"upper_macro_01_{self.side}",
+                f"upper_macro_02_{self.side}",
+                f"upper_macro_03_{self.side}",
+                f"lower_macro_01_{self.side}",
+                f"lower_macro_02_{self.side}",
+                f"lower_macro_03_{self.side}",
+            ],
         }
 
     # -------------------

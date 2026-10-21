@@ -76,6 +76,20 @@ class Eyelid:
         # ---------------------------------------------------------
         # Collision gap attribute
         # ---------------------------------------------------------
+        if not cmds.attributeQuery(
+            "collision",
+            node=self.main_ctrl,
+            exists=True,
+        ):
+            cmds.addAttr(
+                self.main_ctrl,
+                longName="collision",
+                attributeType="double",
+                minValue=0.0,
+                maxValue=1.0,
+                defaultValue=1.0,
+                keyable=True,
+            )
 
         if not cmds.attributeQuery(
             "collisionGap",
@@ -288,7 +302,26 @@ class Eyelid:
             3,  # type:ignore
         )
 
-        collision_weight = f"{collision_remap}.outValue"
+        # ---------------------------------------------------------
+        # Animator collision strength
+        # ---------------------------------------------------------
+
+        collision_strength = cmds.createNode(
+            "multiplyDivide",
+            name=f"{name}_collision_strength_MD",
+        )
+
+        cmds.connectAttr(
+            f"{collision_remap}.outValue",
+            f"{collision_strength}.input1X",
+        )
+
+        cmds.connectAttr(
+            f"{self.main_ctrl}.collision",
+            f"{collision_strength}.input2X",
+        )
+
+        collision_weight = f"{collision_strength}.outputX"
 
         # ---------------------------------------------------------
         # 3. Blend each collision driver to the midpoint

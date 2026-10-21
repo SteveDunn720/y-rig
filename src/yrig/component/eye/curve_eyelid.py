@@ -34,6 +34,7 @@ class Eyelid:
         control_size: float = 1.0,
         setup_parent: str = "rig",
         setup_group: str = "eyes_setup",
+        orient_sub_expression_controls: bool = False,
     ) -> None:
         if guides is None:
             guides = {}
@@ -51,6 +52,7 @@ class Eyelid:
         self.blink_guides = {}
         self.blink_curves = {}
         self.blink_blendshapes = {}
+        self.orient_sub_expression_controls = orient_sub_expression_controls
 
     # -------------------
     # Helper Functions
@@ -788,7 +790,7 @@ class Eyelid:
             matrix = self.get_curve_point_matrix(
                 curve=upper_curve,
                 parameter=parameter,
-                tangent_orient=True,
+                tangent_orient=self.orient_sub_expression_controls,
             )
 
             control, driver = self.create_expression_control_pair(
@@ -813,7 +815,7 @@ class Eyelid:
             matrix = self.get_curve_point_matrix(
                 curve=curve,
                 parameter=0.5,
-                tangent_orient=True,
+                tangent_orient=self.orient_sub_expression_controls,
             )
 
             control, driver = self.create_expression_control_pair(
@@ -865,7 +867,7 @@ class Eyelid:
                 matrix = self.get_curve_point_matrix(
                     curve=curve,
                     parameter=parameter,
-                    tangent_orient=True,
+                    tangent_orient=self.orient_sub_expression_controls,
                 )
 
                 # ---------------------------------------------
@@ -1373,7 +1375,7 @@ class Eyelid:
                 control_matrix = self.get_curve_point_matrix(
                     curve=self.guides[f"eyelid_{vertical}_rest"],
                     parameter=percent,
-                    tangent_orient=True,
+                    tangent_orient=self.orient_sub_expression_controls,
                 )
 
                 # Root joint stays at the eye center.

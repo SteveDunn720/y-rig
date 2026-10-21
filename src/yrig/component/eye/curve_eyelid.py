@@ -854,7 +854,7 @@ class Eyelid:
             control, driver = self.create_expression_control_pair(
                 name=f"eyelid_{corner}_{self.side}",
                 matrix=matrix,
-                control_parent=self.expression_control_grps["upper"],
+                control_parent=self.main_ctrl,
                 fake_parent=self.expression_driver_grp,
                 size=self.control_size * 0.2,
             )

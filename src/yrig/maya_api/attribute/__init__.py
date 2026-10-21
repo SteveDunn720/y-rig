@@ -12,6 +12,7 @@ from .compound import (
     AimMatrixAxisAttribute,
     BlendMatrixTargetAttribute,
     ClosestPointOnSurfaceResultAttribute,
+    NearestPointOnCurveResultAttribute,
     UvPinCoordinateAttribute,
     WtMatrixAttribute,
 )
@@ -92,6 +93,7 @@ __all__ = [
     "MatrixArrayAttribute",
     "MatrixAttribute",
     "MessageAttribute",
+    "NearestPointOnCurveResultAttribute",
     "NumericAttribute",
     "NurbsCurveAttribute",
     "NurbsSurfaceAttribute",

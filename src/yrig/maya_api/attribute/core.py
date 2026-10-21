@@ -452,7 +452,7 @@ class Vector2Attribute(Attribute[tuple[float, float]]):
 
 
 class Vector3Attribute(Attribute[tuple[float, float, float]]):
-    """A Maya attribute of the type double3 (XYZ)"""
+    """A Maya attribute with three values (XYZ)"""
 
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
@@ -490,10 +490,10 @@ class QuatAttribute(Attribute[tuple[float, float, float, float]]):
     def __init__(self, attr_path: str) -> None:
         super().__init__(attr_path)
 
-        self.x = ScalarAttribute(f"{attr_path}X")
-        self.y = ScalarAttribute(f"{attr_path}Y")
-        self.z = ScalarAttribute(f"{attr_path}Z")
-        self.w = ScalarAttribute(f"{attr_path}W")
+        self.x = DoubleAttribute(f"{attr_path}X")
+        self.y = DoubleAttribute(f"{attr_path}Y")
+        self.z = DoubleAttribute(f"{attr_path}Z")
+        self.w = DoubleAttribute(f"{attr_path}W")
 
 
 class Long3Attribute(Attribute[tuple[int, int, int]]):

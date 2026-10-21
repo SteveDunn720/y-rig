@@ -363,6 +363,13 @@
                 "DEFAULT_NODES = getattr(STAGE, \"default_nodes\", {})",
                 "log = yrig.build.nxt_api.get_node_logger(\"${_nxtpath}\")",
                 "",
+                "def get_ik_joints() -> set[str]:",
+                "    joints = set()",
+                "    for handle in cmds.ls(type=\"ikHandle\") or []:",
+                "        chain = cmds.ikHandle(handle, query=True, jointList=True) or []",
+                "        joints.update(chain)",
+                "    return set(joints)",
+                "",
                 "def is_connected(plug: str) -> bool:",
                 "    try:",
                 "        if cmds.listConnections(plug, source=True, destination=True):",
@@ -384,6 +391,7 @@
                 "        return",
                 "",
                 "    nodes = cmds.ls(type=\"transform\") or []",
+                "    ik_joints = get_ik_joints()",
                 "    locked = []",
                 "    skipped = []",
                 "",
@@ -394,6 +402,9 @@
                 "",
                 "        # Controls are left completely untouched",
                 "        if node in controls:",
+                "            continue",
+                "            ",
+                "        if node in ik_joints:",
                 "            continue",
                 "",
                 "        keyable = set(cmds.listAttr(node, keyable=True) or [])",
@@ -425,7 +436,7 @@
                 "    return locked",
                 "",
                 "if not ${dev_build}:",
-                "    locked = lock_non_control_attrs(ignored_nodes=set(${ignored_nodes}), ignored_attrs=set(\"visibility\"))",
+                "    locked = lock_non_control_attrs(ignored_nodes=set(${ignored_nodes}), ignored_attrs=set(${ignored_attrs}))",
                 "    if locked:",
                 "        log.info(f\"Locked {len(locked)} attributes.\")"
             ]
@@ -710,7 +721,8 @@
                 "model",
                 "guides",
                 "controls",
-                "deformation"
+                "deformation",
+                "logic"
             ],
             "attrs": {
                 "rig_root": {
@@ -824,6 +836,19 @@
                 "if guides_filepath_str:",
                 "    guides_filepath = Path(guides_filepath_str)",
                 "    yrig.io.import_maya_file(guides_filepath)"
+            ]
+        },
+        "/setup/root/logic": {
+            "attrs": {
+                "logic_group": {
+                    "type": "raw",
+                    "value": "logic"
+                }
+            },
+            "code": [
+                "if not cmds.objExists(\"${logic_group}\"):",
+                "    logic_group = yrig.transform.create_transform(\"${logic_group}\", parent=\"${rig_root}\")",
+                "    cmds.hide(logic_group)"
             ]
         },
         "/setup/root/model": {

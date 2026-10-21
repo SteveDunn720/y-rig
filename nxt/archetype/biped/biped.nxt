@@ -75,6 +75,7 @@
             "/tools_window/biped/face/mouth_surf_skin_io": true,
             "/tools_window/biped/face/mouth_surface_io": true,
             "/tools_window/biped/face/psd/eye_psd_io": true,
+            "/tools_window/biped/face/psd/mouth_psd_io": true,
             "/tools_window/biped/face/skin_data_io": true,
             "/tools_window/biped/face/solo_face_guides_io": true,
             "/tools_window/tools/mgear/shifter_guides_io": true
@@ -125,8 +126,8 @@
                 -300.0
             ],
             "/shifter_build": [
-                -1160.0,
-                0.0
+                -840.0,
+                -120.0
             ],
             "/simple_eyebrow": [
                 -360.0,

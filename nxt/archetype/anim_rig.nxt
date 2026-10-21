@@ -5,6 +5,7 @@
     "mute": false,
     "solo": false,
     "references": [
+        "util/pipe.nxt",
         "util/tools.nxt",
         "util/skin.nxt",
         "core.nxt"

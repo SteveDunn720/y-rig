@@ -11,9 +11,13 @@
     "meta_data": {
         "positions": {
             "/shifter_build": [
-                -1220.0,
-                0.0
+                -840.0,
+                -120.0
             ]
+        },
+        "collapse": {
+            "/tools_window/tools/mgear": false,
+            "/tools_window/tools/mgear/shifter_guides_io": true
         }
     },
     "nodes": {

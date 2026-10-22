@@ -19,6 +19,7 @@ from yrig.skin.split.tag import tag_for_weight_split
 from yrig.transform import create_transform
 
 from .ik import create_ik_single_chain
+from .mirror import mirror_matrix, mirror_eye_matrix
 
 
 class Eyelid:
@@ -119,6 +120,34 @@ class Eyelid:
                 name=f"eyelid_collision_{index:02d}_{self.side}",
                 push=push,
             )
+
+    def get_expression_mirrored_matrix(
+        self,
+        matrix: MMatrix,
+    ) -> MMatrix:
+        """Apply left-to-right orientation behavior to expression matrices.
+
+        The supplied matrix is already at the correct world position.
+        Right-side orientation is constructed as a mirrored left-side
+        orientation without moving the control.
+        """
+
+        if self.side != "R":
+            return matrix
+
+        # Reflect the right-side matrix into hypothetical left space.
+        left_matrix = mirror_matrix(
+            matrix,
+            axis="x",
+            behavior=False,
+        )
+
+        # Mirror the left-style transform back with proper handedness.
+        return mirror_matrix(
+            left_matrix,
+            axis="x",
+            behavior=True,
+        )
 
     def create_eyelid_collision_pair(
         self,
@@ -715,14 +744,14 @@ class Eyelid:
         control_parent: str,
         fake_parent: str,
         size: float,
+        mirror_offset: bool = False,
     ) -> tuple[Control, str]:
         """Create matching real and fake expression controls.
 
-        The fake hierarchy contains:
-            offset -> driver
+        Mirroring is applied to both offset hierarchies.
 
-        Both hierarchies share the same world-space rest pose.
-        No driving connections are created.
+        Only mirror when requested, avoiding additional mirroring
+        for controls placed using explicit guides.
         """
 
         # ---------------------------------------------------------
@@ -749,6 +778,21 @@ class Eyelid:
         )
 
         # ---------------------------------------------------------
+        # Mirror both offsets
+        # ---------------------------------------------------------
+
+        if mirror_offset:
+            cmds.setAttr(
+                f"{control.offset}.scaleX",
+                -1.0,  # type:ignore
+            )
+
+            cmds.setAttr(
+                f"{fake_offset}.scaleX",
+                -1.0,  # type:ignore
+            )
+
+        # ---------------------------------------------------------
         # Fake driver
         # ---------------------------------------------------------
 
@@ -771,7 +815,12 @@ class Eyelid:
         Midpoint major controls share guide 02 with macro index 2.
 
         If a guide is missing, placement falls back to the rest curve.
-        Explicit guides provide both position and orientation.
+
+        Right-side curve-generated controls receive scaleX = -1
+        on their offset groups. Explicit guides retain their
+        existing orientation.
+
+        Shared corners are parented under the main eye control.
         """
 
         # ---------------------------------------------------------
@@ -822,18 +871,29 @@ class Eyelid:
             vertical: str,
             guide_index: int,
             parameter: float,
-        ) -> MMatrix:
-            """Use a named guide when available, otherwise sample the curve."""
+        ) -> tuple[MMatrix, bool]:
+            """Return placement matrix and whether an explicit guide was used.
+
+            Explicit guides provide position and orientation.
+            Curve-generated placements use the curve orientation setting.
+            """
 
             guide_name = f"{vertical}_macro_{guide_index:02d}_{self.side}"
 
-            matches = cmds.ls(guide_name, long=True, type="transform") or []
+            matches = (
+                cmds.ls(
+                    guide_name,
+                    long=True,
+                    type="transform",
+                )
+                or []
+            )
 
             if len(matches) > 1:
                 raise RuntimeError(f"Multiple expression guides found: {guide_name}")
 
             if matches:
-                return MMatrix(
+                matrix = MMatrix(
                     cmds.xform(
                         matches[0],
                         query=True,
@@ -842,17 +902,26 @@ class Eyelid:
                     )
                 )
 
-            return self.get_curve_point_matrix(
+                return matrix, True
+
+            matrix = self.get_curve_point_matrix(
                 curve=curves[vertical],
                 parameter=parameter,
                 tangent_orient=self.orient_sub_expression_controls,
             )
 
+            return matrix, False
+
         # ---------------------------------------------------------
-        # Cache macro placement matrices
+        # Cache macro placement matrices and mirror flags
         # ---------------------------------------------------------
 
         macro_matrices = {
+            "upper": {},
+            "lower": {},
+        }
+
+        macro_mirror = {
             "upper": {},
             "lower": {},
         }
@@ -862,17 +931,22 @@ class Eyelid:
                 # Macro index 4 uses guide 05.
                 guide_index = 5 if index == 4 else index
 
-                # Shared corners use the upper eyelid placement.
+                # Shared corners use upper eyelid placement.
                 if index in (0, 4):
                     placement_vertical = "upper"
                 else:
                     placement_vertical = vertical
 
-                macro_matrices[vertical][index] = get_placement_matrix(
+                matrix, has_guide = get_placement_matrix(
                     vertical=placement_vertical,
                     guide_index=guide_index,
                     parameter=parameter,
                 )
+
+                macro_matrices[vertical][index] = matrix
+
+                # Mirror only right-side curve-generated placements.
+                macro_mirror[vertical][index] = self.side == "R" and not has_guide
 
         # ---------------------------------------------------------
         # Shared corner controls
@@ -890,6 +964,7 @@ class Eyelid:
                 control_parent=self.main_ctrl,
                 fake_parent=self.expression_driver_grp,
                 size=self.control_size * 0.2,
+                mirror_offset=macro_mirror["upper"][index],
             )
 
             self.expression_major_controls[corner] = control
@@ -908,6 +983,7 @@ class Eyelid:
                 control_parent=self.expression_control_grps[vertical],
                 fake_parent=self.expression_driver_grp,
                 size=self.control_size * 0.25,
+                mirror_offset=macro_mirror[vertical][2],
             )
 
             self.expression_major_controls[f"{vertical}_mid"] = control
@@ -937,6 +1013,7 @@ class Eyelid:
                     control_parent=major_control.transform,
                     fake_parent=major_driver,
                     size=self.control_size * 0.12,
+                    mirror_offset=macro_mirror[vertical][index],
                 )
 
                 self.expression_macro_controls[vertical].append(control)

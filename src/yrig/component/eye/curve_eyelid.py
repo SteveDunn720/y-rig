@@ -19,7 +19,7 @@ from yrig.skin.split.tag import tag_for_weight_split
 from yrig.transform import create_transform
 
 from .ik import create_ik_single_chain
-from .mirror import mirror_matrix, mirror_eye_matrix
+from .mirror import mirror_matrix
 
 
 class Eyelid:

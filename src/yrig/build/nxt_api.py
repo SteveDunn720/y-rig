@@ -137,7 +137,7 @@ def _add_world_node(stage: Stage, layer: SpecLayer) -> SpecNode:
 
 
 def setup_rig_build_nxt_layer(
-    filepath: Path, *, rig_path: Path, inherits: Path | None, name: str, color: str
+    filepath: Path, *, rig_path: Path, inherits: Path | None, asset_name: str, color: str
 ) -> None:
     """
     Create and save an NXT layer for a rig build.
@@ -162,7 +162,7 @@ def setup_rig_build_nxt_layer(
     stage: Stage = session.new_file()
     layer: SpecLayer = stage.top_layer
 
-    layer.set_alias(name)
+    layer.set_alias(asset_name)
     layer.color = color
 
     if inherits is not None:
@@ -174,6 +174,12 @@ def setup_rig_build_nxt_layer(
         node=world_node,
         attr="rig_path",
         attr_data={"value": rig_path.as_posix()},
+        layer=layer,
+    )
+    stage.add_node_attr(
+        node=world_node,
+        attr="asset_name",
+        attr_data={"value": asset_name},
         layer=layer,
     )
     layer.save(filepath=filepath.as_posix())

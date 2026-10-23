@@ -33,7 +33,7 @@ class Eyelid:
         component_grp: str,
         control_grp: str,
         control_size: float = 1.0,
-        setup_parent: str = "rig",
+        setup_parent: str = "logic",
         setup_group: str = "eyes_setup",
         orient_sub_expression_controls: bool = False,
     ) -> None:
@@ -484,13 +484,6 @@ class Eyelid:
         main_ctrl = self.main_ctrl
 
         # Main visibility attributes
-        cmds.addAttr(
-            main_ctrl,
-            longName="eyelid_controls",
-            attributeType="enum",
-            enumName="-------------",
-            keyable=True,
-        )
 
         cmds.addAttr(
             main_ctrl,
@@ -840,6 +833,8 @@ class Eyelid:
             parent=self.eyes_setup_grp,
         )
 
+        self.setup_expression_follow()
+
         self.expression_major_controls = {}
         self.expression_major_drivers = {}
 
@@ -981,7 +976,7 @@ class Eyelid:
                 name=f"eyelid_{vertical}_mid_{self.side}",
                 matrix=matrix,
                 control_parent=self.expression_control_grps[vertical],
-                fake_parent=self.expression_driver_grp,
+                fake_parent=self.expression_follow_grp,
                 size=self.control_size * 0.25,
                 mirror_offset=macro_mirror[vertical][2],
             )
@@ -2437,6 +2432,26 @@ class Eyelid:
 
         return m.asMatrix()
 
+    def setup_expression_follow(self) -> None:
+        """Create the fake eyelid follow group before expression controls."""
+        expression_follow_offset = create_transform(
+            name=f"eyelid_follow_{self.side}_fake_grp_offset",
+            parent=self.eyes_setup_grp,
+            transform=self.guides["center_piv"],
+        )
+
+        self.expression_follow_grp = create_transform(
+            name=f"eyelid_follow_{self.side}_fake_grp",
+            parent=expression_follow_offset,
+            transform=self.guides["center_piv"],
+        )
+
+        cmds.connectAttr(
+            f"{self.look_offset}.rotate",
+            f"{self.expression_follow_grp}.rotate",
+            force=True,
+        )
+
     def build(
         self,
         sub_divisions: int = 11,
@@ -2456,9 +2471,10 @@ class Eyelid:
             parent=self.main_ctrl,
             transform=self.guides["center_piv"],
         )
+
         self.sub_grp = create_transform(
             name=f"sub_eyelid_controls_{self.side}",
-            parent=self.look_offset,
+            parent=self.main_ctrl,
             transform=self.guides["center_piv"],
         )
 
@@ -2551,7 +2567,9 @@ class Eyelid:
         self.connect_sub_controls_to_ik()
 
         # Build expression control hierarchies.
+
         self.build_expression_controls()
+        # self.setup_expression_follow()
 
         self.build_macro_joints()
         self.skin_macro_curves()

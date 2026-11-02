@@ -1,6 +1,5 @@
-from yrig.joint import create_joint
 from yrig.control import create_control
-
+from yrig.joint import create_joint
 
 guide = "face_top_M"
 name = "hat"

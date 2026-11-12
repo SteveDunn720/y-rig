@@ -1,3 +1,4 @@
+from yrig.maya_api.node import MultMatrixNode, BlendMatrixNode
 from maya import cmds
 from maya.api.OpenMaya import MFnNurbsCurve, MMatrix, MSelectionList, MSpace, MVector
 
@@ -264,31 +265,21 @@ class Socket:
             parent=follow_offset,
         )
 
-        relative_mm = cmds.createNode("multMatrix", name=f"socket_{self.side}_follow_relative_mm")
-        cmds.connectAttr(f"{driver}.worldMatrix[0]", f"{relative_mm}.matrixIn[0]")
-        cmds.connectAttr(
-            f"{self.control_grp}.worldInverseMatrix[0]",
-            f"{relative_mm}.matrixIn[1]",
-        )
-
-        rest_relative = MMatrix(cmds.getAttr(f"{relative_mm}.matrixSum"))
-        delta_mm = cmds.createNode("multMatrix", name=f"socket_{self.side}_follow_delta_mm")
-        cmds.setAttr(
-            f"{delta_mm}.matrixIn[0]",
-            *tuple(rest_relative.inverse()),
-            type="matrix",
-        )
-        cmds.connectAttr(f"{relative_mm}.matrixSum", f"{delta_mm}.matrixIn[1]")
-
-        blend = cmds.createNode("blendMatrix", name=f"socket_{self.side}_follow_bm")
-        cmds.connectAttr(f"{delta_mm}.matrixSum", f"{blend}.target[0].targetMatrix")
-        cmds.connectAttr(f"{driver}.socket_follow", f"{blend}.target[0].weight")
-
-        local_mm = cmds.createNode("multMatrix", name=f"socket_{self.side}_follow_local_mm")
-        cmds.connectAttr(f"{follow_pos}.matrix", f"{local_mm}.matrixIn[0]")
-        cmds.connectAttr(f"{blend}.outputMatrix", f"{local_mm}.matrixIn[1]")
-        cmds.connectAttr(f"{follow_pos}.inverseMatrix", f"{local_mm}.matrixIn[2]")
-        cmds.connectAttr(f"{local_mm}.matrixSum", f"{follow_offset}.offsetParentMatrix")
+        relative_mm = MultMatrixNode.create(name=f"socket_{self.side}_follow_relative_mm")
+        relative_mm.matrix_in[0].connect_from(f"{driver}.worldMatrix[0]")
+        relative_mm.matrix_in[1].connect_from(f"{self.control_grp}.worldInverseMatrix[0]")
+        rest_relative = MMatrix(relative_mm.matrix_sum.get())
+        delta_mm = MultMatrixNode.create(name=f"socket_{self.side}_follow_delta_mm")
+        delta_mm.matrix_in[0].set(rest_relative.inverse())
+        delta_mm.matrix_in[1].connect_from(relative_mm.matrix_sum)
+        blend = BlendMatrixNode.create(name=f"socket_{self.side}_follow_bm")
+        blend.target[0].target_matrix.connect_from(delta_mm.matrix_sum)
+        blend.target[0].weight.connect_from(f"{driver}.socket_follow")
+        local_mm = MultMatrixNode.create(name=f"socket_{self.side}_follow_local_mm")
+        local_mm.matrix_in[0].connect_from(f"{follow_pos}.matrix")
+        local_mm.matrix_in[1].connect_from(f"{blend}.outputMatrix")
+        local_mm.matrix_in[2].connect_from(f"{follow_pos}.inverseMatrix")
+        local_mm.matrix_sum.connect_to(f"{follow_offset}.offsetParentMatrix")
 
         self.socket_follow_pos = follow_pos
         self.socket_follow_offset = follow_offset
@@ -428,11 +419,6 @@ class Socket:
                 longName="sub_socket",
                 proxy=f"{self.main_ctrl}.sub_socket",
             )
-
-        self.sub_socket_set = cmds.sets(
-            [control.transform for control in self.sub_socket_control],  # type:ignore
-            name=f"socket_sub_{self.side}_set",
-        )
 
         # ---------------------------------------------------------
         # Build upper and lower eyelid matrix splines

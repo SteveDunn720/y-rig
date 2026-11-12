@@ -1,14 +1,10 @@
-import math
-
 from maya import cmds
 from maya.api.OpenMaya import (
-    MEulerRotation,
     MFnNurbsCurve,
     MMatrix,
     MPoint,
     MSelectionList,
     MSpace,
-    MTransformationMatrix,
     MVector,
 )
 
@@ -21,7 +17,6 @@ from yrig.skin.split.tag import tag_for_weight_split
 from yrig.transform import create_transform
 
 from .ik import create_ik_single_chain
-from .mirror import mirror_matrix
 
 
 class Eyelid:

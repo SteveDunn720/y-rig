@@ -123,34 +123,6 @@ class Eyelid:
                 push=push,
             )
 
-    def get_expression_mirrored_matrix(
-        self,
-        matrix: MMatrix,
-    ) -> MMatrix:
-        """Apply left-to-right orientation behavior to expression matrices.
-
-        The supplied matrix is already at the correct world position.
-        Right-side orientation is constructed as a mirrored left-side
-        orientation without moving the control.
-        """
-
-        if self.side != "R":
-            return matrix
-
-        # Reflect the right-side matrix into hypothetical left space.
-        left_matrix = mirror_matrix(
-            matrix,
-            axis="x",
-            behavior=False,
-        )
-
-        # Mirror the left-style transform back with proper handedness.
-        return mirror_matrix(
-            left_matrix,
-            axis="x",
-            behavior=True,
-        )
-
     def create_eyelid_collision_pair(
         self,
         upper_pin: str,
@@ -1792,39 +1764,6 @@ class Eyelid:
 
         return f"{node}.outValue"
 
-    def get_expression_placement_matrix(
-        self,
-        vertical: str,
-        index: int,
-        parameter: float,
-        curve: str,
-    ) -> MMatrix:
-        """Get expression control placement from an explicit guide or curve."""
-
-        # Only interior macro controls can use explicit guides.
-        if index in (1, 2, 3):
-            guide_name = f"{vertical}_macro_{index:02d}_{self.side}"
-
-            # Support either guide names or guide objects stored in self.guides.
-            guide = self.guides.get(guide_name)
-
-            if guide and cmds.objExists(guide):
-                return MMatrix(
-                    cmds.xform(
-                        guide,
-                        query=True,
-                        worldSpace=True,
-                        matrix=True,
-                    )
-                )
-
-        # Existing curve-based fallback.
-        return self.get_curve_point_matrix(
-            curve=curve,
-            parameter=parameter,
-            tangent_orient=self.orient_sub_expression_controls,
-        )
-
     def build_blink_blendshapes(
         self,
         extension: float = 2.0,
@@ -2408,34 +2347,6 @@ class Eyelid:
             matrix = matrix * mirror_matrix
 
         return matrix
-
-    def convert_to_matrix(
-        self,
-        pos: tuple[float, float, float] = (0, 0, 0),
-        rot: tuple[float, float, float] = (0, 0, 0),
-        scale: tuple[float, float, float] = (1, 1, 1),
-    ) -> MMatrix:
-        """
-        Build an MMatrix from translation, rotation, and scale.
-        """
-
-        m = MTransformationMatrix()
-
-        # Translation
-        m.setTranslation(MVector(*pos), MSpace.kWorld)
-
-        # Rotation (Euler degrees → radians internally handled by API)
-        euler = MEulerRotation(
-            math.radians(rot[0]),
-            math.radians(rot[1]),
-            math.radians(rot[2]),
-        )
-        m.setRotation(euler)
-
-        # Scale
-        m.setScale(scale, MSpace.kWorld)
-
-        return m.asMatrix()
 
     def setup_expression_follow(self) -> None:
         """Create the fake eyelid follow group before expression controls."""

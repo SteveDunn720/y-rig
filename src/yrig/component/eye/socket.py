@@ -1,9 +1,9 @@
-from yrig.maya_api.node import MultMatrixNode, BlendMatrixNode
 from maya import cmds
 from maya.api.OpenMaya import MFnNurbsCurve, MMatrix, MSelectionList, MSpace, MVector
 
 from yrig.control import Control, create_control
 from yrig.joint import create_joint
+from yrig.maya_api.node import BlendMatrixNode, MultMatrixNode
 from yrig.skin.split.tag import tag_for_weight_split
 from yrig.spline.matrix_spline.build import matrix_spline_from_transforms
 from yrig.spline.matrix_spline.core import MatrixSpline

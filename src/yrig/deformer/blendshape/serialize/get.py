@@ -12,6 +12,7 @@ from maya.api.OpenMaya import (
 )
 
 from yrig.deformer.blendshape.core import (
+    get_blendshape_input_shape,
     get_existing_target_group_indices,
     get_target_index_to_name_map,
     resolve_target_index,
@@ -106,6 +107,22 @@ def get_blendshape_target_items_dict(
     return items
 
 
+def get_blendshape_target_group_data(
+    blendshape: BlendShapeNode,
+    input_geometry: MDagPath,
+    target_group: BlendShapeInputTargetGroupAttribute,
+    target_index: int,
+) -> BlendShapeTargetGroupData:
+    target_name = blendshape.weight[target_index].get_alias()
+    tagret_mode = target_group.post_deformers_mode.get()
+    target_group_data = BlendShapeTargetGroupData(
+        name=target_name,
+        mode=tagret_mode,
+        items=get_blendshape_target_items_dict(input_geometry, target_group),
+    )
+    return target_group_data
+
+
 def get_blendshape_target_groups_dict(
     blendshape: BlendShapeNode,
     input_geometry: MDagPath,
@@ -121,12 +138,8 @@ def get_blendshape_target_groups_dict(
     )
     for index in indices:
         target_group = target.input_target_group[index]
-        target_name = alias_map[index]
-        target_mode = target_group.post_deformers_mode.get()
-        target_group_data = BlendShapeTargetGroupData(
-            name=target_name,
-            mode=target_mode,
-            items=get_blendshape_target_items_dict(input_geometry, target_group),
+        target_group_data = get_blendshape_target_group_data(
+            blendshape, input_geometry, target_group, index
         )
         target_groups[index] = target_group_data
 
@@ -139,10 +152,9 @@ def get_blendshape_target_dict(
     target_data_dict: dict[int, BlendShapeInputTargetData] = {}
     indices = blendshape.input.get_indices()
     for index in indices:
-        input_geometry_attr = blendshape.input[index].input_geometry.get_input()
-        if input_geometry_attr is None:
-            raise RuntimeError(f"{input_geometry_attr} had no input geometry.")
-        input_geometry_node = str(input_geometry_attr).split(".", 1)[0]
+        input_geometry_node = get_blendshape_input_shape(blendshape, index)
+        if input_geometry_node is None:
+            raise RuntimeError(f"{blendshape.input[index]} had no input geometry.")
         input_geometry = get_dag_path(input_geometry_node)
         target = blendshape.input_target[index]
         group_data = get_blendshape_target_groups_dict(
@@ -159,11 +171,11 @@ def get_blendshape_input_data_list(blendshape: BlendShapeNode) -> list[BlendShap
     indices = blendshape.input.get_indices()
     for index in indices:
         input = blendshape.input[index]
-        input_geo = input.input_geometry.get_input()
+        input_geometry_node = get_blendshape_input_shape(blendshape, index)
         original_geo = blendshape.original_geometry[index].get_input()
-        if input_geo:
+        if input_geometry_node:
             input_data = BlendShapeInputData(
-                str(input_geo),
+                str(input_geometry_node),
                 original_geometry=str(original_geo) if original_geo else None,
                 group_id=input.group_id.get(),
                 component_tag_expression=input.component_tag_expression.get(),

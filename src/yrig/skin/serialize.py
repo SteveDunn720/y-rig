@@ -9,7 +9,6 @@ from yrig.io import confirm_overwrite
 from yrig.io.json import export_json, load_json
 from yrig.maya_api.enum import (
     SkinClusterNormalizeWeights,
-    SkinClusterRelativeSpaceMode,
     SkinClusterSkinningMethod,
     SkinClusterWeightDistribution,
 )
@@ -32,7 +31,6 @@ class SkinBindData:
     name: str
     influences: list[str]
     skinning_method: SkinClusterSkinningMethod
-    relative_space_mode: SkinClusterRelativeSpaceMode
     support_non_rigid: bool
     normalize_weights: SkinClusterNormalizeWeights
     weight_distribution: SkinClusterWeightDistribution
@@ -52,7 +50,15 @@ def _validate_influences(
     influence_names: Iterable[str],
     geometry: str,
     error_on_missing: bool = False,
+    *,
+    influence_map: Callable[[str], str] | None = None,
 ) -> list[str]:
+    """Validate destination influence names after optional remapping."""
+    influence_names = list(
+        dict.fromkeys(
+            influence_map(name) if influence_map is not None else name for name in influence_names
+        )
+    )
     valid = [name for name in influence_names if cmds.objExists(name)]
     missing = set(influence_names) - set(valid)
     if missing:
@@ -106,7 +112,6 @@ def get_skin_bind_data(skin_cluster: str | SkinClusterNode) -> SkinBindData:
         name=str(skin_cluster),
         influences=get_skin_cluster_influences(skin_cluster),
         skinning_method=skin_cluster_node.skinning_method.get(),
-        relative_space_mode=skin_cluster_node.relative_space_mode.get(),
         support_non_rigid=skin_cluster_node.dqs_support_non_rigid.get(),
         normalize_weights=skin_cluster_node.normalize_weights.get(),
         weight_distribution=skin_cluster_node.weight_distribution.get(),
@@ -124,7 +129,6 @@ def apply_skin_bind_data(skin_cluster: str | SkinClusterNode, data: SkinBindData
         else SkinClusterNode.from_existing(skin_cluster)
     )
     skin_cluster_node.skinning_method.set(data.skinning_method)
-    skin_cluster_node.relative_space_mode.set(data.relative_space_mode)
     skin_cluster_node.dqs_support_non_rigid.set(data.support_non_rigid)
     skin_cluster_node.normalize_weights.set(data.normalize_weights)
     skin_cluster_node.weight_distribution.set(data.weight_distribution)
@@ -136,9 +140,14 @@ def skin_geometry_from_bind_data(
     geometry: str,
     data: SkinBindData,
     skip_missing_influences: bool = True,
+    *,
+    influence_map: Callable[[str], str] | None = None,
 ) -> SkinClusterNode:
     valid_influences = _validate_influences(
-        data.influences, geometry, error_on_missing=not skip_missing_influences
+        data.influences,
+        geometry,
+        error_on_missing=not skip_missing_influences,
+        influence_map=influence_map,
     )
     return skin_geometry(
         bind_joints=valid_influences,
@@ -148,7 +157,6 @@ def skin_geometry_from_bind_data(
         in {SkinClusterSkinningMethod.DUAL_QUATERNION, SkinClusterSkinningMethod.WEIGHT_BLENDED},
         weight_blend=data.skinning_method == SkinClusterSkinningMethod.WEIGHT_BLENDED,
         support_non_rigid=data.support_non_rigid,
-        relative_space_mode=data.relative_space_mode,
         normalize_weights=data.normalize_weights,
         weight_distribution=data.weight_distribution,
         max_influences=data.max_influences,

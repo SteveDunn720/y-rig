@@ -156,9 +156,12 @@
         "collapse": {
             "/apply/deformation": false,
             "/apply/visibility_sets/default_hidden": true,
+            "/build/base_controls": true,
+            "/build/base_controls/local": false,
             "/finalize/hide_joints": true,
             "/finalize/metadata": true,
             "/finalize/metadata/build_commit": true,
+            "/finalize/prune/blendshapes": true,
             "/io_pair": true,
             "/psd_import": true,
             "/psd_import/pose_intepolators": true,
@@ -174,7 +177,8 @@
             "/tools_window/tools/control_shapes/control_shapes_io/export": true,
             "/tools_window/tools/control_shapes/control_shapes_io/import": true,
             "/tools_window/tools/geometry/geometry_io": true,
-            "/tools_window/tools/pipe": true,
+            "/tools_window/tools/pipe": false,
+            "/tools_window/tools/pipe/ingest_model": true,
             "/tools_window/tools/skin/skin_data_io": true,
             "/tools_window/tools/visibility_sets_io": true
         },
@@ -314,10 +318,123 @@
         "/build": {
             "execute_in": "/setup",
             "child_order": [
+                "base_controls",
                 "middle",
                 "left",
                 "right"
             ]
+        },
+        "/build/base_controls": {
+            "child_order": [
+                "global",
+                "shot",
+                "local"
+            ],
+            "attrs": {
+                "control_parent": {
+                    "type": "raw",
+                    "value": "${/setup/root.rig_root}"
+                },
+                "control_size": {
+                    "type": "int",
+                    "value": "24"
+                }
+            }
+        },
+        "/build/base_controls/global": {
+            "attrs": {
+                "control": {
+                    "type": "raw",
+                    "value": "${control_name}_ctl"
+                },
+                "control_color": {
+                    "type": "raw",
+                    "value": "#34a1eb"
+                },
+                "control_name": {
+                    "type": "raw",
+                    "value": "global"
+                },
+                "control_shape": {
+                    "type": "raw",
+                    "value": "hexagon"
+                },
+                "skip_if_exists": {
+                    "type": "raw",
+                    "value": "world_ctl"
+                }
+            },
+            "code": [
+                "if not cmds.objExists(\"${skip_if_exists}\"):",
+                "    control = yrig.control.create_control(",
+                "        \"${control_name}\", ",
+                "        parent=\"${control_parent}\", ",
+                "        size = ${control_size},",
+                "        control_shape = \"${control_shape}\"",
+                "    )",
+                "    self.control = control.transform",
+                "    yrig.control.set_override_color(control, color=\"${control_color}\", override_shapes=True)",
+                "else:",
+                "    self.control = \"${skip_if_exists}\""
+            ]
+        },
+        "/build/base_controls/local": {
+            "instance": "../shot",
+            "child_order": [
+                "constrain_trs"
+            ],
+            "attrs": {
+                "control_name": {
+                    "value": "local"
+                },
+                "control_parent": {
+                    "value": "${../shot.control}"
+                },
+                "control_size": {
+                    "type": "raw",
+                    "value": "${../.control_size} * 0.5"
+                },
+                "skip_if_exists": {
+                    "value": "local_M0_ctl"
+                }
+            }
+        },
+        "/build/base_controls/local/constrain_trs": {
+            "attrs": {
+                "trs_group": {
+                    "type": "raw",
+                    "value": "${/setup/root/trs.trs_group}"
+                }
+            },
+            "code": [
+                "yrig.transform.matrix_constraint(\"${control}\", \"${trs_group}\", shear=False, keep_offset=False)"
+            ]
+        },
+        "/build/base_controls/shot": {
+            "instance": "../global",
+            "attrs": {
+                "control_color": {
+                    "value": "#ebcf34"
+                },
+                "control_name": {
+                    "type": "raw",
+                    "value": "shot"
+                },
+                "control_parent": {
+                    "value": "${../global.control}"
+                },
+                "control_shape": {
+                    "type": "raw",
+                    "value": "round_square"
+                },
+                "control_size": {
+                    "type": "raw",
+                    "value": "${../.control_size} * 0.6"
+                },
+                "skip_if_exists": {
+                    "value": "global_M0_ctl"
+                }
+            }
         },
         "/build/left": {
             "instance": "/side",
@@ -361,7 +478,7 @@
                 "delete_guides",
                 "hide_joints",
                 "model_override",
-                "skin_tools_data",
+                "prune",
                 "metadata",
                 "lock_attrs"
             ]
@@ -558,7 +675,29 @@
                 ")"
             ]
         },
-        "/finalize/skin_tools_data": {
+        "/finalize/prune": {
+            "child_order": [
+                "skin_tools_data",
+                "blendshapes"
+            ]
+        },
+        "/finalize/prune/blendshapes": {
+            "code": [
+                "log = yrig.build.nxt_api.get_node_logger(\"${_nxtpath}\")",
+                "",
+                "if not ${dev_build}:",
+                "    empty_blendshapes = []",
+                "    for node in cmds.ls(type=\"blendShape\") or []:",
+                "        target_indices = cmds.getAttr(f\"{node}.weight\", multiIndices=True) or []",
+                "        if not target_indices:",
+                "            empty_blendshapes.append(node)",
+                "    ",
+                "    if empty_blendshapes:",
+                "        cmds.delete(empty_blendshapes)",
+                "        log.info(f\"Deleted {len(empty_blendshapes)} blendShape node(s) that had no targets: {empty_blendshapes}\")"
+            ]
+        },
+        "/finalize/prune/skin_tools_data": {
             "code": [
                 "if not ${dev_build}:",
                 "    yrig.skin.ng.cleanup_ng_data_nodes()"
@@ -796,6 +935,7 @@
         "/setup/root": {
             "start_point": false,
             "child_order": [
+                "trs",
                 "model",
                 "guides",
                 "controls",
@@ -803,6 +943,10 @@
                 "logic"
             ],
             "attrs": {
+                "anim_publish_set": {
+                    "type": "raw",
+                    "value": "anim_publish_set"
+                },
                 "rig_root": {
                     "comment": "Name for the root node that houses the entire rig.",
                     "type": "raw",
@@ -963,6 +1107,10 @@
             ],
             "enabled": true,
             "attrs": {
+                "child_index": {
+                    "type": "int",
+                    "value": "2"
+                },
                 "model_filepath": {
                     "comment": "Filepath to the Model to be imported.",
                     "type": "raw",
@@ -973,6 +1121,10 @@
                     "type": "raw",
                     "value": "geo"
                 },
+                "model_group_parent": {
+                    "type": "raw",
+                    "value": "${rig_root}"
+                },
                 "model_set": {
                     "comment": "All imported model geometry is added to this set.",
                     "type": "raw",
@@ -981,45 +1133,27 @@
             },
             "code": [
                 "from yrig.io import import_maya_file",
+                "",
                 "model_filepath = Path(\"${model_filepath}\")",
                 "imported_nodes: list[str] = import_maya_file(model_filepath)",
-                "",
                 "top_level_nodes: list[str] = cmds.ls(imported_nodes, assemblies=True)",
-                "",
-                "# # Case 1: exactly one root transform",
-                "if len(top_level_nodes) == 1:",
-                "    top_level_node = top_level_nodes[0]",
-                "    if cmds.nodeType(top_level_node) == \"transform\":",
-                "        geo_grp = top_level_node",
-                "    else:",
-                "        geo_grp = cmds.group(top_level_node, name=\"${model_group}\", world=True)",
-                "    if geo_grp != \"${model_group}\":",
-                "        geo_grp = cmds.rename(geo_grp)",
-                "else:",
-                "    # Case 2: multiple top level transforms (we need to group them)",
-                "    geo_grp = cmds.group(top_level_nodes, name=\"${model_group}\", world=True)  # type: ignore",
-                "",
-                "# Keep in mind the mgear rig object's \"model\" is actually the root rig transform.",
-                "cmds.parent(geo_grp, \"${rig_root}\")",
-                "cmds.reorder(geo_grp, front=True)",
-                "cmds.reorder(geo_grp, relative=1)",
-                "",
-                "# Get the imported meshes",
-                "meshes = cmds.listRelatives(geo_grp, allDescendents=True, type=\"mesh\")",
-                "mesh_transforms = (",
-                "    cmds.listRelatives(",
-                "        meshes,  # type: ignore",
-                "        parent=True,",
-                "        fullPath=True,",
+                "for top_level_node in reversed(top_level_nodes):",
+                "    cmds.parent(top_level_node, \"${model_group_parent}\")",
+                "    cmds.reorder(top_level_node, front=True)",
+                "    cmds.reorder(top_level_node, relative=${child_index})",
+                "    meshes = cmds.listRelatives(top_level_node, allDescendents=True, type=\"mesh\")",
+                "    mesh_transforms = (",
+                "        cmds.listRelatives(",
+                "            meshes,  # type: ignore",
+                "            parent=True,",
+                "            fullPath=True,",
+                "        )",
+                "        or []",
                 "    )",
-                "    or []",
-                ")",
-                "# remove duplicates",
-                "mesh_transforms: list[str] = list(set(mesh_transforms))",
-                "# Put the geo in the set.",
-                "yrig.sets.add_to_set(mesh_transforms, \"${model_set}\", parent=\"${rig_set}\")",
-                "cmds.viewFit()",
-                ""
+                "    yrig.sets.add_to_set(mesh_transforms, \"${model_set}\", parent=\"${rig_set}\")",
+                "    yrig.sets.add_to_set(mesh_transforms, \"${anim_publish_set}\", parent=\"${rig_set}\")",
+                "    cmds.viewFit()",
+                "    "
             ]
         },
         "/setup/root/model/smooth_preview": {
@@ -1033,6 +1167,26 @@
             "code": [
                 "for geo in ${smooth_geo}:",
                 "    yrig.shape.set_smooth_preview(geo)"
+            ]
+        },
+        "/setup/root/trs": {
+            "attrs": {
+                "child_index": {
+                    "type": "int",
+                    "value": "1"
+                },
+                "trs_group": {
+                    "type": "raw",
+                    "value": "trs"
+                }
+            },
+            "code": [
+                "self.trs_group = yrig.transform.create_transform(\"${trs_group}\", parent=\"${rig_root}\")",
+                "",
+                "cmds.reorder(self.trs_group, front=True)",
+                "cmds.reorder(self.trs_group, relative=${child_index})",
+                "",
+                "yrig.sets.add_to_set(self.trs_group, \"${anim_publish_set}\", parent=\"${rig_set}\")"
             ]
         },
         "/shape_io": {
@@ -1169,40 +1323,7 @@
                 "error_on_topology_change": {
                     "value": "not ${dev_build}"
                 }
-            },
-            "code": [
-                "from yrig.skin import skin_and_apply_weights_from_directories",
-                "from yrig.skin.core import skin_geometry",
-                "from yrig.name import natural_sort_key",
-                "",
-                "log = yrig.build.nxt_api.get_node_logger(\"${_nxtpath}\")",
-                "",
-                "def_in_set = yrig.sets.get_set_members(\"${def_set}\", flatten=True)",
-                "def_joints = sorted(cmds.ls(def_in_set, type=\"joint\"), key=natural_sort_key)",
-                "      ",
-                "",
-                "geo_list = ${geo_list}",
-                "geo_to_skin = geo_list if geo_list else  yrig.sets.get_set_members(\"${geo_set}\", flatten=True)",
-                "",
-                "def _fallback_skin(geometry: str):",
-                "    skin_geometry(def_joints, geometry, dual_quaternion=${dual_quaternion})",
-                "    log.info(f\"Default skinned {geometry}\")",
-                "",
-                "strip_suffix = \"${strip_suffix}\"",
-                "def _geo_to_filename(geometry: str):",
-                "    return geometry.removesuffix(strip_suffix)",
-                "",
-                "",
-                "skin_directories = [Path(dir) for dir in ${resolved_skin_directories}]",
-                "skin_and_apply_weights_from_directories(",
-                "    skin_directories, ",
-                "    geo_to_skin, ",
-                "    fallback_skinning=_fallback_skin if ${fallback_skinning} else None, ",
-                "    geo_to_filename=_geo_to_filename if strip_suffix else None,",
-                "    error_on_topology_change=not ${allow_topology_change},",
-                "    )",
-                ""
-            ]
+            }
         },
         "/tools_window/tools/control_shapes": {
             "instance": "/panel",
